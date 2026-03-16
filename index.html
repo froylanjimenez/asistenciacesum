@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CESUM – Sistema de Gestión Escolar</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-dark:    #0d1117;
+  --bg-card:    #161b22;
+  --bg-input:   #1c2330;
+  --border:     #30363d;
+  --accent:     #2563eb;
+  --accent-lt:  #3b82f6;
+  --accent-glow:#2563eb44;
+  --green:      #22c55e;
+  --red:        #ef4444;
+  --orange:     #f97316;
+  --yellow:     #eab308;
+  --purple:     #a855f7;
+  --text-1:     #f0f6fc;
+  --text-2:     #8b949e;
+  --text-3:     #484f58;
+  --radius:     10px;
+  --shadow:     0 4px 24px #00000060;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-1);min-height:100vh}
+#app{min-height:100vh}
+.screen{display:none!important}
+.screen.active{display:flex!important}
+#appScreen.active{display:block!important}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,#1e3a5f55 0%,transparent 70%),var(--bg-dark)}
+.login-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;
+  padding:2.5rem;width:100%;max-width:400px;box-shadow:var(--shadow),0 0 60px #2563eb18}
+.login-logo{text-align:center;margin-bottom:2rem}
+.login-logo .escudo{width:72px;height:72px;background:linear-gradient(135deg,#2563eb,#a855f7);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 1rem;font-size:2rem;box-shadow:0 0 30px var(--accent-glow)}
+.login-logo h1{font-size:1.4rem;font-weight:700;color:var(--text-1);line-height:1.2}
+.login-logo p{font-size:.8rem;color:var(--text-2);margin-top:.25rem}
+.form-label{font-size:.85rem;font-weight:500;color:var(--text-2);margin-bottom:.4rem}
+.form-control,.form-select{background:var(--bg-input)!important;border:1px solid var(--border)!important;
+  color:var(--text-1)!important;border-radius:var(--radius)!important;
+  font-family:'Outfit',sans-serif;font-size:.95rem;padding:.6rem .9rem;transition:border-color .2s,box-shadow .2s}
+.form-control:focus,.form-select:focus{border-color:var(--accent)!important;
+  box-shadow:0 0 0 3px var(--accent-glow)!important;outline:none}
+.form-control::placeholder{color:var(--text-3)!important}
+.btn-primary-cesum{background:var(--accent);border:none;border-radius:var(--radius);color:#fff;
+  font-weight:600;font-family:'Outfit',sans-serif;padding:.65rem 1.5rem;
+  transition:background .2s,transform .1s,box-shadow .2s;cursor:pointer}
+.btn-primary-cesum:hover{background:var(--accent-lt);box-shadow:0 0 16px var(--accent-glow)}
+.btn-primary-cesum:active{transform:scale(.97)}
+
+/* NAVBAR */
+.cesum-navbar{background:var(--bg-card);border-bottom:1px solid var(--border);
+  padding:.75rem 1.5rem;display:flex;align-items:center;gap:1rem;
+  position:sticky;top:0;z-index:100;flex-wrap:wrap}
+.cesum-navbar .brand{font-weight:700;font-size:1.05rem;color:var(--text-1);
+  display:flex;align-items:center;gap:.5rem;flex:1;min-width:200px}
+.cesum-navbar .brand span{font-size:.75rem;font-weight:400;color:var(--text-2);display:block}
+.nav-tabs-cesum{display:flex;gap:.25rem;flex-wrap:wrap}
+.nav-tab-btn{background:transparent;border:1px solid transparent;border-radius:8px;
+  color:var(--text-2);font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:500;
+  padding:.4rem .9rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.4rem}
+.nav-tab-btn:hover{background:var(--bg-input);color:var(--text-1)}
+.nav-tab-btn.active{background:var(--accent);color:#fff;border-color:transparent}
+.nav-tab-btn.hidden{display:none}
+.cesum-navbar .user-info{display:flex;align-items:center;gap:.75rem}
+.user-badge{background:var(--bg-input);border:1px solid var(--border);border-radius:8px;
+  padding:.35rem .75rem;font-size:.8rem;color:var(--text-2)}
+.user-badge strong{color:var(--text-1)}
+#btnLogout{background:transparent;border:1px solid var(--border);border-radius:8px;
+  color:var(--text-2);font-size:.8rem;font-family:'Outfit',sans-serif;
+  padding:.35rem .75rem;cursor:pointer;transition:all .2s}
+#btnLogout:hover{border-color:var(--red);color:var(--red)}
+
+/* CONTENIDO */
+.main-content{padding:1.5rem;max-width:1400px;margin:0 auto}
+
+/* CARDS */
+.cesum-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem}
+.cesum-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.cesum-card-header h5{font-size:1rem;font-weight:600;color:var(--text-1);display:flex;align-items:center;gap:.5rem;margin:0}
+
+/* BOTONES */
+.btn-cesum{display:inline-flex;align-items:center;gap:.4rem;border:none;border-radius:8px;
+  font-family:'Outfit',sans-serif;font-weight:500;font-size:.85rem;padding:.45rem 1rem;cursor:pointer;transition:all .18s}
+.btn-cesum.sm{font-size:.78rem;padding:.3rem .7rem}
+.btn-cesum-primary{background:var(--accent);color:#fff}
+.btn-cesum-success{background:var(--green);color:#fff}
+.btn-cesum-danger{background:var(--red);color:#fff}
+.btn-cesum-warning{background:var(--orange);color:#fff}
+.btn-cesum-purple{background:var(--purple);color:#fff}
+.btn-cesum-secondary{background:var(--bg-input);color:var(--text-2);border:1px solid var(--border)}
+.btn-cesum:hover{opacity:.88;transform:translateY(-1px)}
+.btn-cesum:active{transform:scale(.97)}
+
+/* ASISTENCIA */
+#asistenciaTab .filtros{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:flex-end}
+#asistenciaTab .filtros .form-group{flex:1;min-width:160px}
+
+.hora-actual-banner{display:flex;align-items:center;gap:.5rem;background:var(--bg-input);
+  border:1px solid var(--border);border-radius:8px;padding:.4rem .9rem;
+  font-size:.82rem;color:var(--text-2);margin-bottom:.75rem;flex-wrap:wrap}
+.hora-actual-banner .hora-chip{background:var(--accent);color:#fff;border-radius:6px;
+  font-size:.8rem;font-weight:600;padding:.15rem .55rem;font-family:'JetBrains Mono',monospace}
+.hora-actual-banner .hora-chip.descanso{background:var(--orange)}
+.hora-actual-banner .hora-chip.salida{background:var(--text-3)}
+
+.asis-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.asis-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.85rem}
+.asis-table th{background:var(--bg-input);color:var(--text-2);font-weight:600;font-size:.75rem;
+  text-transform:uppercase;letter-spacing:.04em;padding:.5rem .4rem;text-align:center;
+  border-bottom:1px solid var(--border);white-space:nowrap;position:relative}
+.asis-table th:first-child{text-align:left;padding-left:.75rem}
+.asis-table td{padding:.4rem .3rem;border-bottom:1px solid var(--border);vertical-align:middle;text-align:center}
+.asis-table td:first-child{text-align:left;font-weight:500;color:var(--text-1);padding-left:.75rem;min-width:130px}
+.asis-table tr:last-child td{border-bottom:none}
+.asis-table tr:hover td{background:#ffffff08}
+.asis-table th.hora-activa{background:#2563eb22!important;color:var(--accent-lt)!important;border-bottom:2px solid var(--accent)!important}
+.asis-table td.hora-activa{background:#2563eb0a}
+
+.estado-btn{display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:8px;border:1.5px solid transparent;
+  cursor:pointer;font-size:.9rem;transition:all .15s;
+  font-family:'JetBrains Mono',monospace;font-weight:700;position:relative}
+.estado-btn:disabled{cursor:not-allowed;opacity:.9}
+.eb-asistio{background:#166534;border-color:#22c55e;color:#4ade80}
+.eb-falla{background:#7f1d1d;border-color:#ef4444;color:#fca5a5}
+.eb-excusa{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+.eb-fuga{background:#18181b;border-color:#52525b;color:#e4e4e7}
+.eb-retardo{background:#7c2d12;border-color:#f97316;color:#fdba74}
+.eb-psico{background:#4a1d96;border-color:#a855f7;color:#d8b4fe}
+.estado-btn::after{content:attr(data-label);position:absolute;bottom:calc(100% + 6px);left:50%;
+  transform:translateX(-50%);background:#1c2330;border:1px solid var(--border);color:var(--text-1);
+  font-size:.7rem;font-family:'Outfit',sans-serif;font-weight:500;padding:.2rem .5rem;
+  border-radius:5px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;z-index:10}
+.estado-btn:not(:disabled):hover::after{opacity:1}
+
+.btn-reporte-fila{background:transparent;border:1px solid var(--border);border-radius:6px;
+  color:var(--text-2);font-size:.82rem;padding:.25rem .5rem;cursor:pointer;transition:all .15s;line-height:1}
+.btn-reporte-fila:hover{border-color:var(--orange);color:var(--orange);background:#7c2d1220}
+
+.grado-badge{display:inline-block;background:var(--bg-input);border:1px solid var(--border);
+  border-radius:5px;font-size:.68rem;font-family:'JetBrains Mono',monospace;
+  padding:.08rem .4rem;color:var(--text-2);margin-left:.3rem}
+.est-nombre{font-size:.82rem;line-height:1.2}
+.est-meta{font-size:.68rem;color:var(--text-2);margin-top:2px}
+.leyenda-wrap{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+.leyenda-item{display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--text-2)}
+.leyenda-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+/* ESTADÍSTICAS */
+.stat-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.85rem}
+.stat-table th{background:var(--bg-input);color:var(--text-2);font-size:.78rem;
+  text-transform:uppercase;letter-spacing:.04em;padding:.6rem .9rem;text-align:center;border-bottom:1px solid var(--border)}
+.stat-table th:first-child,.stat-table td:first-child{text-align:left}
+.stat-table td{padding:.5rem .9rem;border-bottom:1px solid var(--border);text-align:center;color:var(--text-1)}
+.stat-table tr:last-child td{border-bottom:none}
+.stat-table tr:hover td{background:#ffffff06}
+.stat-val{font-family:'JetBrains Mono',monospace;font-weight:600}
+.stat-val.danger{color:var(--red)}.stat-val.warning{color:var(--orange)}
+.stat-val.info{color:var(--accent-lt)}.stat-val.muted{color:var(--yellow)}
+.stat-val.purple{color:var(--purple)}.stat-val.zero{color:var(--text-3)}
+.stat-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;margin-bottom:1.25rem}
+.stat-summary-card{background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;text-align:center}
+.stat-summary-card .num{font-size:1.8rem;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1}
+.stat-summary-card .lbl{font-size:.78rem;color:var(--text-2);margin-top:.25rem}
+
+/* PSICOLOGÍA */
+.citas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem}
+.cita-card{background:var(--bg-input);border:1px solid var(--border);border-radius:12px;
+  padding:1rem;cursor:pointer;transition:all .18s;position:relative}
+.cita-card:hover{border-color:var(--purple);transform:translateY(-2px);box-shadow:0 8px 24px #a855f720}
+.cita-card .cita-nombre{font-weight:600;font-size:.95rem;color:var(--text-1);margin-bottom:.35rem}
+.cita-card .cita-meta{font-size:.8rem;color:var(--text-2);display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem}
+.cita-card .cita-estado{position:absolute;top:.75rem;right:.75rem;font-size:.7rem;font-weight:600;
+  padding:.2rem .6rem;border-radius:20px;background:#4a1d9630;color:#d8b4fe;border:1px solid #a855f740}
+.cita-card .cita-estado.completada{background:#16653430;color:#4ade80;border-color:#22c55e40}
+
+/* NOVEDADES */
+.novedad-badge{font-size:.72rem;font-weight:600;padding:.18rem .55rem;border-radius:20px}
+.novedad-badge.activa{background:#16653430;color:#4ade80}
+.novedad-badge.inactiva{background:#7f1d1d30;color:#fca5a5}
+.novedad-badge.pendiente{background:#7c2d1230;color:#fdba74}
+
+/* MODALES */
+.modal-cesum .modal-content{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;color:var(--text-1)}
+.modal-cesum .modal-header{border-bottom:1px solid var(--border);padding:1.1rem 1.4rem}
+.modal-cesum .modal-title{font-weight:600;font-size:1rem;display:flex;align-items:center;gap:.5rem}
+.modal-cesum .modal-footer{border-top:1px solid var(--border);padding:.9rem 1.4rem}
+.modal-cesum .btn-close{filter:invert(1) opacity(.5)}
+
+/* TOAST */
+.toast-cesum{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;min-width:280px;max-width:380px;
+  background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:.9rem 1.1rem;
+  display:flex;align-items:center;gap:.75rem;box-shadow:var(--shadow);
+  transform:translateX(110%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);font-size:.9rem}
+.toast-cesum.show{transform:translateX(0)}
+.toast-cesum .toast-icon{font-size:1.2rem;flex-shrink:0}
+.toast-cesum.success{border-left:3px solid var(--green)}
+.toast-cesum.error{border-left:3px solid var(--red)}
+.toast-cesum.info{border-left:3px solid var(--accent)}
+.toast-cesum.warning{border-left:3px solid var(--orange)}
+
+/* SPINNER */
+.loading-overlay{position:fixed;inset:0;background:#0d111799;z-index:9998;display:none;align-items:center;justify-content:center}
+.loading-overlay.show{display:flex}
+.spinner-cesum{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ADMIN — gestión estudiantes */
+.page-inner{padding:20px}
+.page-title{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px}
+.page-subtitle{font-size:12px;color:var(--text-2);margin-bottom:24px}
+
+@media(max-width:768px){
+  .cesum-navbar{padding:.6rem 1rem}
+  .main-content{padding:.75rem .5rem}
+  .nav-tab-btn span{display:none}
+  .asis-table td:first-child{min-width:100px}
+  .estado-btn{width:32px;height:32px;font-size:.8rem}
+}
+@media(max-width:480px){
+  .asis-table td:first-child{min-width:88px}
+  .estado-btn{width:30px;height:30px;font-size:.75rem;border-radius:6px}
+}
+</style>
+</head>
+<body>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner-cesum"></div></div>
+<div class="toast-cesum" id="toastEl">
+  <span class="toast-icon" id="toastIcon">✓</span>
+  <span id="toastMsg">Mensaje</span>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="escudo">🏫</div>
+      <h1>CESUM</h1>
+      <p>Concentración Educativa del Sur de Montelíbano</p>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Correo electrónico</label>
+      <input type="email" id="loginEmail" class="form-control" placeholder="docente@cesum.edu.co">
+    </div>
+    <div class="mb-4">
+      <label class="form-label">Contraseña</label>
+      <input type="password" id="loginPassword" class="form-control" placeholder="••••••">
+    </div>
+    <button class="btn-primary-cesum w-100" onclick="handleLogin()">
+      <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar
+    </button>
+    <p id="loginError" class="text-danger text-center mt-3 small" style="display:none"></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen" class="screen">
+  <nav class="cesum-navbar">
+    <div class="brand">
+      <span>🏫</span>
+      <div>CESUM <span>Sistema de Gestión Escolar</span></div>
+    </div>
+    <div class="nav-tabs-cesum">
+      <button class="nav-tab-btn active" id="tabAsistencia" onclick="switchTab('asistencia')">
+        <i class="bi bi-person-check"></i><span>Asistencia</span>
+      </button>
+      <button class="nav-tab-btn" id="tabEstadisticas" onclick="switchTab('estadisticas')">
+        <i class="bi bi-bar-chart-line"></i><span>Estadísticas</span>
+      </button>
+      <button class="nav-tab-btn" id="tabPsicologia" onclick="switchTab('psicologia')">
+        <i class="bi bi-heart-pulse"></i><span>Psicología</span>
+      </button>
+      <button class="nav-tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">
+        <i class="bi bi-shield-lock"></i><span>Admin</span>
+      </button>
+    </div>
+    <div class="user-info">
+      <div class="user-badge"><strong id="navNombre">Docente</strong></div>
+      <button id="btnLogout" onclick="handleLogout()"><i class="bi bi-box-arrow-left"></i> Salir</button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <!-- ASISTENCIA -->
+    <div id="asistenciaTab" class="tab-content">
+      <div class="cesum-card">
+        <div class="cesum-card-header">
+          <h5><i class="bi bi-person-check-fill"></i> Planilla de Asistencia</h5>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn-cesum btn-cesum-success" onclick="guardarAsistencia()">
+              <i class="bi bi-cloud-upload"></i> Guardar
+            </button>
+          </div>
+        </div>
+        <div class="hora-actual-banner" id="horaBanner">
+          <i class="bi bi-clock"></i>
+          <span id="horaTexto">Calculando hora...</span>
+        </div>
+        <div class="filtros">
+          <div class="form-group">
+            <label class="form-label">Fecha</label>
+            <input type="date" id="asistFecha" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Grado</label>
+            <select id="asistGrado" class="form-select" onchange="filtrarEstudiantes()">
+              <option value="">-- Todos --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Buscar</label>
+            <input type="text" id="asistBuscar" class="form-control" placeholder="Nombre..." oninput="filtrarEstudiantes()">
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end">
+            <button class="btn-cesum btn-cesum-primary" onclick="cargarPlanilla()">
+              <i class="bi bi-arrow-clockwise"></i> Cargar
+            </button>
+          </div>
+        </div>
+        <div class="asis-table-wrap">
+          <table class="asis-table" id="asisTable">
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th id="th-H1">H1<div style="font-size:.6rem;opacity:.6;font-weight:400">6:30</div></th>
+                <th id="th-H2">H2<div style="font-size:.6rem;opacity:.6;font-weight:400">7:25</div></th>
+                <th id="th-H3">H3<div style="font-size:.6rem;opacity:.6;font-weight:400">8:20</div></th>
+                <th id="th-H4">H4<div style="font-size:.6rem;opacity:.6;font-weight:400">9:45</div></th>
+                <th id="th-H5">H5<div style="font-size:.6rem;opacity:.6;font-weight:400">10:40</div></th>
+                <th id="th-H6">H6<div style="font-size:.6rem;opacity:.6;font-weight:400">11:35</div></th>
+                <th>⚑</th>
+              </tr>
+            </thead>
+            <tbody id="asisBody"></tbody>
+          </table>
+        </div>
+        <div class="leyenda-wrap mt-2">
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#22c55e"></div>✓ Asistió</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#ef4444"></div>✗ Falla</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#3b82f6"></div>E Excusa</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#27272a"></div>F Fuga</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#f97316"></div>R Retardo</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#a855f7"></div>🧠 Psico</div>
+          <div class="leyenda-item" style="margin-left:auto;font-style:italic;opacity:.7">Toca el botón para cambiar estado</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTADÍSTICAS -->
+    <div id="estadisticasTab" class="tab-content" style="display:none">
+      <div class="cesum-card">
+        <div class="cesum-card-header">
+          <h5><i class="bi bi-bar-chart-line-fill"></i> Estadísticas de Inasistencia y Conducta</h5>
+          <button class="btn-cesum btn-cesum-primary" onclick="cargarEstadisticas()">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar
+          </button>
+        </div>
+        <div class="stat-summary-grid" id="statSummary"></div>
+        <div style="overflow-x:auto">
+          <table class="stat-table" id="statTable">
+            <thead>
+              <tr>
+                <th>Estudiante</th><th>Grado</th><th>Fallas</th>
+                <th>Fugas</th><th>Retardos</th><th>Excusas</th><th>Reportes</th>
+              </tr>
+            </thead>
+            <tbody id="statBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PSICOLOGÍA -->
+    <div id="psicologiaTab" class="tab-content" style="display:none">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="cesum-card h-100">
+            <div class="cesum-card-header"><h5><i class="bi bi-calendar-plus"></i> Agendar Cita</h5></div>
+            <div class="mb-3">
+              <label class="form-label">Estudiante</label>
+              <select id="citaEstudiante" class="form-select"><option value="">-- Seleccionar --</option></select>
+            </div>
+            <div class="mb-3"><label class="form-label">Fecha</label><input type="date" id="citaFecha" class="form-control"></div>
+            <div class="mb-3">
+              <label class="form-label">Hora</label>
+              <select id="citaHora" class="form-select">
+                <option value="H1">H1 – 1ª hora</option><option value="H2">H2 – 2ª hora</option>
+                <option value="H3">H3 – 3ª hora</option><option value="H4">H4 – 4ª hora</option>
+                <option value="H5">H5 – 5ª hora</option><option value="H6">H6 – 6ª hora</option>
+              </select>
+            </div>
+            <div class="mb-3"><label class="form-label">Motivo</label><textarea id="citaMotivo" class="form-control" rows="3" placeholder="Descripción del motivo..."></textarea></div>
+            <button class="btn-cesum btn-cesum-purple w-100" onclick="agendarCita()">
+              <i class="bi bi-calendar-check"></i> Agendar y Notificar
+            </button>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="cesum-card">
+            <div class="cesum-card-header">
+              <h5><i class="bi bi-hourglass-split"></i> Citas Pendientes</h5>
+              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarCitasPendientes()">
+                <i class="bi bi-arrow-clockwise"></i> Refrescar
+              </button>
+            </div>
+            <div class="citas-grid" id="citasGrid"><p style="color:var(--text-2);font-size:.85rem">Cargando citas...</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="adminTab" class="tab-content" style="display:none">
+      <div style="display:flex;gap:.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:.75rem;flex-wrap:wrap">
+        <button class="nav-tab-btn active" id="subTabNovedades" onclick="switchAdminTab('novedades')">
+          <i class="bi bi-bell"></i> Novedades
+        </button>
+        <button class="nav-tab-btn" id="subTabSeguimiento" onclick="switchAdminTab('seguimiento')">
+          <i class="bi bi-clipboard2-pulse"></i> Seguimiento de Citas
+        </button>
+        <button class="nav-tab-btn" id="subTabEstudiantes" onclick="switchAdminTab('estudiantes')">
+          <i class="bi bi-people"></i> Estudiantes
+        </button>
+      </div>
+
+      <!-- Novedades -->
+      <div id="adminNovedadesPanel">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="cesum-card">
+              <div class="cesum-card-header"><h5><i class="bi bi-plus-circle"></i> Nueva Novedad</h5></div>
+              <div class="mb-3"><label class="form-label">Estudiante</label><select id="novEstudiante" class="form-select"><option value="">-- Seleccionar --</option></select></div>
+              <div class="mb-3"><label class="form-label">Inicio</label><input type="date" id="novInicio" class="form-control"></div>
+              <div class="mb-3"><label class="form-label">Fin</label><input type="date" id="novFin" class="form-control"></div>
+              <div class="mb-3">
+                <label class="form-label">Estado</label>
+                <select id="novEstado" class="form-select">
+                  <option value="Activa">Activa</option><option value="Pendiente">Pendiente</option><option value="Inactiva">Inactiva</option>
+                </select>
+              </div>
+              <div class="mb-3"><label class="form-label">Motivo</label><textarea id="novMotivo" class="form-control" rows="3" placeholder="Descripción..."></textarea></div>
+              <button class="btn-cesum btn-cesum-primary w-100" onclick="guardarNovedad()"><i class="bi bi-save"></i> Guardar Novedad</button>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="cesum-card">
+              <div class="cesum-card-header">
+                <h5><i class="bi bi-bell-fill"></i> Novedades Registradas</h5>
+                <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarNovedades()"><i class="bi bi-arrow-clockwise"></i> Refrescar</button>
+              </div>
+              <div id="novedadesLista"><p style="color:var(--text-2);font-size:.85rem">Cargando...</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seguimiento -->
+      <div id="adminSeguimientoPanel" style="display:none">
+        <div class="cesum-card">
+          <div class="cesum-card-header">
+            <h5><i class="bi bi-clipboard2-pulse-fill"></i> Seguimiento de Citas</h5>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+              <select id="filtroEstadoCita" class="form-select" style="width:auto;font-size:.82rem" onchange="filtrarSeguimiento()">
+                <option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="Completada">Completada</option>
+              </select>
+              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarSeguimiento()"><i class="bi bi-arrow-clockwise"></i> Refrescar</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="stat-table" id="seguimientoTable">
+              <thead>
+                <tr>
+                  <th style="text-align:left">Estudiante</th><th>Fecha</th><th>Hora</th>
+                  <th style="text-align:left">Motivo</th><th>Acudiente</th><th>Estado</th>
+                  <th style="text-align:left">Informe</th><th style="text-align:left">Compromisos</th><th>Docente</th>
+                </tr>
+              </thead>
+              <tbody id="seguimientoBody"><tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text-2)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestión Estudiantes (nuevo en Firebase) -->
+      <div id="adminEstudiantesPanel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="cesum-card">
+              <div class="cesum-card-header"><h5><i class="bi bi-person-plus"></i> Agregar Estudiante</h5></div>
+              <div class="mb-3"><label class="form-label">Nombre completo</label><input type="text" id="estNombre" class="form-control" placeholder="Ej: Ana García López"></div>
+              <div class="mb-3"><label class="form-label">Grado</label>
+                <select id="estGrado" class="form-select">
+                  <option value="">-- Seleccionar --</option>
+                  <option>6°A</option><option>6°B</option><option>7°A</option><option>7°B</option>
+                  <option>8°A</option><option>8°B</option><option>9°A</option><option>9°B</option>
+                  <option>10°A</option><option>10°B</option><option>11°A</option><option>11°B</option>
+                </select>
+              </div>
+              <div class="mb-3"><label class="form-label">Acudiente</label><input type="text" id="estAcudiente" class="form-control" placeholder="Nombre del acudiente"></div>
+              <div class="mb-3"><label class="form-label">Teléfono acudiente</label><input type="text" id="estTelefono" class="form-control" placeholder="3001234567"></div>
+              <button class="btn-cesum btn-cesum-success w-100" onclick="guardarEstudiante()"><i class="bi bi-save"></i> Guardar Estudiante</button>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="cesum-card">
+              <div class="cesum-card-header">
+                <h5><i class="bi bi-people-fill"></i> Lista de Estudiantes</h5>
+                <div style="display:flex;gap:.5rem;align-items:center">
+                  <input type="text" id="buscarEst" class="form-control" placeholder="Buscar..." style="width:180px;font-size:.85rem" oninput="renderEstudiantesAdmin()">
+                  <select id="filtroGradoAdmin" class="form-select" style="width:auto;font-size:.82rem" onchange="renderEstudiantesAdmin()">
+                    <option value="">Todos los grados</option>
+                  </select>
+                </div>
+              </div>
+              <div id="estudiantesLista" style="overflow-x:auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REPORTE -->
+<div class="modal fade modal-cesum" id="modalReporte" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Reporte Disciplinario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-3 text-muted small">Estudiante: <strong id="reporteEstNombre" class="text-white"></strong></p>
+        <div class="mb-3">
+          <label class="form-label">Tipo de Falta</label>
+          <select id="reporteFalta" class="form-select">
+            <option value="">-- Seleccionar falta --</option>
+            <option>Agresión verbal</option><option>Agresión física</option>
+            <option>Irrespeto al docente</option><option>Uso de celular en clase</option>
+            <option>Daño a material escolar</option><option>Fuga del aula</option>
+            <option>Vocabulario soez</option><option>Bullying / matoneo</option>
+            <option>Consumo de sustancias</option><option>Otra falta</option>
+          </select>
+        </div>
+        <div class="mb-3"><label class="form-label">Observaciones</label><textarea id="reporteObs" class="form-control" rows="4" placeholder="Describa el incidente con detalle..."></textarea></div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="reporteWhatsapp" checked>
+          <label class="form-check-label small text-muted" for="reporteWhatsapp">Enviar notificación WhatsApp al acudiente</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-danger" onclick="confirmarReporte()"><i class="bi bi-send"></i> Confirmar Reporte</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DESCARGOS -->
+<div class="modal fade modal-cesum" id="modalDescargos" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clipboard2-check-fill me-2" style="color:var(--purple)"></i>Descargos y Compromisos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6"><label class="form-label">Estudiante</label><input type="text" id="descargosEst" class="form-control" readonly></div>
+          <div class="col-sm-3"><label class="form-label">Fecha Cita</label><input type="text" id="descargosFecha" class="form-control" readonly></div>
+          <div class="col-sm-3"><label class="form-label">Hora</label><input type="text" id="descargosHora" class="form-control" readonly></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Acudiente presente</label>
+          <select id="descargosAcudiente" class="form-select"><option value="Sí">Sí</option><option value="No">No</option><option value="Parcial">Parcial</option></select>
+        </div>
+        <div class="mb-3"><label class="form-label">Informe / Diagnóstico</label><textarea id="descargosInforme" class="form-control" rows="4" placeholder="Descripción del caso..."></textarea></div>
+        <div class="mb-3"><label class="form-label">Compromisos</label><textarea id="descargosCompromisos" class="form-control" rows="3" placeholder="Acuerdos y compromisos..."></textarea></div>
+        <input type="hidden" id="descargosIdCita">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-warning" onclick="generarActa()"><i class="bi bi-file-earmark-text"></i> Ver Acta</button>
+        <button class="btn-cesum btn-cesum-success" onclick="completarCita()"><i class="bi bi-check-circle"></i> Guardar y Completar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR NOVEDAD -->
+<div class="modal fade modal-cesum" id="modalEditarNovedad" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2" style="color:var(--accent-lt)"></i>Editar Novedad</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="editNovId">
+        <div class="mb-3"><label class="form-label">Estudiante</label><input type="text" id="editNovEstudiante" class="form-control" readonly></div>
+        <div class="row g-3 mb-3">
+          <div class="col-6"><label class="form-label">Fecha Inicio</label><input type="date" id="editNovInicio" class="form-control"></div>
+          <div class="col-6"><label class="form-label">Fecha Fin</label><input type="date" id="editNovFin" class="form-control"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Estado</label>
+          <select id="editNovEstado" class="form-select"><option value="Activa">Activa</option><option value="Pendiente">Pendiente</option><option value="Inactiva">Inactiva</option></select>
+        </div>
+        <div class="mb-3"><label class="form-label">Motivo</label><textarea id="editNovMotivo" class="form-control" rows="3"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-primary" onclick="guardarEdicionNovedad()"><i class="bi bi-save"></i> Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc,
+  updateDoc, deleteDoc, query, where, orderBy, serverTimestamp, Timestamp }
+  from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+// ════════════════════════════════════════════
+//  FIREBASE CONFIG
+// ════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAbfE_6TywiN7_BzfZkLP7aBs2ZNl8HKwg",
+  authDomain: "cesum-2026.firebaseapp.com",
+  projectId: "cesum-2026",
+  storageBucket: "cesum-2026.firebasestorage.app",
+  messagingSenderId: "921246749192",
+  appId: "1:921246749192:web:9494e8646b21ee82d3b7bd"
+};
+
+const fbApp  = initializeApp(firebaseConfig);
+const auth   = getAuth(fbApp);
+const db     = getFirestore(fbApp);
+
+// ════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ════════════════════════════════════════════
+const state = {
+  usuario: null, nombre: null, isAdmin: false, rol: null,
+  estudiantes: [], citasHoy: [], novedadesActivas: [],
+  asistenciaHoy: {}, todasNovedades: [], todasCitas: []
+};
+
+// ════════════════════════════════════════════
+//  HORARIO
+// ════════════════════════════════════════════
+const HORARIO = [
+  { hora:'H1', inicio:[6,30], fin:[7,25],  label:'H1 · 6:30–7:25' },
+  { hora:'H2', inicio:[7,25], fin:[8,20],  label:'H2 · 7:25–8:20' },
+  { hora:'H3', inicio:[8,20], fin:[9,15],  label:'H3 · 8:20–9:15' },
+  { hora:null, inicio:[9,15], fin:[9,45],  label:'Descanso · 9:15–9:45', descanso:true },
+  { hora:'H4', inicio:[9,45], fin:[10,40], label:'H4 · 9:45–10:40' },
+  { hora:'H5', inicio:[10,40],fin:[11,35], label:'H5 · 10:40–11:35' },
+  { hora:'H6', inicio:[11,35],fin:[12,30], label:'H6 · 11:35–12:30' },
+];
+const HORAS = ['H1','H2','H3','H4','H5','H6'];
+const ESTADOS = [
+  { value:'Asistió',    short:'✓',  label:'Asistió',    css:'eb-asistio' },
+  { value:'Falla',      short:'✗',  label:'Falla',      css:'eb-falla'   },
+  { value:'Excusa',     short:'E',  label:'Excusa',     css:'eb-excusa'  },
+  { value:'Fuga',       short:'F',  label:'Fuga',       css:'eb-fuga'    },
+  { value:'Retardo',    short:'R',  label:'Retardo',    css:'eb-retardo' },
+  { value:'Cita Psico', short:'🧠', label:'Cita Psico', css:'eb-psico'   },
+];
+
+function getHoraActual() {
+  const now = new Date();
+  const mins = now.getHours()*60 + now.getMinutes();
+  const ini = 6*60+30, sal = 12*60+30;
+  if (mins < ini) return { horaKey:null, label:'Antes de iniciar · Inicio 6:30 am', tipo:'antes' };
+  if (mins >= sal) return { horaKey:null, label:'Jornada finalizada · Salida 12:30 pm', tipo:'salida' };
+  for (const b of HORARIO) {
+    const s = b.inicio[0]*60+b.inicio[1], e = b.fin[0]*60+b.fin[1];
+    if (mins >= s && mins < e) {
+      if (b.descanso) return { horaKey:null, label:'Descanso · 9:15–9:45', tipo:'descanso' };
+      return { horaKey:b.hora, label:b.label, tipo:'clase' };
+    }
+  }
+  return { horaKey:null, label:'', tipo:'otro' };
+}
+
+function actualizarBannerHora() {
+  const { horaKey, label, tipo } = getHoraActual();
+  const banner = document.getElementById('horaBanner');
+  const texto  = document.getElementById('horaTexto');
+  if (!banner) return;
+  const chipClass = tipo==='descanso'?'hora-chip descanso':tipo==='salida'?'hora-chip salida':'hora-chip';
+  const chipTxt = tipo==='clase'?horaKey:tipo==='descanso'?'☕':tipo==='salida'?'🏁':'⏳';
+  texto.innerHTML = `<span class="${chipClass}">${chipTxt}</span> ${label}`;
+  HORAS.forEach(h => {
+    const th = document.getElementById('th-'+h);
+    if (th) th.classList.toggle('hora-activa', h===horaKey);
+    document.querySelectorAll('.asis-td-hora').forEach(td => {
+      if (td.dataset.hora === h) td.classList.toggle('hora-activa', h===horaKey);
+    });
+  });
+}
+
+// ════════════════════════════════════════════
+//  UTILIDADES
+// ════════════════════════════════════════════
+function showLoading(v) { document.getElementById('loadingOverlay').classList.toggle('show', v); }
+let toastTimer;
+function showToast(msg, type='success') {
+  const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
+  const el = document.getElementById('toastEl');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = icons[type]||'✅';
+  el.className = `toast-cesum ${type}`;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 4000);
+}
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDate(ts) {
+  if (!ts) return '';
+  if (typeof ts === 'string') return ts.substring(0,10);
+  if (ts.toDate) return ts.toDate().toISOString().substring(0,10);
+  return '';
+}
+function getEstado(val) { return ESTADOS.find(e=>e.value===val)||ESTADOS[0]; }
+
+// ════════════════════════════════════════════
+//  AUTH — Observer
+// ════════════════════════════════════════════
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    // Leer perfil desde Firestore
+    try {
+      const snap = await getDoc(doc(db, 'usuarios', user.uid));
+      if (snap.exists()) {
+        const data = snap.data();
+        state.usuario = user.uid;
+        state.nombre  = data.nombre || user.email;
+        state.rol     = data.rol || 'docente';
+        state.isAdmin = data.rol === 'admin';
+      } else {
+        // Usuario existe en Auth pero no en Firestore → crear perfil básico
+        state.usuario = user.uid;
+        state.nombre  = user.email;
+        state.rol     = 'docente';
+        state.isAdmin = false;
+      }
+    } catch(e) {
+      state.usuario = user.uid;
+      state.nombre  = user.email;
+      state.rol     = 'docente';
+      state.isAdmin = false;
+    }
+    document.getElementById('navNombre').textContent = state.nombre;
+    if (state.isAdmin) document.getElementById('tabAdmin').classList.remove('hidden');
+    showScreen('appScreen');
+    await cargarDatosIniciales();
+    actualizarBannerHora();
+    setInterval(actualizarBannerHora, 60000);
+  } else {
+    showScreen('loginScreen');
+  }
+});
+
+// ════════════════════════════════════════════
+//  LOGIN / LOGOUT
+// ════════════════════════════════════════════
+window.handleLogin = async function() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  const errEl    = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent='Completa todos los campos.'; errEl.style.display='block'; return; }
+  showLoading(true);
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    // onAuthStateChanged se encarga del resto
+  } catch(err) {
+    const msgs = {
+      'auth/user-not-found':'Usuario no encontrado.',
+      'auth/wrong-password':'Contraseña incorrecta.',
+      'auth/invalid-credential':'Credenciales inválidas.',
+      'auth/too-many-requests':'Demasiados intentos. Intenta más tarde.'
+    };
+    errEl.textContent = msgs[err.code] || 'Error al ingresar.';
+    errEl.style.display = 'block';
+  } finally { showLoading(false); }
+};
+
+window.handleLogout = async function() {
+  await signOut(auth);
+  state.usuario=null; state.nombre=null; state.isAdmin=false;
+  document.getElementById('tabAdmin').classList.add('hidden');
+  switchTab('asistencia');
+};
+
+document.getElementById('loginPassword').addEventListener('keydown', e => {
+  if (e.key==='Enter') window.handleLogin();
+});
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ════════════════════════════════════════════
+//  CARGA INICIAL
+// ════════════════════════════════════════════
+async function cargarDatosIniciales() {
+  showLoading(true);
+  try {
+    // Cargar estudiantes
+    const snap = await getDocs(collection(db,'estudiantes'));
+    state.estudiantes = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+    // Cargar citas de hoy (para bloqueo en planilla)
+    const hoy = todayISO();
+    const qCitas = query(collection(db,'citas'), where('fecha','==',hoy), where('estado','==','Pendiente'));
+    const snapCitas = await getDocs(qCitas);
+    state.citasHoy = snapCitas.docs.map(d=>({id:d.id,...d.data()}));
+
+    // Cargar novedades activas hoy
+    await refrescarNovedadesActivas();
+
+    poblarSelectEstudiantes();
+    poblarSelectGrados();
+    document.getElementById('asistFecha').value = hoy;
+    document.getElementById('citaFecha').value  = hoy;
+    filtrarEstudiantes();
+  } catch(e) {
+    showToast('Error cargando datos: '+e.message, 'error');
+  } finally { showLoading(false); }
+}
+
+async function refrescarNovedadesActivas() {
+  const hoy = todayISO();
+  const snap = await getDocs(collection(db,'novedades'));
+  state.novedadesActivas = snap.docs
+    .map(d=>({id:d.id,...d.data()}))
+    .filter(n => {
+      if (!n.inicio || n.estado==='Inactiva') return false;
+      return hoy >= n.inicio && (!n.fin || hoy <= n.fin);
+    });
+}
+
+function poblarSelectEstudiantes() {
+  ['citaEstudiante','novEstudiante'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+    state.estudiantes.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.nombre;
+      opt.textContent = `${e.nombre} (${e.grado})`;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function poblarSelectGrados() {
+  const grados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
+  ['asistGrado','filtroGradoAdmin'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const first = id==='asistGrado'?'<option value="">-- Todos --</option>':'<option value="">Todos los grados</option>';
+    sel.innerHTML = first;
+    grados.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o); });
+  });
+}
+
+// ════════════════════════════════════════════
+//  NAVEGACIÓN
+// ════════════════════════════════════════════
+window.switchTab = function(tab) {
+  ['asistencia','estadisticas','psicologia','admin'].forEach(t => {
+    const el=document.getElementById(t+'Tab');
+    const btn=document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(el)  el.style.display  = t===tab?'block':'none';
+    if(btn) btn.classList.toggle('active', t===tab);
+  });
+  if (tab==='estadisticas') cargarEstadisticas();
+  if (tab==='psicologia')   cargarCitasPendientes();
+  if (tab==='admin')        { cargarNovedades(); switchAdminTab('novedades'); }
+};
+
+window.switchAdminTab = function(sub) {
+  ['novedades','seguimiento','estudiantes'].forEach(s => {
+    const el=document.getElementById('admin'+s.charAt(0).toUpperCase()+s.slice(1)+'Panel');
+    const btn=document.getElementById('subTab'+s.charAt(0).toUpperCase()+s.slice(1));
+    if(el)  el.style.display = s===sub?'block':'none';
+    if(btn) btn.classList.toggle('active', s===sub);
+  });
+  if (sub==='seguimiento') cargarSeguimiento();
+  if (sub==='estudiantes') { renderEstudiantesAdmin(); }
+};
+
+// ════════════════════════════════════════════
+//  ASISTENCIA
+// ════════════════════════════════════════════
+window.cargarPlanilla = async function() {
+  const fechaEl = document.getElementById('asistFecha');
+  if (!fechaEl.value) fechaEl.value = todayISO();
+  const fecha = fechaEl.value;
+  showLoading(true);
+  try {
+    const snap = await getDoc(doc(db,'asistencia',fecha));
+    state.asistenciaHoy = {};
+    if (snap.exists()) {
+      (snap.data().registros||[]).forEach(r => {
+        state.asistenciaHoy[r.estudiante+'_'+r.hora] = r.estado;
+      });
+    }
+    // Refrescar citas del día seleccionado
+    const qC = query(collection(db,'citas'), where('fecha','==',fecha), where('estado','==','Pendiente'));
+    const snapC = await getDocs(qC);
+    state.citasHoy = snapC.docs.map(d=>({id:d.id,...d.data()}));
+    await refrescarNovedadesActivas();
+  } catch(e) { state.asistenciaHoy={}; }
+  finally { showLoading(false); }
+  filtrarEstudiantes();
+  actualizarBannerHora();
+};
+
+window.filtrarEstudiantes = function() {
+  const grado  = document.getElementById('asistGrado').value.toLowerCase();
+  const buscar = document.getElementById('asistBuscar').value.toLowerCase();
+  const filtrados = state.estudiantes.filter(e =>
+    (!grado  || e.grado.toLowerCase()===grado) &&
+    (!buscar || e.nombre.toLowerCase().includes(buscar))
+  );
+  renderPlanilla(filtrados);
+};
+
+function renderPlanilla(estudiantes) {
+  const tbody = document.getElementById('asisBody');
+  if (!estudiantes.length) {
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-2)">No hay estudiantes. Verifica el grado seleccionado.</td></tr>`;
+    return;
+  }
+  const { horaKey } = getHoraActual();
+  tbody.innerHTML='';
+  estudiantes.forEach(est => {
+    const tr = document.createElement('tr');
+    const tdNombre = document.createElement('td');
+    const tieneNov = state.novedadesActivas.some(n=>n.estudiante===est.nombre);
+    tdNombre.innerHTML=`<div class="est-nombre">${est.nombre}</div>
+      <div class="est-meta">${est.grado}${tieneNov?' &nbsp;<span style="color:#93c5fd;font-size:.65rem">📋 Nov</span>':''}</div>`;
+    tr.appendChild(tdNombre);
+
+    HORAS.forEach(hora => {
+      const td = document.createElement('td');
+      td.className='asis-td-hora'+(hora===horaKey?' hora-activa':'');
+      td.dataset.hora = hora;
+      const tieneCita = state.citasHoy.some(c=>c.estudiante===est.nombre && c.hora===hora);
+      const btn = document.createElement('button');
+      btn.className='estado-btn';
+      if (tieneCita) {
+        const e=getEstado('Cita Psico');
+        btn.className+=' '+e.css; btn.textContent=e.short;
+        btn.dataset.estado=e.value; btn.setAttribute('data-label',e.label); btn.disabled=true;
+      } else if (tieneNov) {
+        const e=getEstado('Excusa');
+        btn.className+=' '+e.css; btn.textContent=e.short;
+        btn.dataset.estado=e.value; btn.setAttribute('data-label','Excusa (Novedad)'); btn.disabled=true;
+      } else {
+        const estadoG = state.asistenciaHoy[est.nombre+'_'+hora]||'Asistió';
+        const e=getEstado(estadoG);
+        btn.className+=' '+e.css; btn.textContent=e.short;
+        btn.dataset.estado=e.value; btn.dataset.est=est.nombre;
+        btn.dataset.hora2=hora; btn.dataset.grado=est.grado;
+        btn.setAttribute('data-label',e.label);
+        btn.addEventListener('click', function() { ciclarEstado(this); });
+      }
+      td.appendChild(btn); tr.appendChild(td);
+    });
+
+    const tdRep = document.createElement('td');
+    const btnRep = document.createElement('button');
+    btnRep.className='btn-reporte-fila';
+    btnRep.innerHTML='<i class="bi bi-flag"></i>';
+    btnRep.addEventListener('click',()=>abrirModalReporte(est));
+    tdRep.appendChild(btnRep); tr.appendChild(tdRep);
+    tbody.appendChild(tr);
+  });
+  HORAS.forEach(h => {
+    const th=document.getElementById('th-'+h);
+    if(th) th.classList.toggle('hora-activa', h===horaKey);
+  });
+}
+
+function ciclarEstado(btn) {
+  const vals=ESTADOS.map(e=>e.value);
+  const next=ESTADOS[(vals.indexOf(btn.dataset.estado)+1)%ESTADOS.length];
+  btn.dataset.estado=next.value;
+  btn.className='estado-btn '+next.css;
+  btn.textContent=next.short;
+  btn.setAttribute('data-label',next.label);
+}
+
+window.guardarAsistencia = async function() {
+  const fecha = document.getElementById('asistFecha').value;
+  if (!fecha) { showToast('Selecciona una fecha.','warning'); return; }
+  const btns = document.querySelectorAll('#asisBody .estado-btn');
+  if (!btns.length) { showToast('No hay planilla cargada.','warning'); return; }
+  const registros = [];
+  btns.forEach(btn => {
+    registros.push({
+      fecha, hora: btn.dataset.hora2||btn.dataset.hora||'',
+      estudiante: btn.dataset.est||'',
+      grado: btn.dataset.grado||'',
+      estado: btn.dataset.estado||'Asistió',
+      docente: state.nombre,
+      ts: new Date().toISOString()
+    });
+  });
+  const validos = registros.filter(r=>r.estudiante);
+  if (!validos.length) { showToast('No hay registros válidos.','warning'); return; }
+  showLoading(true);
+  try {
+    await setDoc(doc(db,'asistencia',fecha), {
+      fecha, registros: validos, actualizadoPor: state.nombre, ts: serverTimestamp()
+    });
+    showToast('Asistencia guardada correctamente ✓','success');
+    // Actualizar cache local
+    state.asistenciaHoy={};
+    validos.forEach(r=>{ state.asistenciaHoy[r.estudiante+'_'+r.hora]=r.estado; });
+  } catch(e) { showToast('Error al guardar: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  REPORTE DISCIPLINARIO
+// ════════════════════════════════════════════
+let reporteEstActual = null;
+function abrirModalReporte(est) {
+  reporteEstActual = est;
+  document.getElementById('reporteEstNombre').textContent = est.nombre;
+  document.getElementById('reporteFalta').value='';
+  document.getElementById('reporteObs').value='';
+  document.getElementById('reporteWhatsapp').checked=true;
+  new bootstrap.Modal(document.getElementById('modalReporte')).show();
+}
+
+window.confirmarReporte = async function() {
+  const falta   = document.getElementById('reporteFalta').value;
+  const obs     = document.getElementById('reporteObs').value.trim();
+  const enviarWA= document.getElementById('reporteWhatsapp').checked;
+  if (!falta) { showToast('Selecciona el tipo de falta.','warning'); return; }
+  if (!obs)   { showToast('Escribe las observaciones.','warning'); return; }
+  const est=reporteEstActual, fecha=todayISO();
+  bootstrap.Modal.getInstance(document.getElementById('modalReporte')).hide();
+  showLoading(true);
+  try {
+    await addDoc(collection(db,'reportes'), {
+      fecha, estudiante:est.nombre, grado:est.grado,
+      acudiente:est.acudiente||'', telefono:est.telefono||'',
+      falta, observacion:obs, docente:state.nombre, ts:serverTimestamp()
+    });
+    showToast('Reporte guardado.','success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+  if (enviarWA && est.telefono) {
+    const num = est.telefono.toString().replace(/\D/g,'');
+    const msg='*Concentracion Educativa del Sur de Montelibano*\n\nEstimado/a acudiente de *'+est.nombre+'*,\n\nFecha: *'+fecha+'*\nFalta: '+falta+'\nObservacion: '+obs+'\n\nDocente: '+state.nombre;
+    window.open('https://wa.me/57'+num+'?text='+encodeURIComponent(msg),'_blank');
+  }
+};
+
+// ════════════════════════════════════════════
+//  ESTADÍSTICAS
+// ════════════════════════════════════════════
+window.cargarEstadisticas = async function() {
+  showLoading(true);
+  try {
+    // Leer todos los registros de asistencia
+    const snapAsist = await getDocs(collection(db,'asistencia'));
+    const snapRep   = await getDocs(collection(db,'reportes'));
+
+    // Contar por estudiante
+    const mapa = {};
+    state.estudiantes.forEach(e => {
+      mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, fallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+    });
+
+    snapAsist.docs.forEach(d => {
+      (d.data().registros||[]).forEach(r => {
+        if (!mapa[r.estudiante]) return;
+        if (r.estado==='Falla')   mapa[r.estudiante].fallas++;
+        if (r.estado==='Fuga')    mapa[r.estudiante].fugas++;
+        if (r.estado==='Retardo') mapa[r.estudiante].retardos++;
+        if (r.estado==='Excusa')  mapa[r.estudiante].excusas++;
+      });
+    });
+    snapRep.docs.forEach(d => {
+      const r=d.data();
+      if (mapa[r.estudiante]) mapa[r.estudiante].reportes++;
+    });
+
+    renderEstadisticas(Object.values(mapa));
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+function renderEstadisticas(stats) {
+  const totF=stats.reduce((a,s)=>a+s.fallas,0), totFu=stats.reduce((a,s)=>a+s.fugas,0);
+  const totR=stats.reduce((a,s)=>a+s.retardos,0), totE=stats.reduce((a,s)=>a+s.excusas,0);
+  const totRep=stats.reduce((a,s)=>a+s.reportes,0);
+  document.getElementById('statSummary').innerHTML=`
+    <div class="stat-summary-card"><div class="num" style="color:var(--red)">${totF}</div><div class="lbl">Total Fallas</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--text-3)">${totFu}</div><div class="lbl">Total Fugas</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--orange)">${totR}</div><div class="lbl">Total Retardos</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--accent-lt)">${totE}</div><div class="lbl">Total Excusas</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--green)">${totRep}</div><div class="lbl">Reportes</div></div>`;
+  const sorted=[...stats].sort((a,b)=>(b.fallas+b.fugas)-(a.fallas+a.fugas));
+  const tbody=document.getElementById('statBody');
+  if (!sorted.filter(s=>s.fallas+s.fugas+s.retardos+s.excusas+s.reportes>0).length) {
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--text-2)">Sin datos de inasistencia.</td></tr>';
+    return;
+  }
+  const cl=(v,t)=>v===0?`<td><span class="stat-val zero">0</span></td>`:`<td><span class="stat-val ${t}">${v}</span></td>`;
+  tbody.innerHTML=sorted.map(s=>`<tr>
+    <td style="font-weight:500">${s.nombre}</td>
+    <td><span class="grado-badge">${s.grado}</span></td>
+    ${cl(s.fallas,'danger')}${cl(s.fugas,'muted')}${cl(s.retardos,'warning')}${cl(s.excusas,'info')}${cl(s.reportes,'purple')}
+  </tr>`).join('');
+}
+
+// ════════════════════════════════════════════
+//  PSICOLOGÍA — CITAS
+// ════════════════════════════════════════════
+window.agendarCita = async function() {
+  const estudiante=document.getElementById('citaEstudiante').value;
+  const fecha=document.getElementById('citaFecha').value;
+  const hora=document.getElementById('citaHora').value;
+  const motivo=document.getElementById('citaMotivo').value.trim();
+  if (!estudiante||!fecha||!hora||!motivo) { showToast('Completa todos los campos.','warning'); return; }
+  showLoading(true);
+  try {
+    const ref = await addDoc(collection(db,'citas'), {
+      estudiante, fecha, hora, motivo, docente:state.nombre,
+      estado:'Pendiente', informe:'', compromisos:'', acudiente_asiste:'',
+      ts:serverTimestamp()
+    });
+    showToast('Cita agendada.','success');
+    const estData=state.estudiantes.find(e=>e.nombre===estudiante)||{};
+    if (estData.telefono) {
+      const num=estData.telefono.toString().replace(/\D/g,'');
+      const msg='*Concentración Educativa del Sur de Montelibano*\n\nEstimado/a *'+(estData.acudiente||'Acudiente')+'*, acudiente de *'+estudiante+'*,\n\nSe le cita:\n📅 Fecha: '+fecha+'\n⏰ Hora: '+hora+'\n📋 Motivo: '+motivo+'\n\nPor favor confirme su asistencia.';
+      window.open('https://wa.me/57'+num+'?text='+encodeURIComponent(msg),'_blank');
+    }
+    document.getElementById('citaEstudiante').value='';
+    document.getElementById('citaFecha').value='';
+    document.getElementById('citaMotivo').value='';
+    await cargarCitasPendientes();
+    // Refrescar citas de hoy
+    const qC=query(collection(db,'citas'),where('fecha','==',todayISO()),where('estado','==','Pendiente'));
+    const sC=await getDocs(qC);
+    state.citasHoy=sC.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.cargarCitasPendientes = async function() {
+  const grid=document.getElementById('citasGrid');
+  grid.innerHTML='<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+  try {
+    const snap=await getDocs(query(collection(db,'citas'),where('estado','==','Pendiente')));
+    const citas=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    if (!citas.length) { grid.innerHTML='<p style="color:var(--text-2);font-size:.85rem;padding:.5rem">No hay citas pendientes.</p>'; return; }
+    grid.innerHTML=citas.map(c=>`
+      <div class="cita-card" onclick='abrirDescargos(${JSON.stringify(c).replace(/'/g,"&apos;")})'>
+        <span class="cita-estado">Pendiente</span>
+        <div class="cita-nombre"><i class="bi bi-person-fill" style="color:var(--purple)"></i> ${c.estudiante}</div>
+        <div class="cita-meta"><i class="bi bi-calendar3"></i> ${c.fecha}</div>
+        <div class="cita-meta"><i class="bi bi-clock"></i> ${c.hora}</div>
+        <div class="cita-meta"><i class="bi bi-chat-text"></i> ${c.motivo||'–'}</div>
+      </div>`).join('');
+  } catch(e) { grid.innerHTML=`<p style="color:var(--red)">Error: ${e.message}</p>`; }
+};
+
+window.abrirDescargos = function(cita) {
+  if (typeof cita==='string') cita=JSON.parse(cita);
+  document.getElementById('descargosEst').value=cita.estudiante;
+  document.getElementById('descargosFecha').value=cita.fecha;
+  document.getElementById('descargosHora').value=cita.hora;
+  document.getElementById('descargosInforme').value=cita.informe||'';
+  document.getElementById('descargosCompromisos').value=cita.compromisos||'';
+  document.getElementById('descargosAcudiente').value=cita.acudiente_asiste||'Sí';
+  document.getElementById('descargosIdCita').value=cita.id;
+  new bootstrap.Modal(document.getElementById('modalDescargos')).show();
+};
+
+window.completarCita = async function() {
+  const id=document.getElementById('descargosIdCita').value;
+  const acudiente_asiste=document.getElementById('descargosAcudiente').value;
+  const informe=document.getElementById('descargosInforme').value.trim();
+  const compromisos=document.getElementById('descargosCompromisos').value.trim();
+  if (!informe||!compromisos) { showToast('Completa el informe y compromisos.','warning'); return; }
+  bootstrap.Modal.getInstance(document.getElementById('modalDescargos')).hide();
+  showLoading(true);
+  try {
+    await updateDoc(doc(db,'citas',id), { estado:'Completada', acudiente_asiste, informe, compromisos, completadoPor:state.nombre });
+    showToast('Cita completada y guardada.','success');
+    await cargarCitasPendientes();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  ACTA PDF
+// ════════════════════════════════════════════
+window.generarActa = function() {
+  const estudiante=document.getElementById('descargosEst').value;
+  const fecha=document.getElementById('descargosFecha').value;
+  const hora=document.getElementById('descargosHora').value;
+  const acudiente_asiste=document.getElementById('descargosAcudiente').value;
+  const informe=document.getElementById('descargosInforme').value;
+  const compromisos=document.getElementById('descargosCompromisos').value;
+  if (!estudiante) { showToast('No hay datos de cita.','warning'); return; }
+  const est=state.estudiantes.find(e=>e.nombre===estudiante)||{};
+  const docente=state.nombre||'';
+  const fechaLarga=new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Acta – ${estudiante}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Times New Roman',serif;font-size:12pt;color:#111;background:#fff;padding:2cm 2.5cm;max-width:21cm;margin:0 auto}
+.enc{text-align:center;margin-bottom:18px}.enc .inst{font-size:15pt;font-weight:bold;text-transform:uppercase;letter-spacing:1px;line-height:1.3}
+.enc .sub{font-size:10pt;margin-top:4px;color:#444}.enc hr.g{border:none;border-top:2.5px solid #111;margin:10px 0 4px}.enc hr.f{border:none;border-top:1px solid #111;margin:4px 0 14px}
+.enc .ta{font-size:13pt;font-weight:bold;text-transform:uppercase;letter-spacing:2px}table.d{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11pt}
+table.d td{border:1px solid #aaa;padding:5px 9px;vertical-align:top}table.d td.l{background:#f5f5f5;font-weight:bold;width:30%;white-space:nowrap}
+.st{background:#e8e8e8;border-left:4px solid #333;padding:5px 10px;font-weight:bold;font-size:11pt}
+.sc{border:1px solid #aaa;border-top:none;padding:10px 12px;min-height:90px;text-align:justify;font-size:11pt;line-height:1.7;margin-bottom:16px;white-space:pre-wrap}
+.fi{display:flex;justify-content:space-around;margin-top:50px;gap:20px}.fi .f{text-align:center;flex:1}
+.fi .f .l{border-top:1px solid #333;padding-top:8px;font-size:10pt}.fi .f .n{font-weight:bold;font-size:11pt}.fi .f .r{color:#444;font-size:9.5pt}
+.btn{display:block;margin:30px auto 10px;padding:10px 30px;background:#1a56db;color:#fff;border:none;border-radius:6px;font-size:12pt;font-family:Arial,sans-serif;cursor:pointer}
+@media print{.btn{display:none}body{padding:1cm 1.5cm}}</style></head><body>
+<div class="enc"><div class="inst">Concentración Educativa del Sur de Montelíbano</div>
+<div class="sub">Montelíbano, Córdoba &nbsp;|&nbsp; Sistema de Gestión Escolar – CESUM</div>
+<hr class="g"><div class="ta">Acta de Orientación / Coordinación</div><hr class="f"></div>
+<table class="d">
+<tr><td class="l">Fecha del acta:</td><td>${fechaLarga}</td><td class="l" style="width:22%">Hora cita:</td><td style="width:15%">${hora}</td></tr>
+<tr><td class="l">Estudiante:</td><td>${estudiante}</td><td class="l">Fecha cita:</td><td>${fecha}</td></tr>
+<tr><td class="l">Acudiente:</td><td>${est.acudiente||'–'}</td><td class="l">Acudiente presente:</td><td>${acudiente_asiste}</td></tr>
+<tr><td class="l">Docente / Orientador:</td><td colspan="3"><strong>${docente}</strong></td></tr></table>
+<div class="st">INFORME / DIAGNÓSTICO</div><div class="sc">${informe||'(Sin informe registrado)'}</div>
+<div class="st">COMPROMISOS ADQUIRIDOS</div><div class="sc">${compromisos||'(Sin compromisos registrados)'}</div>
+<div class="fi"><div class="f"><div class="l"><div class="n">${docente}</div><div class="r">Docente / Orientador</div></div></div>
+<div class="f"><div class="l"><div class="n">${est.acudiente||'Acudiente'}</div><div class="r">Acudiente / Padre de Familia</div></div></div>
+<div class="f"><div class="l"><div class="n">${estudiante}</div><div class="r">Estudiante</div></div></div></div>
+<button class="btn" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+</body></html>`;
+  const v=window.open('','_blank');
+  if (!v) { showToast('Permite las ventanas emergentes.','warning'); return; }
+  v.document.write(html); v.document.close();
+};
+
+// ════════════════════════════════════════════
+//  NOVEDADES
+// ════════════════════════════════════════════
+window.cargarNovedades = async function() {
+  const lista=document.getElementById('novedadesLista');
+  lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+  try {
+    const snap=await getDocs(collection(db,'novedades'));
+    state.todasNovedades=snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>b.inicio?.localeCompare(a.inicio||'')||0);
+    renderNovedades(state.todasNovedades);
+  } catch(e) { lista.innerHTML=`<p style="color:var(--red)">Error: ${e.message}</p>`; }
+};
+
+function renderNovedades(novedades) {
+  const lista=document.getElementById('novedadesLista');
+  if (!novedades.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">Sin novedades.</p>'; return; }
+  const header=`<div style="display:grid;grid-template-columns:1fr 100px 100px 110px 80px;gap:.5rem;padding:.5rem 0;color:var(--text-2);font-size:.72rem;text-transform:uppercase;font-weight:600;border-bottom:2px solid var(--border)">
+    <div>Estudiante / Motivo</div><div>Inicio</div><div>Fin</div><div>Estado</div><div></div></div>`;
+  const rows=novedades.map(n=>{
+    const ec=(n.estado||'').toLowerCase();
+    const bc=ec==='activa'?'activa':ec==='pendiente'?'pendiente':'inactiva';
+    return `<div style="display:grid;grid-template-columns:1fr 100px 100px 110px 80px;gap:.5rem;padding:.6rem 0;border-bottom:1px solid var(--border);align-items:center">
+      <div><div style="font-weight:500;color:var(--text-1)">${n.estudiante}</div>
+      <div style="font-size:.78rem;color:var(--text-2)">${n.motivo||''}</div>
+      <div style="font-size:.72rem;color:var(--text-3)">${n.docente||''}</div></div>
+      <div style="font-size:.82rem;color:var(--text-2)">${n.inicio||''}</div>
+      <div style="font-size:.82rem;color:var(--text-2)">${n.fin||''}</div>
+      <div><span class="novedad-badge ${bc}">${n.estado||'–'}</span></div>
+      <div><button class="btn-cesum btn-cesum-secondary sm" onclick='abrirEditarNovedad("${n.id}")'><i class="bi bi-pencil"></i></button></div>
+    </div>`;
+  }).join('');
+  lista.innerHTML=header+rows;
+}
+
+window.guardarNovedad = async function() {
+  const estudiante=document.getElementById('novEstudiante').value;
+  const inicio=document.getElementById('novInicio').value;
+  const fin=document.getElementById('novFin').value;
+  const estado=document.getElementById('novEstado').value;
+  const motivo=document.getElementById('novMotivo').value.trim();
+  if (!estudiante||!inicio||!motivo) { showToast('Completa: Estudiante, Inicio y Motivo.','warning'); return; }
+  showLoading(true);
+  try {
+    await addDoc(collection(db,'novedades'), {
+      estudiante, inicio, fin, estado, motivo,
+      docente:state.nombre, fechaReg:todayISO(), ts:serverTimestamp()
+    });
+    showToast('Novedad guardada.','success');
+    ['novEstudiante','novInicio','novFin','novMotivo'].forEach(id=>document.getElementById(id).value='');
+    await cargarNovedades();
+    await refrescarNovedadesActivas();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.abrirEditarNovedad = function(id) {
+  const n=state.todasNovedades.find(x=>x.id===id); if(!n) return;
+  document.getElementById('editNovId').value=id;
+  document.getElementById('editNovEstudiante').value=n.estudiante;
+  document.getElementById('editNovInicio').value=n.inicio||'';
+  document.getElementById('editNovFin').value=n.fin||'';
+  document.getElementById('editNovEstado').value=n.estado||'Activa';
+  document.getElementById('editNovMotivo').value=n.motivo||'';
+  new bootstrap.Modal(document.getElementById('modalEditarNovedad')).show();
+};
+
+window.guardarEdicionNovedad = async function() {
+  const id=document.getElementById('editNovId').value;
+  bootstrap.Modal.getInstance(document.getElementById('modalEditarNovedad')).hide();
+  showLoading(true);
+  try {
+    await updateDoc(doc(db,'novedades',id), {
+      inicio:document.getElementById('editNovInicio').value,
+      fin:document.getElementById('editNovFin').value,
+      estado:document.getElementById('editNovEstado').value,
+      motivo:document.getElementById('editNovMotivo').value.trim()
+    });
+    showToast('Novedad actualizada.','success');
+    await cargarNovedades();
+    await refrescarNovedadesActivas();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  SEGUIMIENTO DE CITAS (Admin)
+// ════════════════════════════════════════════
+window.cargarSeguimiento = async function() {
+  const tbody=document.getElementById('seguimientoBody');
+  tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text-2)">Cargando...</td></tr>';
+  try {
+    const snap=await getDocs(collection(db,'citas'));
+    state.todasCitas=snap.docs.map(d=>({id:d.id,...d.data()}));
+    filtrarSeguimiento();
+  } catch(e) { tbody.innerHTML=`<tr><td colspan="9" style="color:var(--red);text-align:center;padding:1rem">Error: ${e.message}</td></tr>`; }
+};
+
+window.filtrarSeguimiento = function() {
+  const filtro=document.getElementById('filtroEstadoCita').value;
+  const lista=filtro?state.todasCitas.filter(c=>c.estado===filtro):state.todasCitas;
+  const sorted=[...lista].sort((a,b)=>{
+    if(a.estado==='Pendiente'&&b.estado!=='Pendiente') return -1;
+    if(b.estado==='Pendiente'&&a.estado!=='Pendiente') return 1;
+    return (b.fecha||'').localeCompare(a.fecha||'');
+  });
+  const tbody=document.getElementById('seguimientoBody');
+  if (!sorted.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text-2)">Sin citas.</td></tr>'; return; }
+  tbody.innerHTML=sorted.map(c=>{
+    const ep=c.estado==='Pendiente';
+    const badge=ep
+      ?`<span style="background:#4a1d9630;color:#d8b4fe;border:1px solid #a855f740;border-radius:20px;font-size:.7rem;font-weight:600;padding:.18rem .6rem">Pendiente</span>`
+      :`<span style="background:#16653430;color:#4ade80;border:1px solid #22c55e40;border-radius:20px;font-size:.7rem;font-weight:600;padding:.18rem .6rem">Completada</span>`;
+    const ic=c.informe?`<span title="${c.informe}" style="font-size:.78rem;color:var(--text-2)">${c.informe.substring(0,40)}${c.informe.length>40?'…':''}</span>`:'<span style="color:var(--text-3);font-size:.75rem">–</span>';
+    const cc=c.compromisos?`<span title="${c.compromisos}" style="font-size:.78rem;color:var(--text-2)">${c.compromisos.substring(0,40)}${c.compromisos.length>40?'…':''}</span>`:'<span style="color:var(--text-3);font-size:.75rem">–</span>';
+    return `<tr><td style="font-weight:500">${c.estudiante}</td><td>${c.fecha||'–'}</td><td>${c.hora||'–'}</td>
+      <td style="font-size:.82rem;max-width:150px">${c.motivo||'–'}</td><td>${c.acudiente_asiste||'–'}</td>
+      <td>${badge}</td><td style="max-width:180px">${ic}</td><td style="max-width:180px">${cc}</td>
+      <td style="font-size:.78rem;color:var(--text-2)">${c.docente||'–'}</td></tr>`;
+  }).join('');
+};
+
+// ════════════════════════════════════════════
+//  GESTIÓN DE ESTUDIANTES (Admin)
+// ════════════════════════════════════════════
+window.guardarEstudiante = async function() {
+  const nombre=document.getElementById('estNombre').value.trim();
+  const grado=document.getElementById('estGrado').value;
+  const acudiente=document.getElementById('estAcudiente').value.trim();
+  const telefono=document.getElementById('estTelefono').value.trim();
+  if (!nombre||!grado) { showToast('Nombre y grado son obligatorios.','warning'); return; }
+  showLoading(true);
+  try {
+    await addDoc(collection(db,'estudiantes'), { nombre, grado, acudiente, telefono, ts:serverTimestamp() });
+    showToast('Estudiante guardado.','success');
+    ['estNombre','estGrado','estAcudiente','estTelefono'].forEach(id=>document.getElementById(id).value='');
+    // Recargar lista
+    const snap=await getDocs(collection(db,'estudiantes'));
+    state.estudiantes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    poblarSelectEstudiantes(); poblarSelectGrados();
+    renderEstudiantesAdmin();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.eliminarEstudiante = async function(id) {
+  if (!confirm('¿Eliminar este estudiante? Esta acción no se puede deshacer.')) return;
+  showLoading(true);
+  try {
+    await deleteDoc(doc(db,'estudiantes',id));
+    state.estudiantes=state.estudiantes.filter(e=>e.id!==id);
+    poblarSelectEstudiantes(); poblarSelectGrados();
+    renderEstudiantesAdmin();
+    showToast('Estudiante eliminado.','success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.renderEstudiantesAdmin = function() {
+  const buscar=(document.getElementById('buscarEst')?.value||'').toLowerCase();
+  const grado=(document.getElementById('filtroGradoAdmin')?.value||'').toLowerCase();
+  const filtrados=state.estudiantes.filter(e=>
+    (!grado||e.grado.toLowerCase()===grado)&&
+    (!buscar||e.nombre.toLowerCase().includes(buscar))
+  );
+  const el=document.getElementById('estudiantesLista');
+  if (!filtrados.length) { el.innerHTML='<p style="color:var(--text-2);font-size:.85rem;padding:1rem">Sin estudiantes.</p>'; return; }
+  el.innerHTML=`<table class="stat-table">
+    <thead><tr><th>Nombre</th><th>Grado</th><th>Acudiente</th><th>Teléfono</th><th></th></tr></thead>
+    <tbody>${filtrados.map(e=>`<tr>
+      <td style="font-weight:500">${e.nombre}</td>
+      <td><span class="grado-badge">${e.grado}</span></td>
+      <td style="font-size:.82rem;color:var(--text-2)">${e.acudiente||'–'}</td>
+      <td style="font-size:.82rem;color:var(--text-2)">${e.telefono||'–'}</td>
+      <td><button class="btn-cesum btn-cesum-danger sm" onclick='eliminarEstudiante("${e.id}")'><i class="bi bi-trash"></i></button></td>
+    </tr>`).join('')}</tbody></table>`;
+};
+
+// ════════════════════════════════════════════
+//  INIT — fechas por defecto
+// ════════════════════════════════════════════
+document.getElementById('asistFecha').value = todayISO();
+document.getElementById('citaFecha').value  = todayISO();
+
+// Exponer funciones necesarias globalmente para onclick en HTML
+window.switchTab      = window.switchTab;
+window.switchAdminTab = window.switchAdminTab;
+window.cargarPlanilla = window.cargarPlanilla;
+window.filtrarEstudiantes = window.filtrarEstudiantes;
+window.guardarAsistencia  = window.guardarAsistencia;
+window.confirmarReporte   = window.confirmarReporte;
+window.cargarEstadisticas = window.cargarEstadisticas;
+window.agendarCita        = window.agendarCita;
+window.cargarCitasPendientes = window.cargarCitasPendientes;
+window.abrirDescargos     = window.abrirDescargos;
+window.completarCita      = window.completarCita;
+window.generarActa        = window.generarActa;
+window.cargarNovedades    = window.cargarNovedades;
+window.guardarNovedad     = window.guardarNovedad;
+window.abrirEditarNovedad = window.abrirEditarNovedad;
+window.guardarEdicionNovedad = window.guardarEdicionNovedad;
+window.cargarSeguimiento  = window.cargarSeguimiento;
+window.filtrarSeguimiento = window.filtrarSeguimiento;
+window.guardarEstudiante  = window.guardarEstudiante;
+window.eliminarEstudiante = window.eliminarEstudiante;
+window.renderEstudiantesAdmin = window.renderEstudiantesAdmin;
+window.handleLogout       = window.handleLogout;
+</script>
+</body>
+</html>
