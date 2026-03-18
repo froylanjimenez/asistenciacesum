@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: el usuario autenticado tiene un perfil activo
+    function isActivo() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.activo != false;
+    }
+
+    // Helper: el usuario es admin activo
+    function isAdmin() {
+      return isActivo()
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    // Helper: el usuario es docente activo
+    function isDocente() {
+      return isActivo()
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'docente';
+    }
+
+    // ── Usuarios ──────────────────────────────────────────────────────────
+    match /usuarios/{uid} {
+      // Cada usuario puede leer su propio perfil; admins leen todos
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      // Solo admins crean/modifican usuarios
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Estudiantes ───────────────────────────────────────────────────────
+    match /estudiantes/{estId} {
+      allow read: if isActivo();
+      allow write: if isAdmin();
+    }
+
+    // ── Asistencia ────────────────────────────────────────────────────────
+    // Documento por fecha; registros son array dentro del doc
+    match /asistencia/{fecha} {
+      allow read: if isActivo();
+      // Docentes registran/editan asistencia; admins también
+      allow write: if isActivo();
+    }
+
+    // ── Reportes de comportamiento ────────────────────────────────────────
+    match /reportes/{repId} {
+      allow read: if isActivo();
+      allow create: if isActivo();
+      // Solo quien creó el reporte o un admin puede editar/borrar
+      allow update, delete: if isAdmin()
+        || (isActivo() && resource.data.creadoPor == request.auth.uid);
+    }
+
+    // ── Novedades / ausencias justificadas ───────────────────────────────
+    match /novedades/{novId} {
+      allow read: if isActivo();
+      allow create: if isActivo();
+      allow update, delete: if isAdmin()
+        || (isActivo() && resource.data.creadoPor == request.auth.uid);
+    }
+
+    // ── Citas ─────────────────────────────────────────────────────────────
+    match /citas/{citaId} {
+      allow read: if isActivo();
+      allow create: if isActivo();
+      allow update, delete: if isAdmin()
+        || (isActivo() && resource.data.creadoPor == request.auth.uid);
+    }
+
+    // ── Noticias / comunicados ────────────────────────────────────────────
+    match /noticias/{notId} {
+      allow read: if isActivo();
+      allow write: if isAdmin();
+    }
+
+    // ── Actividades / notas ───────────────────────────────────────────────
+    match /actividades/{actId} {
+      allow read: if isActivo();
+      allow create: if isActivo();
+      allow update, delete: if isAdmin()
+        || (isActivo() && resource.data.creadoPor == request.auth.uid);
+    }
+
+    // ── Bloqueo por defecto ───────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
