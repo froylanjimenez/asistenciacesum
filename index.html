@@ -1104,7 +1104,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager,
+import { initializeFirestore, getFirestore,
   collection, doc, getDoc, getDocs, setDoc, addDoc, writeBatch,
   updateDoc, deleteDoc, query, where, orderBy, serverTimestamp, Timestamp }
   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
@@ -1126,14 +1126,21 @@ const auth   = getAuth(fbApp);
 // Persistencia offline via IndexedDB — reduce lecturas al servidor en visitas repetidas
 let db;
 try {
-  db = initializeFirestore(fbApp, {
-    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-  });
+  // Intentar habilitar persistencia offline (IndexedDB) — falla silenciosamente si el navegador no lo soporta
+  const fsModule = await import("https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js");
+  const persistentLocalCache      = fsModule.persistentLocalCache;
+  const persistentMultipleTabManager = fsModule.persistentMultipleTabManager;
+  if (persistentLocalCache && persistentMultipleTabManager) {
+    db = initializeFirestore(fbApp, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+  } else {
+    db = getFirestore(fbApp);
+  }
 } catch {
   try {
     db = initializeFirestore(fbApp, {});
   } catch {
-    // Firestore ya estaba inicializado — obtener instancia existente
     db = getFirestore(fbApp);
   }
 }
