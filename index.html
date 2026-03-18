@@ -262,6 +262,42 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 .record-tab-btn:hover{color:var(--text-1)}
 .record-tab-panel{display:none}.record-tab-panel.active{display:block}
 
+/* DASHBOARD */
+.dash-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:.75rem;margin-bottom:1.25rem}
+.dash-kpi{background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;display:flex;align-items:center;gap:.9rem}
+.dash-kpi .kpi-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}
+.dash-kpi .kpi-num{font-size:1.75rem;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1}
+.dash-kpi .kpi-lbl{font-size:.78rem;color:var(--text-2);margin-top:.15rem}
+.riesgo-badge{display:inline-flex;align-items:center;gap:.25rem;background:#7f1d1d40;color:#fca5a5;border:1px solid #ef444440;border-radius:20px;font-size:.68rem;font-weight:700;padding:.1rem .45rem;margin-left:.35rem;vertical-align:middle}
+.dash-top-list{display:flex;flex-direction:column;gap:.4rem}
+.dash-top-row{display:flex;align-items:center;gap:.75rem;padding:.45rem .6rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;font-size:.83rem}
+.dash-top-row .dtr-pos{min-width:20px;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-3)}
+.dash-top-row .dtr-nombre{flex:1;font-weight:500}
+.dash-top-row .dtr-grado{font-size:.73rem;color:var(--text-2)}
+/* ALERTAS RIESGO */
+.riesgo-alert{background:#7f1d1d25;border:1px solid #ef444440;border-radius:10px;padding:.75rem 1rem;margin-bottom:.75rem;display:none}
+.riesgo-alert.show{display:flex;align-items:center;gap:.75rem}
+/* MINI CALENDARIO */
+.mini-cal{user-select:none}
+.mini-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;font-size:.88rem;font-weight:600;color:var(--text-1)}
+.mini-cal-header button{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-2);cursor:pointer;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:all .15s}
+.mini-cal-header button:hover{background:var(--bg-input);color:var(--text-1)}
+.mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:.72rem}
+.cal-dow{text-align:center;color:var(--text-3);font-weight:600;padding:.2rem 0;font-size:.65rem}
+.cal-day{text-align:center;padding:.3rem .1rem;border-radius:6px;font-family:'JetBrains Mono',monospace;min-height:28px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;font-size:.73rem}
+.cal-day.today{background:var(--accent);color:#fff;font-weight:700}
+.cal-day.otro-mes{color:var(--text-3)}
+.cal-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
+.cal-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+/* DOCENTES ADMIN */
+.docente-row{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;border-bottom:1px solid var(--border);font-size:.85rem}
+.docente-row:last-child{border-bottom:none}
+.docente-row .dr-info{flex:1}
+.docente-row .dr-nombre{font-weight:500;color:var(--text-1)}
+.docente-row .dr-email{font-size:.75rem;color:var(--text-2)}
+.badge-activo{background:#16653430;color:#4ade80;border:1px solid #22c55e40;border-radius:20px;font-size:.7rem;font-weight:600;padding:.15rem .5rem}
+.badge-inactivo{background:#7f1d1d30;color:#fca5a5;border:1px solid #ef444440;border-radius:20px;font-size:.7rem;font-weight:600;padding:.15rem .5rem}
+
 /* NOTICIAS BANNER */
 .noticias-banner-wrap{margin-bottom:.75rem}
 .noticia-banner-item{display:flex;align-items:flex-start;gap:.75rem;background:var(--bg-input);
@@ -346,6 +382,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
       <div>CESUM <span>Sistema de Gestión Escolar</span></div>
     </div>
     <div class="nav-tabs-cesum">
+      <button class="nav-tab-btn" id="tabInicio" onclick="switchTab('inicio')">
+        <i class="bi bi-grid-1x2"></i><span>Inicio</span>
+      </button>
       <button class="nav-tab-btn active" id="tabAsistencia" onclick="switchTab('asistencia')">
         <i class="bi bi-person-check"></i><span>Asistencia</span>
       </button>
@@ -372,6 +411,33 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
     <!-- BANNER NOTICIAS ACTIVAS -->
     <div id="noticiasBanner" class="noticias-banner-wrap"></div>
 
+    <!-- INICIO / DASHBOARD -->
+    <div id="inicioTab" class="tab-content" style="display:none">
+      <div class="dash-kpi-grid" id="dashKpis">
+        <div class="dash-kpi"><div class="kpi-icon" style="background:#1e3a5f">👩‍🎓</div><div><div class="kpi-num" id="dkTotalEst">–</div><div class="kpi-lbl">Estudiantes</div></div></div>
+        <div class="dash-kpi"><div class="kpi-icon" style="background:#7f1d1d">❌</div><div><div class="kpi-num" style="color:var(--red)" id="dkAusentesHoy">–</div><div class="kpi-lbl">Ausentes hoy</div></div></div>
+        <div class="dash-kpi"><div class="kpi-icon" style="background:#4a1d96">🧠</div><div><div class="kpi-num" style="color:var(--purple)" id="dkCitasPend">–</div><div class="kpi-lbl">Citas pendientes</div></div></div>
+        <div class="dash-kpi"><div class="kpi-icon" style="background:#7c2d12">⚠️</div><div><div class="kpi-num" style="color:var(--orange)" id="dkRiesgo">–</div><div class="kpi-lbl">En riesgo (≥3 fallas)</div></div></div>
+        <div class="dash-kpi"><div class="kpi-icon" style="background:#1e3a5f">📢</div><div><div class="kpi-num" style="color:var(--accent-lt)" id="dkNoticias">–</div><div class="kpi-lbl">Noticias activas</div></div></div>
+      </div>
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="cesum-card">
+            <div class="cesum-card-header"><h5><i class="bi bi-exclamation-triangle-fill" style="color:var(--orange)"></i> Top estudiantes en riesgo</h5>
+              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarDashboard()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+            </div>
+            <div id="dashTopRiesgo"><p style="color:var(--text-2);font-size:.85rem">Cargando...</p></div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="cesum-card">
+            <div class="cesum-card-header"><h5><i class="bi bi-calendar-x-fill" style="color:var(--red)"></i> Ausentes hoy</h5></div>
+            <div id="dashAusentesHoy"><p style="color:var(--text-2);font-size:.85rem">Cargando...</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ASISTENCIA -->
     <div id="asistenciaTab" class="tab-content">
       <div class="cesum-card">
@@ -380,6 +446,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             <button class="btn-cesum btn-cesum-success" onclick="guardarAsistencia()">
               <i class="bi bi-cloud-upload"></i> Guardar
+            </button>
+            <button class="btn-cesum btn-cesum-secondary" onclick="exportarAsistenciaCSV()">
+              <i class="bi bi-download"></i> Exportar CSV
             </button>
           </div>
         </div>
@@ -442,9 +511,19 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
       <div class="cesum-card">
         <div class="cesum-card-header">
           <h5><i class="bi bi-bar-chart-line-fill"></i> Estadísticas de Inasistencia y Conducta</h5>
-          <button class="btn-cesum btn-cesum-primary" onclick="cargarEstadisticas()">
-            <i class="bi bi-arrow-clockwise"></i> Actualizar
-          </button>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <label style="font-size:.8rem;color:var(--text-2)">Del</label>
+            <input type="date" id="statDesde" class="form-control" style="width:auto;font-size:.82rem">
+            <label style="font-size:.8rem;color:var(--text-2)">al</label>
+            <input type="date" id="statHasta" class="form-control" style="width:auto;font-size:.82rem">
+            <button class="btn-cesum btn-cesum-primary sm" onclick="cargarEstadisticas()">
+              <i class="bi bi-arrow-clockwise"></i> Aplicar
+            </button>
+          </div>
+        </div>
+        <div id="riesgoAlert" class="riesgo-alert">
+          <i class="bi bi-exclamation-triangle-fill" style="font-size:1.2rem;color:var(--red);flex-shrink:0"></i>
+          <span id="riesgoAlertMsg" style="font-size:.85rem;color:var(--text-1)"></span>
         </div>
         <div class="stat-summary-grid" id="statSummary"></div>
         <div style="overflow-x:auto">
@@ -452,7 +531,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
             <thead>
               <tr>
                 <th>Estudiante</th><th>Grado</th><th>Fallas</th>
-                <th>Fugas</th><th>Retardos</th><th>Excusas</th><th>Reportes</th>
+                <th>Fugas</th><th>Retardos</th><th>Excusas</th><th>Reportes</th><th>Estado</th>
               </tr>
             </thead>
             <tbody id="statBody"></tbody>
@@ -566,6 +645,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
         <button class="nav-tab-btn" id="subTabNoticias" onclick="switchAdminTab('noticias')">
           <i class="bi bi-megaphone"></i> Noticias
         </button>
+        <button class="nav-tab-btn" id="subTabDocentes" onclick="switchAdminTab('docentes')">
+          <i class="bi bi-person-badge"></i> Docentes
+        </button>
       </div>
 
       <!-- Novedades -->
@@ -650,8 +732,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
             <div class="cesum-card">
               <div class="cesum-card-header">
                 <h5><i class="bi bi-people-fill"></i> Lista de Estudiantes</h5>
-                <div style="display:flex;gap:.5rem;align-items:center">
-                  <input type="text" id="buscarEst" class="form-control" placeholder="Buscar..." style="width:180px;font-size:.85rem" oninput="renderEstudiantesAdmin()">
+                <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                  <button class="btn-cesum btn-cesum-secondary sm" onclick="abrirImportarCSV()">
+                    <i class="bi bi-upload"></i> Importar CSV
+                  </button>
+                  <input type="text" id="buscarEst" class="form-control" placeholder="Buscar..." style="width:160px;font-size:.85rem" oninput="renderEstudiantesAdmin()">
                   <select id="filtroGradoAdmin" class="form-select" style="width:auto;font-size:.82rem" onchange="renderEstudiantesAdmin()">
                     <option value="">Todos los grados</option>
                   </select>
@@ -663,6 +748,46 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
         </div>
       </div>
     </div>
+
+      <!-- Docentes (admin) -->
+      <div id="adminDocentesPanel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="cesum-card h-100">
+              <div class="cesum-card-header"><h5><i class="bi bi-person-plus-fill"></i> Nuevo Docente</h5></div>
+              <div class="mb-3">
+                <label class="form-label">Nombre completo</label>
+                <input type="text" id="docNombre" class="form-control" placeholder="Ej: María García">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Correo electrónico</label>
+                <input type="email" id="docEmail" class="form-control" placeholder="docente@cesum.edu.co">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Contraseña inicial</label>
+                <input type="text" id="docPassword" class="form-control" placeholder="Mínimo 6 caracteres">
+              </div>
+              <button class="btn-cesum btn-cesum-success w-100" onclick="crearDocente()">
+                <i class="bi bi-person-check"></i> Crear cuenta docente
+              </button>
+              <p class="mt-2" style="font-size:.75rem;color:var(--text-2)">
+                <i class="bi bi-info-circle"></i> El docente debe cambiar su contraseña desde su dispositivo en el primer acceso.
+              </p>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="cesum-card">
+              <div class="cesum-card-header">
+                <h5><i class="bi bi-people-fill"></i> Docentes registrados</h5>
+                <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarDocentesAdmin()">
+                  <i class="bi bi-arrow-clockwise"></i> Refrescar
+                </button>
+              </div>
+              <div id="docentesAdminLista"><p style="color:var(--text-2);font-size:.85rem">Cargando...</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Noticias (admin) -->
       <div id="adminNoticiasPanel" style="display:none">
@@ -885,10 +1010,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
           <button class="record-tab-btn active" id="rtab-inasistencias" onclick="switchRecordTab('inasistencias')"><i class="bi bi-calendar-x"></i> Inasistencias</button>
           <button class="record-tab-btn" id="rtab-novedades" onclick="switchRecordTab('novedades')"><i class="bi bi-bell"></i> Novedades</button>
           <button class="record-tab-btn" id="rtab-citas" onclick="switchRecordTab('citas')"><i class="bi bi-heart-pulse"></i> Citas</button>
+          <button class="record-tab-btn" id="rtab-calendario" onclick="switchRecordTab('calendario')"><i class="bi bi-calendar3"></i> Calendario</button>
+          <button class="record-tab-btn" id="rtab-comunicados" onclick="switchRecordTab('comunicados')"><i class="bi bi-whatsapp"></i> Comunicados</button>
         </div>
         <div id="rpanel-inasistencias" class="record-tab-panel active" style="max-height:280px;overflow-y:auto"></div>
         <div id="rpanel-novedades"     class="record-tab-panel" style="max-height:280px;overflow-y:auto"></div>
         <div id="rpanel-citas"         class="record-tab-panel" style="max-height:280px;overflow-y:auto"></div>
+        <div id="rpanel-calendario"    class="record-tab-panel" style="max-height:320px;overflow-y:auto"></div>
+        <div id="rpanel-comunicados"   class="record-tab-panel" style="max-height:320px;overflow-y:auto"></div>
       </div>
       <div class="modal-footer">
         <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -926,12 +1055,54 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
   </div>
 </div>
 
+<!-- MODAL IMPORTAR CSV -->
+<div class="modal fade modal-cesum" id="modalImportarCSV" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-upload me-2" style="color:var(--green)"></i>Importar Estudiantes desde CSV</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem;margin-bottom:1rem;font-size:.83rem;color:var(--text-2)">
+          <b style="color:var(--text-1)">Formato requerido del CSV:</b><br>
+          Columnas en orden: <code style="color:var(--accent-lt)">nombre, grado, acudiente, telefono</code><br>
+          La primera fila debe ser el encabezado. Ejemplo:<br>
+          <code style="font-size:.78rem">nombre,grado,acudiente,telefono<br>Ana García,10°A,Rosa García,3001234567</code>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Seleccionar archivo CSV</label>
+          <input type="file" id="csvFileInput" class="form-control" accept=".csv,text/csv" onchange="previsualizarCSV()">
+        </div>
+        <div id="csvPreviewWrap" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+            <span id="csvPreviewCount" style="font-size:.85rem;color:var(--text-2)"></span>
+            <span id="csvErrorCount" style="font-size:.8rem;color:var(--red)"></span>
+          </div>
+          <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+            <table class="stat-table" id="csvPreviewTable">
+              <thead><tr><th>Nombre</th><th>Grado</th><th>Acudiente</th><th>Teléfono</th><th>Estado</th></tr></thead>
+              <tbody id="csvPreviewBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-success" id="btnConfirmarCSV" onclick="confirmarImportarCSV()" disabled>
+          <i class="bi bi-check-circle"></i> Importar estudiantes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Firebase SDK -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc,
   updateDoc, deleteDoc, query, where, orderBy, serverTimestamp, Timestamp }
@@ -1058,6 +1229,12 @@ onAuthStateChanged(auth, async user => {
       const snap = await getDoc(doc(db, 'usuarios', user.uid));
       if (snap.exists()) {
         const data = snap.data();
+        if (data.activo === false) {
+          await signOut(auth);
+          const errEl = document.getElementById('loginError');
+          if (errEl) { errEl.textContent='Cuenta desactivada. Contacta al administrador.'; errEl.style.display='block'; }
+          return;
+        }
         state.usuario = user.uid;
         state.nombre  = data.nombre || user.email;
         state.rol     = data.rol || 'docente';
@@ -1204,12 +1381,13 @@ function poblarSelectGrados() {
 //  NAVEGACIÓN
 // ════════════════════════════════════════════
 window.switchTab = function(tab) {
-  ['asistencia','estadisticas','psicologia','notas','admin'].forEach(t => {
+  ['inicio','asistencia','estadisticas','psicologia','notas','admin'].forEach(t => {
     const el=document.getElementById(t+'Tab');
     const btn=document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1));
     if(el)  el.style.display  = t===tab?'block':'none';
     if(btn) btn.classList.toggle('active', t===tab);
   });
+  if (tab==='inicio')       cargarDashboard();
   if (tab==='estadisticas') cargarEstadisticas();
   if (tab==='psicologia')   cargarCitasPendientes();
   if (tab==='notas')        cargarActividades();
@@ -1217,7 +1395,7 @@ window.switchTab = function(tab) {
 };
 
 window.switchAdminTab = function(sub) {
-  ['novedades','seguimiento','estudiantes','noticias'].forEach(s => {
+  ['novedades','seguimiento','estudiantes','noticias','docentes'].forEach(s => {
     const el=document.getElementById('admin'+s.charAt(0).toUpperCase()+s.slice(1)+'Panel');
     const btn=document.getElementById('subTab'+s.charAt(0).toUpperCase()+s.slice(1));
     if(el)  el.style.display = s===sub?'block':'none';
@@ -1226,6 +1404,7 @@ window.switchAdminTab = function(sub) {
   if (sub==='seguimiento') cargarSeguimiento();
   if (sub==='estudiantes') renderEstudiantesAdmin();
   if (sub==='noticias')    { cargarNoticias(); cargarDocentes().then(renderDocentesCheckboxes); }
+  if (sub==='docentes')    cargarDocentesAdmin();
 };
 
 // ════════════════════════════════════════════
@@ -1413,19 +1592,20 @@ window.confirmarReporte = async function() {
 //  ESTADÍSTICAS
 // ════════════════════════════════════════════
 window.cargarEstadisticas = async function() {
+  const desde = document.getElementById('statDesde')?.value || '';
+  const hasta = document.getElementById('statHasta')?.value || '';
   showLoading(true);
   try {
-    // Leer todos los registros de asistencia
     const snapAsist = await getDocs(collection(db,'asistencia'));
     const snapRep   = await getDocs(collection(db,'reportes'));
-
-    // Contar por estudiante
     const mapa = {};
     state.estudiantes.forEach(e => {
       mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, fallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
     });
-
     snapAsist.docs.forEach(d => {
+      const fecha = d.id; // doc ID es la fecha YYYY-MM-DD
+      if (desde && fecha < desde) return;
+      if (hasta && fecha > hasta) return;
       (d.data().registros||[]).forEach(r => {
         if (!mapa[r.estudiante]) return;
         if (r.estado==='Falla')   mapa[r.estudiante].fallas++;
@@ -1436,36 +1616,51 @@ window.cargarEstadisticas = async function() {
     });
     snapRep.docs.forEach(d => {
       const r=d.data();
+      if (desde && r.fecha < desde) return;
+      if (hasta && r.fecha > hasta) return;
       if (mapa[r.estudiante]) mapa[r.estudiante].reportes++;
     });
-
-    renderEstadisticas(Object.values(mapa));
+    renderEstadisticas(Object.values(mapa), desde, hasta);
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
 
-function renderEstadisticas(stats) {
+function renderEstadisticas(stats, desde='', hasta='') {
   const totF=stats.reduce((a,s)=>a+s.fallas,0), totFu=stats.reduce((a,s)=>a+s.fugas,0);
   const totR=stats.reduce((a,s)=>a+s.retardos,0), totE=stats.reduce((a,s)=>a+s.excusas,0);
   const totRep=stats.reduce((a,s)=>a+s.reportes,0);
+  const enRiesgo=stats.filter(s=>s.fallas>=3);
+  const periodo = desde||hasta ? ` · Período: ${desde||'inicio'}${hasta?' → '+hasta:''}` : ' · Período: todo el tiempo';
   document.getElementById('statSummary').innerHTML=`
-    <div class="stat-summary-card"><div class="num" style="color:var(--red)">${totF}</div><div class="lbl">Total Fallas</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--red)">${totF}</div><div class="lbl">Total Fallas${periodo?'':''}</div></div>
     <div class="stat-summary-card"><div class="num" style="color:var(--text-3)">${totFu}</div><div class="lbl">Total Fugas</div></div>
     <div class="stat-summary-card"><div class="num" style="color:var(--orange)">${totR}</div><div class="lbl">Total Retardos</div></div>
     <div class="stat-summary-card"><div class="num" style="color:var(--accent-lt)">${totE}</div><div class="lbl">Total Excusas</div></div>
-    <div class="stat-summary-card"><div class="num" style="color:var(--green)">${totRep}</div><div class="lbl">Reportes</div></div>`;
+    <div class="stat-summary-card"><div class="num" style="color:var(--green)">${totRep}</div><div class="lbl">Reportes</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--red)">${enRiesgo.length}</div><div class="lbl">⚠️ En riesgo (≥3 fallas)</div></div>`;
+  // Alerta de riesgo
+  const alertEl = document.getElementById('riesgoAlert');
+  const alertMsg = document.getElementById('riesgoAlertMsg');
+  if (enRiesgo.length && alertEl) {
+    alertEl.classList.add('show');
+    alertMsg.innerHTML = `<strong>${enRiesgo.length} estudiante(s) en riesgo</strong> con 3 o más fallas: ${enRiesgo.slice(0,5).map(s=>`<strong>${escapeHtml(s.nombre)}</strong> (${s.fallas} fallas)`).join(', ')}${enRiesgo.length>5?` y ${enRiesgo.length-5} más.':''}`;
+  } else if (alertEl) { alertEl.classList.remove('show'); }
   const sorted=[...stats].sort((a,b)=>(b.fallas+b.fugas)-(a.fallas+a.fugas));
   const tbody=document.getElementById('statBody');
   if (!sorted.filter(s=>s.fallas+s.fugas+s.retardos+s.excusas+s.reportes>0).length) {
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--text-2)">Sin datos de inasistencia.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:1.5rem;color:var(--text-2)">Sin datos de inasistencia para el período.</td></tr>';
     return;
   }
   const cl=(v,t)=>v===0?`<td><span class="stat-val zero">0</span></td>`:`<td><span class="stat-val ${t}">${v}</span></td>`;
-  tbody.innerHTML=sorted.map(s=>`<tr>
-    <td style="font-weight:500"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(s.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(s.nombre)}</span></td>
-    <td><span class="grado-badge">${escapeHtml(s.grado)}</span></td>
-    ${cl(s.fallas,'danger')}${cl(s.fugas,'muted')}${cl(s.retardos,'warning')}${cl(s.excusas,'info')}${cl(s.reportes,'purple')}
-  </tr>`).join('');
+  tbody.innerHTML=sorted.map(s=>{
+    const riesgo = s.fallas >= 5 ? `<span class="riesgo-badge">🔴 Crítico</span>` : s.fallas >= 3 ? `<span class="riesgo-badge">⚠️ Riesgo</span>` : '';
+    return `<tr>
+      <td style="font-weight:500"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(s.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(s.nombre)}</span></td>
+      <td><span class="grado-badge">${escapeHtml(s.grado)}</span></td>
+      ${cl(s.fallas,'danger')}${cl(s.fugas,'muted')}${cl(s.retardos,'warning')}${cl(s.excusas,'info')}${cl(s.reportes,'purple')}
+      <td>${riesgo}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════
@@ -2009,16 +2204,19 @@ function waLink(tel) {
 }
 
 window.switchRecordTab = function(tab) {
-  ['inasistencias','novedades','citas'].forEach(t => {
-    document.getElementById('rtab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('rpanel-'+t).classList.toggle('active', t===tab);
+  ['inasistencias','novedades','citas','calendario','comunicados'].forEach(t => {
+    document.getElementById('rtab-'+t)?.classList.toggle('active', t===tab);
+    document.getElementById('rpanel-'+t)?.classList.toggle('active', t===tab);
   });
+  if (tab==='calendario')  renderCalendarioRecord();
+  if (tab==='comunicados') renderComunicadosRecord();
 };
 
 let _recordNombreActual = null;
 
 window.verRecordEstudiante = async function(nombre) {
   _recordNombreActual = nombre;
+  _calRecordYear = null; _calRecordMonth = null; _calRecordData = {};
   const est = state.estudiantes.find(e => e.nombre === nombre) || {};
   document.getElementById('recordNombre').textContent = nombre;
   document.getElementById('recordInfoEst').innerHTML =
@@ -2164,6 +2362,376 @@ window.guardarEdicionEstudiante = async function() {
     showToast('Estudiante actualizado.','success');
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════
+window.cargarDashboard = async function() {
+  const hoy = todayISO();
+  try {
+    // KPIs
+    document.getElementById('dkTotalEst').textContent = state.estudiantes.length;
+    // Ausentes hoy (fallas)
+    const snapHoy = await getDoc(doc(db,'asistencia',hoy));
+    let ausentesHoy = 0, ausentes = [];
+    if (snapHoy.exists()) {
+      const registros = snapHoy.data().registros || [];
+      const porEst = {};
+      registros.forEach(r => { if (!porEst[r.estudiante]) porEst[r.estudiante]={}; porEst[r.estudiante][r.hora]=r.estado; });
+      Object.entries(porEst).forEach(([nombre, horas]) => {
+        const tieneF = Object.values(horas).some(e=>e==='Falla');
+        if (tieneF) { ausentesHoy++; ausentes.push(nombre); }
+      });
+    }
+    document.getElementById('dkAusentesHoy').textContent = ausentesHoy;
+    // Citas pendientes
+    const snapCP = await getDocs(query(collection(db,'citas'),where('estado','==','Pendiente')));
+    document.getElementById('dkCitasPend').textContent = snapCP.size;
+    // Noticias activas
+    const snapN = await getDocs(collection(db,'noticias'));
+    const noticiasAct = snapN.docs.filter(d=>{ const n=d.data(); return n.inicio<=hoy && (!n.fin||n.fin>=hoy); }).length;
+    document.getElementById('dkNoticias').textContent = noticiasAct;
+    // Riesgo (≥3 fallas históricas)
+    const snapA = await getDocs(collection(db,'asistencia'));
+    const fallasPorEst = {};
+    snapA.docs.forEach(d => {
+      (d.data().registros||[]).forEach(r => {
+        if (r.estado==='Falla') fallasPorEst[r.estudiante] = (fallasPorEst[r.estudiante]||0)+1;
+      });
+    });
+    const enRiesgo = Object.entries(fallasPorEst)
+      .filter(([,n])=>n>=3)
+      .sort((a,b)=>b[1]-a[1]);
+    document.getElementById('dkRiesgo').textContent = enRiesgo.length;
+    // Top riesgo
+    const topEl = document.getElementById('dashTopRiesgo');
+    if (!enRiesgo.length) {
+      topEl.innerHTML = '<p style="color:var(--green);font-size:.85rem;padding:.5rem 0">✅ Ningún estudiante en situación de riesgo.</p>';
+    } else {
+      topEl.innerHTML = '<div class="dash-top-list">'+enRiesgo.slice(0,8).map(([nombre,fallas],i)=>{
+        const est = state.estudiantes.find(e=>e.nombre===nombre)||{};
+        const nivel = fallas>=5?'🔴':'⚠️';
+        return `<div class="dash-top-row">
+          <span class="dtr-pos">${i+1}</span>
+          <div class="dtr-info"><div class="dtr-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(nombre).replace(/'/g,"&#39;")}')">${escapeHtml(nombre)}</span></div>
+          <div class="dtr-grado">${escapeHtml(est.grado||'')}</div></div>
+          <span class="riesgo-badge">${nivel} ${fallas} fallas</span>
+        </div>`;
+      }).join('')+'</div>';
+    }
+    // Ausentes hoy lista
+    const ausEl = document.getElementById('dashAusentesHoy');
+    if (!ausentes.length) {
+      ausEl.innerHTML = '<p style="color:var(--green);font-size:.85rem;padding:.5rem 0">✅ Sin fallas registradas hoy.</p>';
+    } else {
+      ausEl.innerHTML = '<div class="dash-top-list">'+ausentes.map(nombre=>{
+        const est = state.estudiantes.find(e=>e.nombre===nombre)||{};
+        return `<div class="dash-top-row">
+          <span style="font-size:.85rem">❌</span>
+          <div><div class="dtr-nombre">${escapeHtml(nombre)}</div><div class="dtr-grado">${escapeHtml(est.grado||'')}</div></div>
+        </div>`;
+      }).join('')+'</div>';
+    }
+  } catch(e) { showToast('Error cargando dashboard: '+e.message,'error'); }
+};
+
+// ════════════════════════════════════════════
+//  EXPORTAR PLANILLA ASISTENCIA CSV
+// ════════════════════════════════════════════
+window.exportarAsistenciaCSV = function() {
+  const rows = [['Estudiante','Grado','H1','H2','H3','H4','H5','H6']];
+  const fecha = document.getElementById('asistFecha')?.value || todayISO();
+  const tbody = document.querySelectorAll('#asisBody tr');
+  if (!tbody.length) { showToast('Carga la planilla primero.','warning'); return; }
+  tbody.forEach(tr => {
+    const nombre = tr.querySelector('.est-nombre-link')?.textContent?.trim() || '';
+    const grado  = tr.querySelector('.est-meta')?.textContent?.trim().split(' ')[0] || '';
+    if (!nombre) return;
+    const estados = [...tr.querySelectorAll('.estado-btn')].map(b => b.dataset.estado||'');
+    rows.push([nombre, grado, ...estados]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`asistencia_${fecha}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Planilla exportada.','success');
+};
+
+// ════════════════════════════════════════════
+//  GESTIÓN DE DOCENTES (ADMIN)
+// ════════════════════════════════════════════
+window.crearDocente = async function() {
+  const nombre   = document.getElementById('docNombre').value.trim();
+  const email    = document.getElementById('docEmail').value.trim();
+  const password = document.getElementById('docPassword').value.trim();
+  if (!nombre||!email||!password) { showToast('Completa todos los campos.','warning'); return; }
+  if (password.length < 6) { showToast('La contraseña debe tener mínimo 6 caracteres.','warning'); return; }
+  showLoading(true);
+  try {
+    // Usar app secundaria para no cerrar sesión del admin
+    const secondaryApp  = initializeApp(firebaseConfig, 'secondary-'+Date.now());
+    const secondaryAuth = getAuth(secondaryApp);
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const uid  = cred.user.uid;
+    await signOut(secondaryAuth);
+    await deleteApp(secondaryApp);
+    // Guardar perfil en Firestore
+    await setDoc(doc(db,'usuarios',uid), {
+      nombre, email, rol:'docente', activo:true, creadoPor:state.usuario, ts:serverTimestamp()
+    });
+    document.getElementById('docNombre').value   = '';
+    document.getElementById('docEmail').value    = '';
+    document.getElementById('docPassword').value = '';
+    showToast(`Docente ${nombre} creado correctamente.`,'success');
+    cargarDocentesAdmin();
+    _docentes = []; // reset cache
+  } catch(e) {
+    const msgs = {'auth/email-already-in-use':'Este correo ya está registrado.','auth/invalid-email':'Correo inválido.'};
+    showToast(msgs[e.code]||'Error: '+e.message,'error');
+  }
+  finally { showLoading(false); }
+};
+
+window.cargarDocentesAdmin = async function() {
+  const lista = document.getElementById('docentesAdminLista');
+  if (!lista) return;
+  lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+  try {
+    const snap = await getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
+    const docs = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+    if (!docs.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">No hay docentes registrados.</p>'; return; }
+    lista.innerHTML = '<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">'+docs.map(d=>{
+      const activo = d.activo !== false;
+      return `<div class="docente-row">
+        <div class="dr-info">
+          <div class="dr-nombre">${escapeHtml(d.nombre||d.email)}</div>
+          <div class="dr-email">${escapeHtml(d.email||d.id)}</div>
+        </div>
+        <span class="${activo?'badge-activo':'badge-inactivo'}">${activo?'Activo':'Inactivo'}</span>
+        <button class="btn-cesum ${activo?'btn-cesum-warning':'btn-cesum-success'} sm" onclick="toggleActivoDocente('${d.id}',${activo})">
+          <i class="bi bi-${activo?'pause':'play'}-circle"></i> ${activo?'Desactivar':'Activar'}
+        </button>
+      </div>`;
+    }).join('')+'</div>';
+    _docentes = []; // reset para que se recargue en noticias
+  } catch(e) { lista.innerHTML=`<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`; }
+};
+
+window.toggleActivoDocente = async function(uid, activo) {
+  const accion = activo ? 'desactivar' : 'activar';
+  if (!confirm(`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} esta cuenta de docente?`)) return;
+  showLoading(true);
+  try {
+    await updateDoc(doc(db,'usuarios',uid), { activo: !activo });
+    showToast(`Cuenta ${accion}da correctamente.`,'success');
+    cargarDocentesAdmin();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  IMPORTAR ESTUDIANTES CSV
+// ════════════════════════════════════════════
+let _csvParsed = [];
+
+window.abrirImportarCSV = function() {
+  _csvParsed = [];
+  document.getElementById('csvFileInput').value = '';
+  document.getElementById('csvPreviewWrap').style.display = 'none';
+  document.getElementById('btnConfirmarCSV').disabled = true;
+  new bootstrap.Modal(document.getElementById('modalImportarCSV')).show();
+};
+
+window.previsualizarCSV = function() {
+  const file = document.getElementById('csvFileInput').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split(/\r?\n/).filter(l=>l.trim());
+    if (lines.length < 2) { showToast('El archivo está vacío o no tiene datos.','warning'); return; }
+    const header = lines[0].split(',').map(h=>h.replace(/"/g,'').trim().toLowerCase());
+    const iNombre = header.indexOf('nombre'), iGrado=header.indexOf('grado');
+    const iAcud=header.indexOf('acudiente'), iTel=header.indexOf('telefono');
+    if (iNombre<0||iGrado<0) { showToast('El CSV debe tener columnas "nombre" y "grado".','error'); return; }
+    _csvParsed = [];
+    const tbody = document.getElementById('csvPreviewBody');
+    let errores = 0;
+    tbody.innerHTML = lines.slice(1).map(line=>{
+      const cols = line.split(',').map(c=>c.replace(/^"|"$/g,'').trim());
+      const nombre=cols[iNombre]||'', grado=cols[iGrado]||'', acudiente=iAcud>=0?cols[iAcud]||'':'', telefono=iTel>=0?cols[iTel]||'':'';
+      const ok = nombre && grado;
+      if (ok) _csvParsed.push({nombre,grado,acudiente,telefono});
+      else errores++;
+      const badge = ok ? '<span style="color:var(--green);font-size:.75rem">✓ OK</span>' : '<span style="color:var(--red);font-size:.75rem">✗ Inválido</span>';
+      return `<tr style="${ok?'':'opacity:.5'}"><td>${escapeHtml(nombre)||'–'}</td><td>${escapeHtml(grado)||'–'}</td><td>${escapeHtml(acudiente)}</td><td>${escapeHtml(telefono)}</td><td>${badge}</td></tr>`;
+    }).join('');
+    document.getElementById('csvPreviewWrap').style.display = 'block';
+    document.getElementById('csvPreviewCount').textContent = `${_csvParsed.length} registro(s) válidos`;
+    document.getElementById('csvErrorCount').textContent = errores ? `${errores} fila(s) con error` : '';
+    document.getElementById('btnConfirmarCSV').disabled = _csvParsed.length === 0;
+  };
+  reader.readAsText(file, 'UTF-8');
+};
+
+window.confirmarImportarCSV = async function() {
+  if (!_csvParsed.length) return;
+  if (!confirm(`¿Importar ${_csvParsed.length} estudiante(s)? Se agregarán a los existentes.`)) return;
+  bootstrap.Modal.getInstance(document.getElementById('modalImportarCSV')).hide();
+  showLoading(true);
+  let ok=0, err=0;
+  try {
+    for (const est of _csvParsed) {
+      try {
+        await addDoc(collection(db,'estudiantes'), { ...est, ts: serverTimestamp() });
+        ok++;
+      } catch(e) { err++; }
+    }
+    // Recargar estudiantes
+    const snap = await getDocs(collection(db,'estudiantes'));
+    state.estudiantes = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    poblarSelectEstudiantes(); poblarSelectGrados(); renderEstudiantesAdmin();
+    showToast(`${ok} estudiante(s) importados${err?`, ${err} con error`:''}. `, ok>0?'success':'warning');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  COMUNICADOS WHATSAPP PREDEFINIDOS
+// ════════════════════════════════════════════
+function renderComunicadosRecord() {
+  const panel = document.getElementById('rpanel-comunicados');
+  if (!panel || !_recordNombreActual) return;
+  const est = state.estudiantes.find(e=>e.nombre===_recordNombreActual)||{};
+  const tel = (est.telefono||'').toString().replace(/\D/g,'');
+  const acudiente = est.acudiente || 'Acudiente';
+  const nombre = est.nombre || '';
+  const hoy = todayISO();
+  const templates = [
+    {
+      icono:'📅', titulo:'Inasistencia reiterada',
+      msg:`*Concentración Educativa del Sur de Montelíbano*\n\nEstimado/a *${acudiente}*, acudiente de *${nombre}*:\n\nSe le notifica que su acudido presenta inasistencias reiteradas a clases. Le solicitamos comunicarse con la institución a la mayor brevedad.\n\nFecha: ${hoy}\nDocente: ${state.nombre}`
+    },
+    {
+      icono:'🧠', titulo:'Citación psicología',
+      msg:`*Concentración Educativa del Sur de Montelíbano*\n\nEstimado/a *${acudiente}*, acudiente de *${nombre}*:\n\nSe le informa que su acudido ha sido citado a sesión con orientación escolar/psicología.\n\nPor favor confirme su asistencia a la institución.\n\nFecha: ${hoy}\nDocente: ${state.nombre}`
+    },
+    {
+      icono:'👨‍👩‍👧', titulo:'Reunión con acudiente',
+      msg:`*Concentración Educativa del Sur de Montelíbano*\n\nEstimado/a *${acudiente}*:\n\nLe citamos a una reunión relacionada con el proceso académico y/o convivencial de *${nombre}*.\n\nPor favor acercarse a la institución para acordar fecha y hora.\n\nDocente: ${state.nombre}`
+    },
+    {
+      icono:'📋', titulo:'Entrega de preinforme',
+      msg:`*Concentración Educativa del Sur de Montelíbano*\n\nEstimado/a *${acudiente}*:\n\nLe recordamos que se acerca la entrega del preinforme académico de *${nombre}*. Por favor esté pendiente del proceso de su acudido.\n\nDocente: ${state.nombre}`
+    },
+    {
+      icono:'⚠️', titulo:'Reporte disciplinario',
+      msg:`*Concentración Educativa del Sur de Montelíbano*\n\nEstimado/a *${acudiente}*, acudiente de *${nombre}*:\n\nSe le informa que su acudido ha sido objeto de un reporte disciplinario. Le solicitamos comunicarse con la institución.\n\nFecha: ${hoy}\nDocente: ${state.nombre}`
+    },
+    {
+      icono:'✅', titulo:'Seguimiento positivo',
+      msg:`*Concentración Educativa del Sur de Montelíbano*\n\nEstimado/a *${acudiente}*:\n\nNos complace informarle que *${nombre}* ha mostrado una mejora notable en su proceso. ¡Felicitaciones!\n\nDocente: ${state.nombre}`
+    },
+  ];
+  if (!tel || tel.length < 10) {
+    panel.innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--text-2);font-size:.85rem">
+      <i class="bi bi-telephone-x" style="font-size:2rem;display:block;margin-bottom:.5rem"></i>
+      No hay teléfono registrado para este estudiante. Edita la ficha para agregar uno.
+    </div>`;
+    return;
+  }
+  panel.innerHTML = `<p style="font-size:.78rem;color:var(--text-3);margin-bottom:.75rem">Selecciona un comunicado para enviarlo al acudiente (${escapeHtml(est.telefono||'')})</p>`+
+    templates.map(t=>`
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.55rem .75rem;background:var(--bg-input);border:1px solid var(--border);border-radius:9px;margin-bottom:.4rem;cursor:pointer;transition:all .18s" onclick="enviarComunicado('${tel}','${encodeURIComponent(t.msg)}')" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
+      <span style="font-size:1.2rem">${t.icono}</span>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:.85rem;color:var(--text-1)">${escapeHtml(t.titulo)}</div>
+        <div style="font-size:.73rem;color:var(--text-2);margin-top:.1rem">${escapeHtml(t.msg.substring(0,80))}…</div>
+      </div>
+      <i class="bi bi-whatsapp" style="color:var(--green);font-size:1.1rem;flex-shrink:0"></i>
+    </div>`).join('');
+}
+
+window.enviarComunicado = function(tel, msgEncoded) {
+  window.open('https://wa.me/57'+tel+'?text='+msgEncoded,'_blank');
+};
+
+// ════════════════════════════════════════════
+//  MINI CALENDARIO DE ASISTENCIA
+// ════════════════════════════════════════════
+let _calRecordYear = null, _calRecordMonth = null, _calRecordData = {};
+
+function renderCalendarioRecord() {
+  const panel = document.getElementById('rpanel-calendario');
+  if (!panel || !_recordNombreActual) return;
+  const hoy = new Date();
+  if (!_calRecordYear)  _calRecordYear  = hoy.getFullYear();
+  if (!_calRecordMonth) _calRecordMonth = hoy.getMonth(); // 0-indexed
+  panel.innerHTML = '<p style="color:var(--text-2);font-size:.82rem;padding:.5rem">Cargando calendario...</p>';
+  cargarDatosCalendario(_recordNombreActual);
+}
+
+async function cargarDatosCalendario(nombre) {
+  try {
+    const snap = await getDocs(collection(db,'asistencia'));
+    const datos = {};
+    snap.docs.forEach(d => {
+      (d.data().registros||[]).filter(r=>r.estudiante===nombre).forEach(r => {
+        if (!datos[d.id]) datos[d.id] = [];
+        datos[d.id].push(r.estado);
+      });
+    });
+    _calRecordData = datos;
+    dibujarCalendario();
+  } catch(e) {
+    const panel = document.getElementById('rpanel-calendario');
+    if (panel) panel.innerHTML = `<p style="color:var(--red);font-size:.82rem">Error: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function dibujarCalendario() {
+  const panel = document.getElementById('rpanel-calendario');
+  if (!panel) return;
+  const year = _calRecordYear, month = _calRecordMonth;
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const primerDia = new Date(year, month, 1).getDay(); // 0=Dom
+  const diasMes   = new Date(year, month+1, 0).getDate();
+  const hoy = todayISO();
+  const DOTS = { 'Falla':'#ef4444','Fuga':'#52525b','Retardo':'#f97316','Excusa':'#3b82f6','Cita Psico':'#a855f7' };
+  let html = `<div class="mini-cal">
+    <div class="mini-cal-header">
+      <button onclick="cambiarMesRecord(-1)"><i class="bi bi-chevron-left"></i></button>
+      <span>${meses[month]} ${year}</span>
+      <button onclick="cambiarMesRecord(1)"><i class="bi bi-chevron-right"></i></button>
+    </div>
+    <div class="mini-cal-grid">
+      <div class="cal-dow">D</div><div class="cal-dow">L</div><div class="cal-dow">M</div>
+      <div class="cal-dow">X</div><div class="cal-dow">J</div><div class="cal-dow">V</div><div class="cal-dow">S</div>`;
+  // Celdas vacías antes del primer día
+  for (let i=0;i<primerDia;i++) html+=`<div class="cal-day otro-mes"></div>`;
+  for (let d=1;d<=diasMes;d++) {
+    const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const estados = _calRecordData[fecha]||[];
+    const isHoy = fecha===hoy;
+    const dots = [...new Set(estados.filter(e=>e!=='Asistió'))].map(e=>`<div class="cal-dot" style="background:${DOTS[e]||'#888'}" title="${e}"></div>`).join('');
+    html+=`<div class="cal-day${isHoy?' today':''}" title="${fecha}">${d}${dots?`<div class="cal-dots">${dots}</div>`:''}`;
+    html+=`</div>`;
+  }
+  html+=`</div>`;
+  // Leyenda
+  html+=`<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.75rem;font-size:.7rem;color:var(--text-2)">`;
+  Object.entries(DOTS).forEach(([lbl,color])=>{ html+=`<span style="display:inline-flex;align-items:center;gap:.25rem"><span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block"></span>${lbl}</span>`; });
+  html+=`</div></div>`;
+  panel.innerHTML = html;
+}
+
+window.cambiarMesRecord = function(dir) {
+  _calRecordMonth += dir;
+  if (_calRecordMonth > 11) { _calRecordMonth=0; _calRecordYear++; }
+  if (_calRecordMonth < 0)  { _calRecordMonth=11; _calRecordYear--; }
+  dibujarCalendario();
 };
 
 // ════════════════════════════════════════════
