@@ -221,6 +221,24 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 .page-title{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px}
 .page-subtitle{font-size:12px;color:var(--text-2);margin-bottom:24px}
 
+/* NOTAS */
+.actividad-card{background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;
+  cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.5rem}
+.actividad-card:hover{border-color:var(--accent);transform:translateX(3px)}
+.actividad-card .ac-nombre{font-weight:600;font-size:.9rem;color:var(--text-1)}
+.actividad-card .ac-meta{font-size:.75rem;color:var(--text-2);margin-top:.2rem}
+.actividad-card .ac-badge{background:var(--accent);color:#fff;border-radius:8px;font-size:.72rem;
+  font-weight:700;padding:.2rem .6rem;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.nota-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.nota-row:last-child{border-bottom:none}
+.nota-input{width:80px;text-align:center;font-family:'JetBrains Mono',monospace;
+  font-weight:600;font-size:.9rem;background:var(--bg-input)!important;
+  border:1px solid var(--border)!important;color:var(--text-1)!important;
+  border-radius:8px!important;padding:.3rem .5rem}
+.nota-input:focus{border-color:var(--accent)!important;box-shadow:0 0 0 2px var(--accent-glow)!important}
+.nota-input.over-max{border-color:var(--red)!important}
+
 /* RECORD ESTUDIANTE */
 .record-fila{display:flex;align-items:flex-start;gap:.75rem;padding:.55rem 0;border-bottom:1px solid var(--border);font-size:.82rem}
 .record-fila:last-child{border-bottom:none}
@@ -294,6 +312,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
       </button>
       <button class="nav-tab-btn" id="tabPsicologia" onclick="switchTab('psicologia')">
         <i class="bi bi-heart-pulse"></i><span>Psicología</span>
+      </button>
+      <button class="nav-tab-btn" id="tabNotas" onclick="switchTab('notas')">
+        <i class="bi bi-journal-text"></i><span>Notas</span>
       </button>
       <button class="nav-tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">
         <i class="bi bi-shield-lock"></i><span>Admin</span>
@@ -429,6 +450,57 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
               </button>
             </div>
             <div class="citas-grid" id="citasGrid"><p style="color:var(--text-2);font-size:.85rem">Cargando citas...</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTAS -->
+    <div id="notasTab" class="tab-content" style="display:none">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="cesum-card h-100">
+            <div class="cesum-card-header"><h5><i class="bi bi-plus-circle"></i> Nueva Actividad</h5></div>
+            <div class="mb-3">
+              <label class="form-label">Nombre de la actividad</label>
+              <input type="text" id="actNombre" class="form-control" placeholder="Ej: Parcial 1 – Matemáticas">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Valoración máxima</label>
+              <input type="number" id="actValoracion" class="form-control" placeholder="100" min="1" max="100" value="100">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Grado</label>
+              <select id="actGrado" class="form-select">
+                <option value="">-- Seleccionar --</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Fecha</label>
+              <input type="date" id="actFecha" class="form-control">
+            </div>
+            <button class="btn-cesum btn-cesum-success w-100" onclick="guardarActividad()">
+              <i class="bi bi-save"></i> Crear Actividad
+            </button>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="cesum-card">
+            <div class="cesum-card-header">
+              <h5><i class="bi bi-journal-text"></i> Actividades</h5>
+              <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                <select id="filtroGradoNotas" class="form-select" style="width:auto;font-size:.82rem" onchange="renderActividades()">
+                  <option value="">Todos los grados</option>
+                </select>
+                <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarActividades()">
+                  <i class="bi bi-arrow-clockwise"></i> Refrescar
+                </button>
+                <button class="btn-cesum btn-cesum-primary sm" onclick="exportarNotasCSV()">
+                  <i class="bi bi-download"></i> Exportar CSV
+                </button>
+              </div>
+            </div>
+            <div id="actividadesLista"><p style="color:var(--text-2);font-size:.85rem">Carga o crea una actividad para comenzar.</p></div>
           </div>
         </div>
       </div>
@@ -607,6 +679,36 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
         <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button class="btn-cesum btn-cesum-warning" onclick="generarActa()"><i class="bi bi-file-earmark-text"></i> Ver Acta</button>
         <button class="btn-cesum btn-cesum-success" onclick="completarCita()"><i class="bi bi-check-circle"></i> Guardar y Completar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CALIFICACIONES -->
+<div class="modal fade modal-cesum" id="modalCalificaciones" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2" style="color:var(--green)"></i><span id="calNombreActividad"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.82rem;color:var(--text-2)">
+          <span><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> Grado: <strong id="calGrado" class="text-white"></strong></span>
+          <span><i class="bi bi-trophy" style="color:var(--yellow)"></i> Valoración máx: <strong id="calValoracionMax" class="text-white"></strong></span>
+          <span><i class="bi bi-calendar3" style="color:var(--accent-lt)"></i> Fecha: <strong id="calFecha" class="text-white"></strong></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem">
+          <input type="text" id="calBuscar" class="form-control" placeholder="Buscar estudiante..." style="font-size:.85rem" oninput="filtrarNotasModal()">
+          <button class="btn-cesum btn-cesum-secondary sm" onclick="rellenarTodos()" style="white-space:nowrap"><i class="bi bi-lightning"></i> Llenar todos</button>
+        </div>
+        <div id="calFilas" style="max-height:380px;overflow-y:auto"></div>
+        <input type="hidden" id="calActividadId">
+      </div>
+      <div class="modal-footer">
+        <div style="font-size:.78rem;color:var(--text-2);flex:1" id="calContador"></div>
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-success" onclick="guardarCalificaciones()"><i class="bi bi-cloud-upload"></i> Guardar Notas</button>
       </div>
     </div>
   </div>
@@ -924,10 +1026,10 @@ function poblarSelectEstudiantes() {
 
 function poblarSelectGrados() {
   const grados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
-  ['asistGrado','filtroGradoAdmin'].forEach(id => {
+  ['asistGrado','filtroGradoAdmin','actGrado','filtroGradoNotas'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
-    const first = id==='asistGrado'?'<option value="">-- Todos --</option>':'<option value="">Todos los grados</option>';
+    const first = id==='asistGrado'?'<option value="">-- Todos --</option>':id==='actGrado'?'<option value="">-- Seleccionar --</option>':'<option value="">Todos los grados</option>';
     sel.innerHTML = first;
     grados.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o); });
   });
@@ -937,7 +1039,7 @@ function poblarSelectGrados() {
 //  NAVEGACIÓN
 // ════════════════════════════════════════════
 window.switchTab = function(tab) {
-  ['asistencia','estadisticas','psicologia','admin'].forEach(t => {
+  ['asistencia','estadisticas','psicologia','notas','admin'].forEach(t => {
     const el=document.getElementById(t+'Tab');
     const btn=document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1));
     if(el)  el.style.display  = t===tab?'block':'none';
@@ -945,6 +1047,7 @@ window.switchTab = function(tab) {
   });
   if (tab==='estadisticas') cargarEstadisticas();
   if (tab==='psicologia')   cargarCitasPendientes();
+  if (tab==='notas')        cargarActividades();
   if (tab==='admin')        { cargarNovedades(); switchAdminTab('novedades'); }
 };
 
@@ -1524,6 +1627,206 @@ window.renderEstudiantesAdmin = function() {
 // ════════════════════════════════════════════
 document.getElementById('asistFecha').value = todayISO();
 document.getElementById('citaFecha').value  = todayISO();
+document.getElementById('actFecha').value   = todayISO();
+
+// ════════════════════════════════════════════
+//  MÓDULO DE NOTAS
+// ════════════════════════════════════════════
+let _actividades = [];       // caché local
+let _actividadActual = null; // actividad abierta en modal
+
+window.guardarActividad = async function() {
+  const nombre     = document.getElementById('actNombre').value.trim();
+  const valoracion = parseInt(document.getElementById('actValoracion').value) || 100;
+  const grado      = document.getElementById('actGrado').value;
+  const fecha      = document.getElementById('actFecha').value;
+  if (!nombre || !grado || !fecha) { showToast('Completa nombre, grado y fecha.','warning'); return; }
+  if (valoracion < 1 || valoracion > 100) { showToast('La valoración debe estar entre 1 y 100.','warning'); return; }
+  showLoading(true);
+  try {
+    await addDoc(collection(db,'actividades'), {
+      nombre, valoracionMax: valoracion, grado, fecha,
+      docente: state.nombre, calificaciones: {}, ts: serverTimestamp()
+    });
+    showToast('Actividad creada.','success');
+    document.getElementById('actNombre').value = '';
+    document.getElementById('actValoracion').value = '100';
+    document.getElementById('actGrado').value = '';
+    await cargarActividades();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.cargarActividades = async function() {
+  const lista = document.getElementById('actividadesLista');
+  lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+  try {
+    const snap = await getDocs(query(collection(db,'actividades'), orderBy('fecha','desc')));
+    _actividades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderActividades();
+  } catch(e) { lista.innerHTML = `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`; }
+};
+
+window.renderActividades = function() {
+  const lista  = document.getElementById('actividadesLista');
+  const filtro = (document.getElementById('filtroGradoNotas')?.value || '').toLowerCase();
+  const acts   = filtro ? _actividades.filter(a => a.grado.toLowerCase() === filtro) : _actividades;
+  if (!acts.length) {
+    lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Sin actividades. Crea una en el panel izquierdo.</p>';
+    return;
+  }
+  lista.innerHTML = acts.map(a => {
+    const calCount = Object.keys(a.calificaciones || {}).length;
+    const estudiantesGrado = state.estudiantes.filter(e => e.grado === a.grado).length;
+    return `<div class="actividad-card" onclick="abrirCalificacion('${escapeHtml(a.id)}')">
+      <div>
+        <div class="ac-nombre">${escapeHtml(a.nombre)}</div>
+        <div class="ac-meta">
+          <span class="grado-badge">${escapeHtml(a.grado)}</span>
+          &nbsp;${escapeHtml(a.fecha)} &nbsp;·&nbsp; ${escapeHtml(a.docente||'')}
+          &nbsp;·&nbsp; ${calCount}/${estudiantesGrado} calificados
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span class="ac-badge">/${a.valoracionMax}</span>
+        <button class="btn-cesum btn-cesum-danger sm" onclick="event.stopPropagation();eliminarActividad('${escapeHtml(a.id)}')">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.abrirCalificacion = function(id) {
+  const act = _actividades.find(a => a.id === id);
+  if (!act) return;
+  _actividadActual = act;
+  document.getElementById('calNombreActividad').textContent = act.nombre;
+  document.getElementById('calGrado').textContent           = act.grado;
+  document.getElementById('calValoracionMax').textContent   = act.valoracionMax;
+  document.getElementById('calFecha').textContent           = act.fecha;
+  document.getElementById('calActividadId').value           = act.id;
+  document.getElementById('calBuscar').value                = '';
+  renderFilasNotas(state.estudiantes.filter(e => e.grado === act.grado));
+  new bootstrap.Modal(document.getElementById('modalCalificaciones')).show();
+};
+
+function renderFilasNotas(estudiantes) {
+  const act = _actividadActual;
+  const container = document.getElementById('calFilas');
+  if (!estudiantes.length) {
+    container.innerHTML = '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem">Sin estudiantes en este grado.</p>';
+    return;
+  }
+  container.innerHTML = estudiantes.map(est => {
+    const nota = act.calificaciones?.[est.nombre] ?? '';
+    return `<div class="nota-row" data-nombre="${escapeHtml(est.nombre)}">
+      <span style="font-weight:500;font-size:.85rem">${escapeHtml(est.nombre)}</span>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:.75rem;color:var(--text-2)">/ ${act.valoracionMax}</span>
+        <input type="number" class="form-control nota-input" min="0" max="${act.valoracionMax}"
+          placeholder="–" value="${nota}"
+          oninput="validarNota(this,${act.valoracionMax})"
+          data-est="${escapeHtml(est.nombre)}">
+      </div>
+    </div>`;
+  }).join('');
+  actualizarContadorNotas();
+}
+
+window.filtrarNotasModal = function() {
+  const buscar = document.getElementById('calBuscar').value.toLowerCase();
+  const grado  = _actividadActual?.grado;
+  const filtrados = state.estudiantes.filter(e =>
+    e.grado === grado && e.nombre.toLowerCase().includes(buscar)
+  );
+  renderFilasNotas(filtrados);
+};
+
+window.validarNota = function(input, max) {
+  const v = parseFloat(input.value);
+  input.classList.toggle('over-max', !isNaN(v) && v > max);
+  actualizarContadorNotas();
+};
+
+function actualizarContadorNotas() {
+  const inputs = document.querySelectorAll('#calFilas .nota-input');
+  const llenos = [...inputs].filter(i => i.value !== '').length;
+  document.getElementById('calContador').textContent = `${llenos} de ${inputs.length} calificados`;
+}
+
+window.rellenarTodos = function() {
+  const max = _actividadActual?.valoracionMax || 100;
+  const val = prompt(`Nota para todos (0 – ${max}):`);
+  if (val === null) return;
+  const n = parseFloat(val);
+  if (isNaN(n) || n < 0 || n > max) { showToast('Nota fuera de rango.','warning'); return; }
+  document.querySelectorAll('#calFilas .nota-input').forEach(i => {
+    i.value = n;
+    i.classList.remove('over-max');
+  });
+  actualizarContadorNotas();
+};
+
+window.guardarCalificaciones = async function() {
+  const id  = document.getElementById('calActividadId').value;
+  const max = _actividadActual?.valoracionMax || 100;
+  const inputs = document.querySelectorAll('#calFilas .nota-input');
+  if ([...inputs].some(i => i.classList.contains('over-max'))) {
+    showToast('Hay notas que superan la valoración máxima.','warning'); return;
+  }
+  const calificaciones = { ..._actividadActual.calificaciones };
+  inputs.forEach(input => {
+    const est = input.dataset.est;
+    const val = input.value.trim();
+    if (val !== '') calificaciones[est] = parseFloat(val);
+  });
+  bootstrap.Modal.getInstance(document.getElementById('modalCalificaciones')).hide();
+  showLoading(true);
+  try {
+    await updateDoc(doc(db,'actividades',id), { calificaciones });
+    _actividadActual.calificaciones = calificaciones;
+    _actividades = _actividades.map(a => a.id === id ? { ...a, calificaciones } : a);
+    renderActividades();
+    showToast('Notas guardadas.','success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.eliminarActividad = async function(id) {
+  if (!confirm('¿Eliminar esta actividad y todas sus notas?')) return;
+  showLoading(true);
+  try {
+    await deleteDoc(doc(db,'actividades',id));
+    _actividades = _actividades.filter(a => a.id !== id);
+    renderActividades();
+    showToast('Actividad eliminada.','success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.exportarNotasCSV = async function() {
+  if (!_actividades.length) { showToast('No hay actividades cargadas. Refresca primero.','warning'); return; }
+  const filtro = (document.getElementById('filtroGradoNotas')?.value || '').toLowerCase();
+  const acts   = filtro ? _actividades.filter(a => a.grado.toLowerCase() === filtro) : _actividades;
+  const rows   = [['Actividad','Valoración Máx','Grado','Fecha','Docente','Estudiante','Grado Estudiante','Nota','% Obtenido']];
+  acts.forEach(act => {
+    const estGrado = state.estudiantes.filter(e => e.grado === act.grado);
+    if (!estGrado.length) return;
+    estGrado.forEach(est => {
+      const nota = act.calificaciones?.[est.nombre] ?? '';
+      const pct  = nota !== '' ? ((nota / act.valoracionMax) * 100).toFixed(1) + '%' : '';
+      rows.push([act.nombre, act.valoracionMax, act.grado, act.fecha, act.docente||'', est.nombre, est.grado, nota, pct]);
+    });
+  });
+  const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], { type:'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `notas_cesum_${todayISO()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 CSV exportado','success');
+};
 
 // ════════════════════════════════════════════
 //  RECORD DE ESTUDIANTE
