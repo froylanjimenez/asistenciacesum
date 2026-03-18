@@ -221,6 +221,20 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 .page-title{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px}
 .page-subtitle{font-size:12px;color:var(--text-2);margin-bottom:24px}
 
+/* RECORD ESTUDIANTE */
+.record-fila{display:flex;align-items:flex-start;gap:.75rem;padding:.55rem 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.record-fila:last-child{border-bottom:none}
+.record-fecha{min-width:88px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-2);padding-top:2px}
+.record-chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.record-chip{display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .55rem;border-radius:20px;font-size:.72rem;font-weight:600}
+.chip-falla{background:#7f1d1d40;color:#fca5a5;border:1px solid #ef444440}
+.chip-fuga{background:#27272a40;color:#a1a1aa;border:1px solid #52525b40}
+.chip-retardo{background:#7c2d1240;color:#fdba74;border:1px solid #f9731640}
+.chip-excusa{background:#1e3a5f40;color:#93c5fd;border:1px solid #3b82f640}
+.chip-psico{background:#4a1d9640;color:#d8b4fe;border:1px solid #a855f740}
+.est-nombre-link{cursor:pointer;color:var(--text-1);text-decoration:none;border-bottom:1px dashed var(--text-3);transition:border-color .15s}
+.est-nombre-link:hover{border-bottom-color:var(--accent-lt);color:var(--accent-lt)}
+
 @media(max-width:768px){
   .cesum-navbar{padding:.6rem 1rem}
   .main-content{padding:.75rem .5rem}
@@ -593,6 +607,27 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
         <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button class="btn-cesum btn-cesum-warning" onclick="generarActa()"><i class="bi bi-file-earmark-text"></i> Ver Acta</button>
         <button class="btn-cesum btn-cesum-success" onclick="completarCita()"><i class="bi bi-check-circle"></i> Guardar y Completar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RECORD ESTUDIANTE -->
+<div class="modal fade modal-cesum" id="modalRecord" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2" style="color:var(--accent-lt)"></i><span id="recordNombre">Estudiante</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="recordInfoEst" style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;padding:.75rem 1rem;background:var(--bg-input);border-radius:10px;font-size:.85rem;color:var(--text-2)"></div>
+        <div class="stat-summary-grid" id="recordStats" style="margin-bottom:1.25rem"></div>
+        <div style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);margin-bottom:.6rem">Historial detallado</div>
+        <div id="recordHistorial" style="max-height:320px;overflow-y:auto"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
@@ -973,7 +1008,7 @@ function renderPlanilla(estudiantes) {
     const tr = document.createElement('tr');
     const tdNombre = document.createElement('td');
     const tieneNov = state.novedadesActivas.some(n=>n.estudiante===est.nombre);
-    tdNombre.innerHTML=`<div class="est-nombre">${escapeHtml(est.nombre)}</div>
+    tdNombre.innerHTML=`<div class="est-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(est.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(est.nombre)}</span></div>
       <div class="est-meta">${escapeHtml(est.grado)}${tieneNov?' &nbsp;<span style="color:#93c5fd;font-size:.65rem">📋 Nov</span>':''}</div>`;
     tr.appendChild(tdNombre);
 
@@ -1158,7 +1193,7 @@ function renderEstadisticas(stats) {
   }
   const cl=(v,t)=>v===0?`<td><span class="stat-val zero">0</span></td>`:`<td><span class="stat-val ${t}">${v}</span></td>`;
   tbody.innerHTML=sorted.map(s=>`<tr>
-    <td style="font-weight:500">${escapeHtml(s.nombre)}</td>
+    <td style="font-weight:500"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(s.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(s.nombre)}</span></td>
     <td><span class="grado-badge">${escapeHtml(s.grado)}</span></td>
     ${cl(s.fallas,'danger')}${cl(s.fugas,'muted')}${cl(s.retardos,'warning')}${cl(s.excusas,'info')}${cl(s.reportes,'purple')}
   </tr>`).join('');
@@ -1489,6 +1524,73 @@ window.renderEstudiantesAdmin = function() {
 // ════════════════════════════════════════════
 document.getElementById('asistFecha').value = todayISO();
 document.getElementById('citaFecha').value  = todayISO();
+
+// ════════════════════════════════════════════
+//  RECORD DE ESTUDIANTE
+// ════════════════════════════════════════════
+window.verRecordEstudiante = async function(nombre) {
+  const est = state.estudiantes.find(e => e.nombre === nombre) || {};
+  document.getElementById('recordNombre').textContent = nombre;
+  document.getElementById('recordInfoEst').innerHTML =
+    `<span><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> ${escapeHtml(est.grado||'–')}</span>` +
+    `<span><i class="bi bi-person" style="color:var(--accent-lt)"></i> ${escapeHtml(est.acudiente||'–')}</span>` +
+    `<span><i class="bi bi-telephone" style="color:var(--accent-lt)"></i> ${escapeHtml(est.telefono||'–')}</span>`;
+  document.getElementById('recordStats').innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-2);font-size:.82rem">Cargando...</div>';
+  document.getElementById('recordHistorial').innerHTML = '';
+  new bootstrap.Modal(document.getElementById('modalRecord')).show();
+
+  try {
+    const snapAsist = await getDocs(collection(db, 'asistencia'));
+    const snapRep   = await getDocs(query(collection(db,'reportes'), where('estudiante','==',nombre)));
+
+    const conteo = { fallas:0, fugas:0, retardos:0, excusas:0, psico:0 };
+    const porFecha = {};
+
+    snapAsist.docs.forEach(d => {
+      const fecha = d.id;
+      (d.data().registros || []).forEach(r => {
+        if (r.estudiante !== nombre) return;
+        const estado = r.estado;
+        if (estado === 'Asistió') return;
+        if (!porFecha[fecha]) porFecha[fecha] = [];
+        porFecha[fecha].push({ hora: r.hora, estado });
+        if (estado === 'Falla')      conteo.fallas++;
+        else if (estado === 'Fuga')       conteo.fugas++;
+        else if (estado === 'Retardo')    conteo.retardos++;
+        else if (estado === 'Excusa')     conteo.excusas++;
+        else if (estado === 'Cita Psico') conteo.psico++;
+      });
+    });
+
+    const reportes = snapRep.docs.length;
+
+    document.getElementById('recordStats').innerHTML = `
+      <div class="stat-summary-card"><div class="num" style="color:var(--red)">${conteo.fallas}</div><div class="lbl">Fallas</div></div>
+      <div class="stat-summary-card"><div class="num" style="color:var(--text-3)">${conteo.fugas}</div><div class="lbl">Fugas</div></div>
+      <div class="stat-summary-card"><div class="num" style="color:var(--orange)">${conteo.retardos}</div><div class="lbl">Retardos</div></div>
+      <div class="stat-summary-card"><div class="num" style="color:var(--accent-lt)">${conteo.excusas}</div><div class="lbl">Excusas</div></div>
+      <div class="stat-summary-card"><div class="num" style="color:var(--purple)">${conteo.psico}</div><div class="lbl">Citas Psico</div></div>
+      <div class="stat-summary-card"><div class="num" style="color:var(--green)">${reportes}</div><div class="lbl">Reportes</div></div>`;
+
+    const fechas = Object.keys(porFecha).sort().reverse();
+    if (!fechas.length) {
+      document.getElementById('recordHistorial').innerHTML =
+        '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem 0">Sin registros de inasistencia.</p>';
+      return;
+    }
+
+    const chipClass = { 'Falla':'chip-falla','Fuga':'chip-fuga','Retardo':'chip-retardo','Excusa':'chip-excusa','Cita Psico':'chip-psico' };
+    document.getElementById('recordHistorial').innerHTML = fechas.map(fecha => {
+      const chips = porFecha[fecha].sort((a,b)=>a.hora.localeCompare(b.hora)).map(r =>
+        `<span class="record-chip ${chipClass[r.estado]||''}">${escapeHtml(r.hora)} ${escapeHtml(r.estado)}</span>`
+      ).join('');
+      return `<div class="record-fila"><span class="record-fecha">${escapeHtml(fecha)}</span><div class="record-chips">${chips}</div></div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('recordStats').innerHTML =
+      `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`;
+  }
+};
 
 // Las funciones ya están expuestas globalmente mediante window.X = function(){}
 </script>
