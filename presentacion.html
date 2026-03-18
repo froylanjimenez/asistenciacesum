@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CESUM — Presentación del Sistema</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d1117;
+  --card:     #161b22;
+  --input:    #1c2330;
+  --border:   #30363d;
+  --blue:     #2563eb;
+  --blue-lt:  #3b82f6;
+  --blue-glow:#2563eb33;
+  --green:    #22c55e;
+  --red:      #ef4444;
+  --orange:   #f97316;
+  --yellow:   #eab308;
+  --purple:   #a855f7;
+  --text:     #f0f6fc;
+  --text-2:   #8b949e;
+  --text-3:   #484f58;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text)}
+
+/* ── PROGRESS ──────────────────────────── */
+#progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--blue-lt));width:0;transition:width .4s ease;z-index:1000}
+
+/* ── COUNTER ──────────────────────────── */
+#counter{position:fixed;top:16px;right:20px;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-3);z-index:100;letter-spacing:.05em}
+
+/* ── NAV ARROWS ───────────────────────── */
+.nav-arrow{position:fixed;bottom:28px;z-index:100;background:var(--card);border:1px solid var(--border);color:var(--text-2);font-size:1.2rem;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;user-select:none}
+.nav-arrow:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+#prev{left:calc(50% - 56px)}
+#next{left:calc(50% + 12px)}
+#dots{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:99}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text-3);transition:all .3s;cursor:pointer}
+.dot.active{background:var(--blue);width:18px;border-radius:3px}
+
+/* ── DECK ─────────────────────────────── */
+#deck{height:100vh;width:100vw;overflow:hidden;position:relative}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem 5rem;opacity:0;transform:translateX(60px);transition:all .5s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.slide.active{opacity:1;transform:translateX(0);pointer-events:all}
+.slide.exit{opacity:0;transform:translateX(-60px)}
+
+/* ── LAYOUT ───────────────────────────── */
+.slide-inner{width:100%;max-width:900px}
+.tag{font-size:.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--blue-lt);font-weight:600;margin-bottom:1rem}
+.big-title{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;margin-bottom:1rem}
+.big-title .hl{color:var(--blue-lt)}
+.subtitle{font-size:clamp(1rem,2vw,1.2rem);color:var(--text-2);line-height:1.7;max-width:680px}
+
+/* ── CARDS GRID ───────────────────────── */
+.grid{display:grid;gap:1rem}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:700px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem}
+.card-icon{font-size:1.8rem;margin-bottom:.6rem}
+.card h3{font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:.4rem}
+.card p{font-size:.82rem;color:var(--text-2);line-height:1.6}
+.card.accent{border-color:var(--blue);background:linear-gradient(135deg,#162035,var(--card))}
+.card.green{border-color:var(--green)}
+.card.red{border-color:var(--red)}
+.card.purple{border-color:var(--purple)}
+.card.yellow{border-color:var(--yellow)}
+
+/* ── COMPARISON TABLE ─────────────────── */
+.cmp-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.85rem}
+.cmp-table th{padding:.75rem 1rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.cmp-table td{padding:.7rem 1rem;border-bottom:1px solid var(--border)}
+.cmp-table tr:last-child td{border-bottom:none}
+.cmp-table .col-papel{background:#7f1d1d18;color:var(--red)}
+.cmp-table .col-cesum{background:#16653418;color:var(--green)}
+.cmp-table .row-label{font-weight:600;color:var(--text);background:var(--input)}
+.ico-no{color:var(--red)}
+.ico-si{color:var(--green)}
+
+/* ── BADGE ────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;padding:.25rem .7rem;border-radius:20px}
+.badge-blue{background:#1e3a5f;color:#93c5fd}
+.badge-green{background:#16653430;color:#4ade80}
+.badge-red{background:#7f1d1d30;color:#fca5a5}
+.badge-orange{background:#7c2d1230;color:#fdba74}
+.badge-purple{background:#4a1d9630;color:#d8b4fe}
+.badge-yellow{background:#71350030;color:#fde047}
+
+/* ── STEPS ────────────────────────────── */
+.steps{display:flex;flex-direction:column;gap:.75rem}
+.step{display:flex;align-items:flex-start;gap:1rem;padding:1rem 1.25rem;background:var(--card);border:1px solid var(--border);border-radius:12px}
+.step-num{min-width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step h4{font-size:.9rem;font-weight:600;margin-bottom:.2rem}
+.step p{font-size:.8rem;color:var(--text-2)}
+
+/* ── COVER SPECIAL ────────────────────── */
+.cover-logo{width:72px;height:72px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1.5rem;box-shadow:0 0 40px var(--blue-glow)}
+.cover-title{font-size:clamp(2.5rem,7vw,5rem);font-weight:800;text-align:center;line-height:1.1;margin-bottom:.75rem}
+.cover-sub{font-size:clamp(.9rem,2vw,1.1rem);color:var(--text-2);text-align:center;max-width:600px;margin:0 auto 2rem}
+.cover-badges{display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem}
+
+/* ── STAT NUMBERS ─────────────────────── */
+.stat-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1.5rem}
+.stat-box{flex:1;min-width:120px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center}
+.stat-box .num{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:700;line-height:1}
+.stat-box .lbl{font-size:.75rem;color:var(--text-2);margin-top:.3rem}
+
+/* ── YES / NO LISTS ───────────────────── */
+.yesno{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.yesno{grid-template-columns:1fr}}
+.yn-col h3{font-size:.82rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:.75rem}
+.yn-list{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+.yn-list li{font-size:.88rem;display:flex;align-items:flex-start;gap:.6rem;line-height:1.5}
+.yn-list li::before{flex-shrink:0;margin-top:.1rem}
+.yes-list li::before{content:'✓';color:var(--green);font-weight:700}
+.no-list li::before{content:'✗';color:var(--red);font-weight:700}
+
+/* ── ROLE TABLE ───────────────────────── */
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.role-grid{grid-template-columns:1fr}}
+.role-col h3{font-size:.82rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
+.role-list{list-style:none;display:flex;flex-direction:column;gap:.4rem}
+.role-list li{font-size:.85rem;color:var(--text-2);display:flex;align-items:flex-start;gap:.5rem}
+.role-list li span{color:var(--text)}
+
+/* ── HINT ─────────────────────────────── */
+#hint{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);font-size:.72rem;color:var(--text-3);letter-spacing:.05em;z-index:100;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="counter">1 / 13</div>
+<div id="hint">← → para navegar · clic en las flechas</div>
+
+<div id="deck">
+
+  <!-- ── SLIDE 1: COVER ─────────────────────────────────── -->
+  <div class="slide active" data-index="0">
+    <div class="slide-inner" style="text-align:center">
+      <div class="cover-logo">🏫</div>
+      <div class="cover-title">CESUM</div>
+      <p class="cover-sub">Sistema de Gestión Escolar Digital para la<br><strong>Concentración Educativa del Sur de Montelíbano</strong></p>
+      <div class="cover-badges">
+        <span class="badge badge-blue">📋 Asistencia</span>
+        <span class="badge badge-orange">⚑ Disciplina</span>
+        <span class="badge badge-purple">🧠 Psicología</span>
+        <span class="badge badge-green">📊 Estadísticas</span>
+        <span class="badge badge-yellow">📝 Notas</span>
+        <span class="badge badge-blue">🔒 Roles Admin</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 2: EL PROBLEMA ───────────────────────────── -->
+  <div class="slide" data-index="1">
+    <div class="slide-inner">
+      <div class="tag">El contexto</div>
+      <h1 class="big-title">El registro en papel <span class="hl">tiene un costo</span></h1>
+      <div class="grid g3" style="margin-top:1.5rem">
+        <div class="card red">
+          <div class="card-icon">⏱️</div>
+          <h3>Tiempo perdido</h3>
+          <p>Pasar lista en cada periodo toma minutos valiosos de clase. Consolidar planillas al final del día puede tomar horas.</p>
+        </div>
+        <div class="card red">
+          <div class="card-icon">📦</div>
+          <h3>Datos dispersos</h3>
+          <p>Las planillas de papel se extravían, deterioran o quedan en diferentes lugares. No hay una fuente de verdad única.</p>
+        </div>
+        <div class="card red">
+          <div class="card-icon">🔍</div>
+          <h3>Sin visibilidad</h3>
+          <p>Saber cuántas fallas tiene un estudiante requiere revisar planilla por planilla. No hay resúmenes automáticos.</p>
+        </div>
+        <div class="card red">
+          <div class="card-icon">📞</div>
+          <h3>Comunicación lenta</h3>
+          <p>Notificar al acudiente implica buscar el número, redactar el mensaje manualmente y enviarlo sin registro del intento.</p>
+        </div>
+        <div class="card red">
+          <div class="card-icon">🗂️</div>
+          <h3>Sin historial</h3>
+          <p>Conocer el historial completo de un estudiante —faltas, citas, novedades— es prácticamente imposible de forma ágil.</p>
+        </div>
+        <div class="card red">
+          <div class="card-icon">🖊️</div>
+          <h3>Errores humanos</h3>
+          <p>Tachones, ilegibilidad y transcripción manual generan inconsistencias que afectan decisiones administrativas.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3: LA SOLUCIÓN ───────────────────────────── -->
+  <div class="slide" data-index="2">
+    <div class="slide-inner">
+      <div class="tag">La solución</div>
+      <h1 class="big-title">Todo en un solo lugar,<br><span class="hl">en tiempo real</span></h1>
+      <p class="subtitle" style="margin-bottom:1.5rem">CESUM centraliza la gestión escolar en una aplicación web accesible desde cualquier dispositivo, con datos sincronizados instantáneamente para todos los docentes.</p>
+      <div class="stat-row">
+        <div class="stat-box"><div class="num" style="color:var(--blue-lt)">6</div><div class="lbl">Periodos de clase diarios</div></div>
+        <div class="stat-box"><div class="num" style="color:var(--green)">6</div><div class="lbl">Estados de asistencia</div></div>
+        <div class="stat-box"><div class="num" style="color:var(--purple)">5</div><div class="lbl">Módulos integrados</div></div>
+        <div class="stat-box"><div class="num" style="color:var(--yellow)">2</div><div class="lbl">Roles de acceso</div></div>
+        <div class="stat-box"><div class="num" style="color:var(--orange)">∞</div><div class="lbl">Historial por estudiante</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4: PAPEL VS CESUM ────────────────────────── -->
+  <div class="slide" data-index="3">
+    <div class="slide-inner">
+      <div class="tag">Comparativa</div>
+      <h1 class="big-title">Papel <span class="hl">vs</span> CESUM</h1>
+      <div style="overflow-x:auto;margin-top:1.25rem;border-radius:14px;border:1px solid var(--border)">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th style="background:var(--input);text-align:left;border-radius:14px 0 0 0">Aspecto</th>
+              <th class="col-papel" style="border-radius:0">📄 Papel</th>
+              <th class="col-cesum" style="border-radius:0 14px 0 0">💻 CESUM</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="row-label">Registro de asistencia</td><td class="col-papel"><span class="ico-no">✗</span> Manual, por periodo, en papel</td><td class="col-cesum"><span class="ico-si">✓</span> Un clic por estudiante</td></tr>
+            <tr><td class="row-label">Acceso al historial</td><td class="col-papel"><span class="ico-no">✗</span> Buscar planillas físicas</td><td class="col-cesum"><span class="ico-si">✓</span> Instantáneo, por nombre</td></tr>
+            <tr><td class="row-label">Estadísticas de fallas</td><td class="col-papel"><span class="ico-no">✗</span> Conteo manual, propenso a error</td><td class="col-cesum"><span class="ico-si">✓</span> Automáticas y en tiempo real</td></tr>
+            <tr><td class="row-label">Notificación a acudiente</td><td class="col-papel"><span class="ico-no">✗</span> Llamada sin trazabilidad</td><td class="col-cesum"><span class="ico-si">✓</span> WhatsApp con un clic</td></tr>
+            <tr><td class="row-label">Citas de psicología</td><td class="col-papel"><span class="ico-no">✗</span> Agenda manual, sin seguimiento</td><td class="col-cesum"><span class="ico-si">✓</span> Agendadas, notificadas y con acta PDF</td></tr>
+            <tr><td class="row-label">Novedades / excusas</td><td class="col-papel"><span class="ico-no">✗</span> Post-its o notas sueltas</td><td class="col-cesum"><span class="ico-si">✓</span> Registradas con fechas de vigencia</td></tr>
+            <tr><td class="row-label">Notas por actividad</td><td class="col-papel"><span class="ico-no">✗</span> Cuaderno del docente, sin respaldo</td><td class="col-cesum"><span class="ico-si">✓</span> En la nube, exportable a CSV</td></tr>
+            <tr><td class="row-label">Pérdida de información</td><td class="col-papel"><span class="ico-no">✗</span> Alta (papel, extravío)</td><td class="col-cesum"><span class="ico-si">✓</span> Nula (Firebase en la nube)</td></tr>
+            <tr><td class="row-label">Acceso remoto</td><td class="col-papel"><span class="ico-no">✗</span> Solo con el papel en mano</td><td class="col-cesum"><span class="ico-si">✓</span> Desde cualquier dispositivo</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5: MÓDULOS ───────────────────────────────── -->
+  <div class="slide" data-index="4">
+    <div class="slide-inner">
+      <div class="tag">Funcionalidades</div>
+      <h1 class="big-title">5 módulos, <span class="hl">una sola app</span></h1>
+      <div class="grid g3" style="margin-top:1.5rem">
+        <div class="card accent">
+          <div class="card-icon">✅</div>
+          <h3>Asistencia</h3>
+          <p>Planilla digital por grado y fecha con 6 periodos. Actualización en tiempo real visible para todos los docentes.</p>
+        </div>
+        <div class="card yellow">
+          <div class="card-icon">📊</div>
+          <h3>Estadísticas</h3>
+          <p>Resumen automático de fallas, fugas, retardos, excusas y reportes por estudiante. Historial detallado con un clic.</p>
+        </div>
+        <div class="card purple">
+          <div class="card-icon">🧠</div>
+          <h3>Psicología</h3>
+          <p>Agenda de citas, seguimiento, generación de actas en PDF y notificación WhatsApp al acudiente.</p>
+        </div>
+        <div class="card green">
+          <div class="card-icon">📝</div>
+          <h3>Notas</h3>
+          <p>Registro de actividades con valoración, calificación por estudiante y exportación en CSV para Excel.</p>
+        </div>
+        <div class="card" style="border-color:var(--orange)">
+          <div class="card-icon">🔔</div>
+          <h3>Novedades & Admin</h3>
+          <p>Gestión de excusas médicas con vigencia automática, reportes disciplinarios y administración de estudiantes.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">☁️</div>
+          <h3>Nube en tiempo real</h3>
+          <p>Todos los datos en Firebase. Sin instalación, sin pérdida de información y acceso simultáneo desde múltiples dispositivos.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6: ASISTENCIA ────────────────────────────── -->
+  <div class="slide" data-index="5">
+    <div class="slide-inner">
+      <div class="tag">Módulo 1</div>
+      <h1 class="big-title">Asistencia <span class="hl">por periodos</span></h1>
+      <p class="subtitle" style="margin-bottom:1.5rem">Registra el estado de cada estudiante en cada uno de los 6 periodos del día con un solo clic. El sistema detecta automáticamente la hora actual y resalta el periodo activo.</p>
+      <div class="grid g3" style="margin-bottom:1.25rem">
+        <div class="card" style="border-color:#22c55e"><div style="font-size:1.5rem;font-family:'JetBrains Mono',monospace;font-weight:700;color:#4ade80">✓</div><h3 style="color:#4ade80">Asistió</h3><p>El estudiante estuvo presente en clase.</p></div>
+        <div class="card" style="border-color:#ef4444"><div style="font-size:1.5rem;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fca5a5">✗</div><h3 style="color:#fca5a5">Falla</h3><p>Ausencia sin justificación registrada.</p></div>
+        <div class="card" style="border-color:#3b82f6"><div style="font-size:1.5rem;font-family:'JetBrains Mono',monospace;font-weight:700;color:#93c5fd">E</div><h3 style="color:#93c5fd">Excusa</h3><p>Ausencia justificada o con novedad activa.</p></div>
+        <div class="card" style="border-color:#52525b"><div style="font-size:1.5rem;font-family:'JetBrains Mono',monospace;font-weight:700;color:#e4e4e7">F</div><h3 style="color:#e4e4e7">Fuga</h3><p>El estudiante abandonó el aula sin permiso.</p></div>
+        <div class="card" style="border-color:#f97316"><div style="font-size:1.5rem;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fdba74">R</div><h3 style="color:#fdba74">Retardo</h3><p>Llegó tarde al periodo de clase.</p></div>
+        <div class="card" style="border-color:#a855f7"><div style="font-size:1.5rem;font-family:'JetBrains Mono',monospace;font-weight:700;color:#d8b4fe">🧠</div><h3 style="color:#d8b4fe">Cita Psico</h3><p>Asistió a cita de psicología (bloqueado automáticamente).</p></div>
+      </div>
+      <p style="font-size:.82rem;color:var(--text-2);background:var(--card);padding:.75rem 1rem;border-radius:10px;border:1px solid var(--border)">
+        💡 <strong>Dato clave:</strong> Si un estudiante tiene una <strong>novedad activa</strong> (excusa médica, permiso), el sistema le asigna automáticamente estado <em>Excusa</em> en todos los periodos — el docente no tiene que hacer nada.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 7: REPORTES & PSICOLOGÍA ─────────────────── -->
+  <div class="slide" data-index="6">
+    <div class="slide-inner">
+      <div class="tag">Módulos 2 y 3</div>
+      <h1 class="big-title">Disciplina <span class="hl">&</span> Psicología</h1>
+      <div class="grid g2" style="margin-top:1.5rem">
+        <div style="display:flex;flex-direction:column;gap:.85rem">
+          <div class="tag" style="margin:0">⚑ Reporte Disciplinario</div>
+          <div class="card" style="border-color:var(--orange)">
+            <p style="font-size:.85rem;color:var(--text-2)">Desde la planilla, el docente toca el ícono de reporte en la fila del estudiante y:</p>
+          </div>
+          <div class="step"><div class="step-num">1</div><div><h4>Selecciona el tipo de falta</h4><p>Agresión, irrespeto, celular, bullying, fuga, consumo, u otra falta.</p></div></div>
+          <div class="step"><div class="step-num">2</div><div><h4>Describe el incidente</h4><p>Campo libre para detallar lo ocurrido con contexto.</p></div></div>
+          <div class="step"><div class="step-num">3</div><div><h4>Notifica al acudiente</h4><p>Con un toggle activo, abre WhatsApp directamente con el mensaje pre-redactado al número registrado.</p></div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.85rem">
+          <div class="tag" style="margin:0">🧠 Citas de Psicología</div>
+          <div class="card" style="border-color:var(--purple)">
+            <p style="font-size:.85rem;color:var(--text-2)">Gestión completa del proceso de orientación escolar:</p>
+          </div>
+          <div class="step"><div class="step-num">1</div><div><h4>Agendar cita</h4><p>Selecciona estudiante, fecha, período y motivo. Notificación WhatsApp automática al acudiente.</p></div></div>
+          <div class="step"><div class="step-num">2</div><div><h4>Registrar descargos</h4><p>Durante la cita: informe, diagnóstico, compromisos y presencia del acudiente.</p></div></div>
+          <div class="step"><div class="step-num">3</div><div><h4>Generar acta PDF</h4><p>Acta formal lista para imprimir o guardar, con firmas y datos institucionales.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 8: NOTAS & ESTADÍSTICAS ──────────────────── -->
+  <div class="slide" data-index="7">
+    <div class="slide-inner">
+      <div class="tag">Módulos 4 y 5</div>
+      <h1 class="big-title">Notas <span class="hl">&</span> Estadísticas</h1>
+      <div class="grid g2" style="margin-top:1.5rem">
+        <div style="display:flex;flex-direction:column;gap:.85rem">
+          <div class="tag" style="margin:0">📝 Módulo de Notas</div>
+          <div class="card green">
+            <h3>Crear actividad</h3>
+            <p>Nombre, valoración máxima (1–100), grado y fecha. Cada actividad queda en la nube.</p>
+          </div>
+          <div class="card green">
+            <h3>Calificar estudiantes</h3>
+            <p>Tabla completa del grado con campo de nota. Opción "Llenar todos" para notas en bloque. Validación de rango en tiempo real.</p>
+          </div>
+          <div class="card green">
+            <h3>Exportar a CSV</h3>
+            <p>Descarga con: Actividad, Valoración Máx, Grado, Fecha, Estudiante, Nota y % Obtenido. Compatible con Excel.</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.85rem">
+          <div class="tag" style="margin:0">📊 Estadísticas</div>
+          <div class="card yellow">
+            <h3>Resumen institucional</h3>
+            <p>Totales de fallas, fugas, retardos, excusas y reportes de toda la institución en un vistazo.</p>
+          </div>
+          <div class="card yellow">
+            <h3>Record individual</h3>
+            <p>Haz clic en cualquier nombre de estudiante para ver su historial completo: inasistencias por fecha y periodo, novedades activas y citas de psicología.</p>
+          </div>
+          <div class="card yellow">
+            <h3>Ordenamiento automático</h3>
+            <p>La tabla ordena automáticamente por mayor número de fallas + fugas para identificar de inmediato los casos prioritarios.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 9: ROLES ─────────────────────────────────── -->
+  <div class="slide" data-index="8">
+    <div class="slide-inner">
+      <div class="tag">Accesos y permisos</div>
+      <h1 class="big-title">Dos roles, <span class="hl">un equipo</span></h1>
+      <p class="subtitle" style="margin-bottom:1.5rem">Cada usuario accede con su correo institucional. El sistema detecta automáticamente si es docente o administrador.</p>
+      <div class="role-grid">
+        <div>
+          <h3 class="tag" style="margin-bottom:.75rem">👩‍🏫 Docente</h3>
+          <ul class="role-list">
+            <li><span class="ico-si">✓</span> <span>Registrar y guardar asistencia diaria</span></li>
+            <li><span class="ico-si">✓</span> <span>Crear reportes disciplinarios</span></li>
+            <li><span class="ico-si">✓</span> <span>Agendar citas de psicología</span></li>
+            <li><span class="ico-si">✓</span> <span>Completar descargos y generar actas</span></li>
+            <li><span class="ico-si">✓</span> <span>Ver estadísticas e historial de estudiantes</span></li>
+            <li><span class="ico-si">✓</span> <span>Crear y calificar actividades (Notas)</span></li>
+            <li><span class="ico-si">✓</span> <span>Editar acudiente y teléfono de estudiantes</span></li>
+            <li><span class="ico-no">✗</span> <span style="color:var(--text-3)">Acceso al panel de Admin</span></li>
+            <li><span class="ico-no">✗</span> <span style="color:var(--text-3)">Crear o eliminar novedades</span></li>
+            <li><span class="ico-no">✗</span> <span style="color:var(--text-3)">Agregar o eliminar estudiantes</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="tag" style="margin-bottom:.75rem">🛡️ Administrador</h3>
+          <ul class="role-list">
+            <li><span class="ico-si">✓</span> <span>Todo lo que puede el docente</span></li>
+            <li><span class="ico-si">✓</span> <span>Panel de Administración completo</span></li>
+            <li><span class="ico-si">✓</span> <span>Agregar, editar y eliminar estudiantes</span></li>
+            <li><span class="ico-si">✓</span> <span>Editar nombre y grado de estudiantes</span></li>
+            <li><span class="ico-si">✓</span> <span>Crear, editar y gestionar novedades</span></li>
+            <li><span class="ico-si">✓</span> <span>Ver seguimiento completo de todas las citas</span></li>
+            <li><span class="ico-si">✓</span> <span>Filtrar citas por estado (Pendiente / Completada)</span></li>
+            <li><span class="ico-si">✓</span> <span>Ver historial completo de cada cita con informe</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 10: GUÍA RÁPIDA ──────────────────────────── -->
+  <div class="slide" data-index="9">
+    <div class="slide-inner">
+      <div class="tag">Primeros pasos</div>
+      <h1 class="big-title">Guía rápida para <span class="hl">usuarios nuevos</span></h1>
+      <div class="grid g2" style="margin-top:1.25rem">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div><h4>Inicia sesión</h4><p>Usa el correo y contraseña que te entregó el administrador. El sistema te lleva directamente a tu rol.</p></div></div>
+          <div class="step"><div class="step-num">2</div><div><h4>Selecciona la fecha y grado</h4><p>En la pestaña Asistencia, elige la fecha del día y filtra por tu grado. Pulsa "Cargar".</p></div></div>
+          <div class="step"><div class="step-num">3</div><div><h4>Registra la asistencia</h4><p>Haz clic en el botón de estado de cada estudiante para ciclar entre los 6 estados. El período activo se resalta automáticamente.</p></div></div>
+          <div class="step"><div class="step-num">4</div><div><h4>Guarda la planilla</h4><p>Pulsa el botón "Guardar" en la parte superior. Los datos se almacenan en la nube al instante.</p></div></div>
+        </div>
+        <div class="steps">
+          <div class="step"><div class="step-num">5</div><div><h4>Reporta si es necesario</h4><p>Si algún estudiante tuvo un incidente, pulsa el ícono ⚑ en su fila para crear el reporte disciplinario.</p></div></div>
+          <div class="step"><div class="step-num">6</div><div><h4>Consulta estadísticas</h4><p>Ve a la pestaña Estadísticas para ver el resumen. Haz clic en cualquier nombre para ver el historial completo del estudiante.</p></div></div>
+          <div class="step"><div class="step-num">7</div><div><h4>Registra notas</h4><p>En la pestaña Notas, crea la actividad, luego haz clic en ella para abrir la tabla de calificación.</p></div></div>
+          <div class="step"><div class="step-num">8</div><div><h4>Cierra sesión al terminar</h4><p>Pulsa "Salir" en la barra de navegación para cerrar la sesión correctamente.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 11: QUÉ SÍ / QUÉ NO ─────────────────────── -->
+  <div class="slide" data-index="10">
+    <div class="slide-inner">
+      <div class="tag">Límites del sistema</div>
+      <h1 class="big-title">¿Qué <span class="hl">puede</span> y qué <span style="color:var(--red)">no puede</span> hacer?</h1>
+      <div class="yesno" style="margin-top:1.5rem">
+        <div>
+          <h3 class="tag" style="color:var(--green);margin-bottom:.75rem">✓ CESUM SÍ hace esto</h3>
+          <ul class="yn-list yes-list">
+            <li>Registrar asistencia por periodos con 6 estados</li>
+            <li>Guardar datos en la nube (sin pérdida)</li>
+            <li>Mostrar estadísticas automáticas en tiempo real</li>
+            <li>Ver el historial completo de cada estudiante</li>
+            <li>Enviar notificaciones WhatsApp al acudiente</li>
+            <li>Agendar y hacer seguimiento a citas de psicología</li>
+            <li>Generar actas de orientación en PDF</li>
+            <li>Gestionar novedades y excusas con vigencia automática</li>
+            <li>Registrar notas por actividad con exportación a CSV</li>
+            <li>Gestionar múltiples grados simultáneamente</li>
+            <li>Funcionar desde computador, tablet o celular</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="tag" style="color:var(--red);margin-bottom:.75rem">✗ CESUM NO hace esto</h3>
+          <ul class="yn-list no-list">
+            <li>No reemplaza el SIMAT ni sistemas oficiales del MEN</li>
+            <li>No envía correos electrónicos automáticos</li>
+            <li>No gestiona horarios de materias o asignaciones</li>
+            <li>No procesa nómina ni documentos laborales docentes</li>
+            <li>No tiene calendario escolar integrado</li>
+            <li>No es un sistema de mensajería interna entre docentes</li>
+            <li>No genera boletines de calificaciones oficiales</li>
+            <li>No se integra automáticamente con otras plataformas</li>
+            <li>No funciona sin conexión a internet</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 12: CONSEJOS ─────────────────────────────── -->
+  <div class="slide" data-index="11">
+    <div class="slide-inner">
+      <div class="tag">Buenas prácticas</div>
+      <h1 class="big-title">Consejos para <span class="hl">sacarle el máximo</span></h1>
+      <div class="grid g2" style="margin-top:1.5rem">
+        <div class="card accent">
+          <div class="card-icon">⏰</div>
+          <h3>Registra en el momento</h3>
+          <p>No esperes al final del día. Registra la asistencia durante o justo después de cada periodo para mayor precisión.</p>
+        </div>
+        <div class="card" style="border-color:var(--green)">
+          <div class="card-icon">📋</div>
+          <h3>Usa novedades preventivamente</h3>
+          <p>Si sabes que un estudiante estará ausente varios días, crea la novedad antes para que la excusa se aplique automáticamente.</p>
+        </div>
+        <div class="card" style="border-color:var(--purple)">
+          <div class="card-icon">🧠</div>
+          <h3>Agenda citas con anticipación</h3>
+          <p>Al agendar una cita de psicología, el sistema bloquea ese período en la planilla y notifica al acudiente automáticamente.</p>
+        </div>
+        <div class="card" style="border-color:var(--yellow)">
+          <div class="card-icon">📊</div>
+          <h3>Revisa estadísticas semanalmente</h3>
+          <p>Un vistazo semanal a la pestaña de Estadísticas permite identificar estudiantes en riesgo antes de que la situación escale.</p>
+        </div>
+        <div class="card" style="border-color:var(--orange)">
+          <div class="card-icon">📥</div>
+          <h3>Exporta notas periódicamente</h3>
+          <p>Descarga el CSV de notas al final de cada periodo y guárdalo como respaldo. Es tu registro oficial para consolidados.</p>
+        </div>
+        <div class="card" style="border-color:var(--blue-lt)">
+          <div class="card-icon">🔒</div>
+          <h3>No compartas tu contraseña</h3>
+          <p>Cada docente tiene su propio acceso. Toda acción queda registrada con tu nombre. Cierra sesión si usas un equipo compartido.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 13: CIERRE ───────────────────────────────── -->
+  <div class="slide" data-index="12">
+    <div class="slide-inner" style="text-align:center">
+      <div class="cover-logo">🚀</div>
+      <div class="big-title" style="margin-bottom:.75rem">Listo para <span class="hl">empezar</span></div>
+      <p class="cover-sub">CESUM está disponible desde cualquier navegador.<br>Solo necesitas tu correo institucional y contraseña.</p>
+      <div style="display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:2rem">
+        <div class="card" style="text-align:left;max-width:220px">
+          <div class="card-icon">❓</div>
+          <h3>¿Tienes dudas?</h3>
+          <p>Contacta al administrador del sistema para solicitar tu acceso o reportar un problema.</p>
+        </div>
+        <div class="card accent" style="text-align:left;max-width:220px">
+          <div class="card-icon">💡</div>
+          <h3>Recuerda siempre</h3>
+          <p>Guardar la planilla antes de cerrar. Los datos no se guardan solos hasta que presiones el botón.</p>
+        </div>
+        <div class="card" style="text-align:left;max-width:220px;border-color:var(--green)">
+          <div class="card-icon">📱</div>
+          <h3>Funciona en celular</h3>
+          <p>Abre la app desde el navegador de tu celular. No requiere instalación. Solo guarda el enlace.</p>
+        </div>
+      </div>
+      <p style="margin-top:2rem;font-size:.8rem;color:var(--text-3)">Concentración Educativa del Sur de Montelíbano · Sistema CESUM · 2026</p>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<button class="nav-arrow" id="prev">←</button>
+<div id="dots"></div>
+<button class="nav-arrow" id="next">→</button>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let current  = 0;
+
+// dots
+const dotsEl = document.getElementById('dots');
+slides.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i===0?' active':'');
+  d.addEventListener('click', () => goTo(i));
+  dotsEl.appendChild(d);
+});
+
+function goTo(n) {
+  if (n < 0 || n >= total) return;
+  slides[current].classList.remove('active');
+  slides[current].classList.add('exit');
+  setTimeout(() => slides[current].classList.remove('exit'), 500);
+  current = n;
+  slides[current].classList.add('active');
+  // progress
+  document.getElementById('progress').style.width = ((current+1)/total*100)+'%';
+  // counter
+  document.getElementById('counter').textContent = (current+1)+' / '+total;
+  // dots
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===current));
+  // hide hint after first nav
+  document.getElementById('hint').style.opacity = '0';
+}
+
+document.getElementById('prev').addEventListener('click', () => goTo(current-1));
+document.getElementById('next').addEventListener('click', () => goTo(current+1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current+1); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); goTo(current-1); }
+});
+
+// Touch swipe
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+document.addEventListener('touchend',   e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) goTo(dx < 0 ? current+1 : current-1);
+}, {passive:true});
+
+// Init progress
+document.getElementById('progress').style.width = (1/total*100)+'%';
+</script>
+</body>
+</html>
