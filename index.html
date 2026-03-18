@@ -660,7 +660,7 @@ const db     = getFirestore(fbApp);
 const state = {
   usuario: null, nombre: null, isAdmin: false, rol: null,
   estudiantes: [], citasHoy: [], novedadesActivas: [],
-  asistenciaHoy: {}, todasNovedades: [], todasCitas: []
+  asistenciaHoy: {}, todasNovedades: [], todasCitas: [], citasPendientes: []
 };
 
 // ════════════════════════════════════════════
@@ -745,6 +745,10 @@ function formatDate(ts) {
 }
 function getEstado(val) { return ESTADOS.find(e=>e.value===val)||ESTADOS[0]; }
 
+function escapeHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 // ════════════════════════════════════════════
 //  AUTH — Observer
 // ════════════════════════════════════════════
@@ -792,6 +796,8 @@ window.handleLogin = async function() {
   const errEl    = document.getElementById('loginError');
   errEl.style.display = 'none';
   if (!email || !password) { errEl.textContent='Completa todos los campos.'; errEl.style.display='block'; return; }
+  const btnLogin = document.querySelector('.btn-primary-cesum');
+  if (btnLogin) { btnLogin.disabled=true; btnLogin.textContent='Ingresando...'; }
   showLoading(true);
   try {
     await signInWithEmailAndPassword(auth, email, password);
@@ -805,7 +811,10 @@ window.handleLogin = async function() {
     };
     errEl.textContent = msgs[err.code] || 'Error al ingresar.';
     errEl.style.display = 'block';
-  } finally { showLoading(false); }
+  } finally {
+    showLoading(false);
+    if (btnLogin) { btnLogin.disabled=false; btnLogin.innerHTML='<i class="bi bi-box-arrow-in-right me-2"></i>Ingresar'; }
+  }
 };
 
 window.handleLogout = async function() {
@@ -964,8 +973,8 @@ function renderPlanilla(estudiantes) {
     const tr = document.createElement('tr');
     const tdNombre = document.createElement('td');
     const tieneNov = state.novedadesActivas.some(n=>n.estudiante===est.nombre);
-    tdNombre.innerHTML=`<div class="est-nombre">${est.nombre}</div>
-      <div class="est-meta">${est.grado}${tieneNov?' &nbsp;<span style="color:#93c5fd;font-size:.65rem">📋 Nov</span>':''}</div>`;
+    tdNombre.innerHTML=`<div class="est-nombre">${escapeHtml(est.nombre)}</div>
+      <div class="est-meta">${escapeHtml(est.grado)}${tieneNov?' &nbsp;<span style="color:#93c5fd;font-size:.65rem">📋 Nov</span>':''}</div>`;
     tr.appendChild(tdNombre);
 
     HORAS.forEach(hora => {
@@ -1023,6 +1032,8 @@ window.guardarAsistencia = async function() {
   if (!fecha) { showToast('Selecciona una fecha.','warning'); return; }
   const btns = document.querySelectorAll('#asisBody .estado-btn');
   if (!btns.length) { showToast('No hay planilla cargada.','warning'); return; }
+  const btnGuardar = document.querySelector('[onclick="guardarAsistencia()"]');
+  if (btnGuardar) { btnGuardar.disabled=true; btnGuardar.innerHTML='<i class="bi bi-hourglass-split"></i> Guardando...'; }
   const registros = [];
   btns.forEach(btn => {
     registros.push({
@@ -1046,7 +1057,10 @@ window.guardarAsistencia = async function() {
     state.asistenciaHoy={};
     validos.forEach(r=>{ state.asistenciaHoy[r.estudiante+'_'+r.hora]=r.estado; });
   } catch(e) { showToast('Error al guardar: '+e.message,'error'); }
-  finally { showLoading(false); }
+  finally {
+    showLoading(false);
+    if (btnGuardar) { btnGuardar.disabled=false; btnGuardar.innerHTML='<i class="bi bi-cloud-upload"></i> Guardar'; }
+  }
 };
 
 // ════════════════════════════════════════════
@@ -1082,8 +1096,12 @@ window.confirmarReporte = async function() {
   finally { showLoading(false); }
   if (enviarWA && est.telefono) {
     const num = est.telefono.toString().replace(/\D/g,'');
-    const msg='*Concentracion Educativa del Sur de Montelibano*\n\nEstimado/a acudiente de *'+est.nombre+'*,\n\nFecha: *'+fecha+'*\nFalta: '+falta+'\nObservacion: '+obs+'\n\nDocente: '+state.nombre;
-    window.open('https://wa.me/57'+num+'?text='+encodeURIComponent(msg),'_blank');
+    if (num.length >= 10) {
+      const msg='*Concentracion Educativa del Sur de Montelibano*\n\nEstimado/a acudiente de *'+est.nombre+'*,\n\nFecha: *'+fecha+'*\nFalta: '+falta+'\nObservacion: '+obs+'\n\nDocente: '+state.nombre;
+      window.open('https://wa.me/57'+num+'?text='+encodeURIComponent(msg),'_blank');
+    } else {
+      showToast('Número de teléfono inválido — no se envió WhatsApp.','warning');
+    }
   }
 };
 
@@ -1140,8 +1158,8 @@ function renderEstadisticas(stats) {
   }
   const cl=(v,t)=>v===0?`<td><span class="stat-val zero">0</span></td>`:`<td><span class="stat-val ${t}">${v}</span></td>`;
   tbody.innerHTML=sorted.map(s=>`<tr>
-    <td style="font-weight:500">${s.nombre}</td>
-    <td><span class="grado-badge">${s.grado}</span></td>
+    <td style="font-weight:500">${escapeHtml(s.nombre)}</td>
+    <td><span class="grado-badge">${escapeHtml(s.grado)}</span></td>
     ${cl(s.fallas,'danger')}${cl(s.fugas,'muted')}${cl(s.retardos,'warning')}${cl(s.excusas,'info')}${cl(s.reportes,'purple')}
   </tr>`).join('');
 }
@@ -1166,8 +1184,12 @@ window.agendarCita = async function() {
     const estData=state.estudiantes.find(e=>e.nombre===estudiante)||{};
     if (estData.telefono) {
       const num=estData.telefono.toString().replace(/\D/g,'');
-      const msg='*Concentración Educativa del Sur de Montelibano*\n\nEstimado/a *'+(estData.acudiente||'Acudiente')+'*, acudiente de *'+estudiante+'*,\n\nSe le cita:\n📅 Fecha: '+fecha+'\n⏰ Hora: '+hora+'\n📋 Motivo: '+motivo+'\n\nPor favor confirme su asistencia.';
-      window.open('https://wa.me/57'+num+'?text='+encodeURIComponent(msg),'_blank');
+      if (num.length >= 10) {
+        const msg='*Concentración Educativa del Sur de Montelibano*\n\nEstimado/a *'+(estData.acudiente||'Acudiente')+'*, acudiente de *'+estudiante+'*,\n\nSe le cita:\n📅 Fecha: '+fecha+'\n⏰ Hora: '+hora+'\n📋 Motivo: '+motivo+'\n\nPor favor confirme su asistencia.';
+        window.open('https://wa.me/57'+num+'?text='+encodeURIComponent(msg),'_blank');
+      } else {
+        showToast('Número de teléfono inválido — no se envió WhatsApp.','warning');
+      }
     }
     document.getElementById('citaEstudiante').value='';
     document.getElementById('citaFecha').value='';
@@ -1189,19 +1211,28 @@ window.cargarCitasPendientes = async function() {
     const citas=snap.docs.map(d=>({id:d.id,...d.data()}))
       .sort((a,b)=>a.fecha.localeCompare(b.fecha));
     if (!citas.length) { grid.innerHTML='<p style="color:var(--text-2);font-size:.85rem;padding:.5rem">No hay citas pendientes.</p>'; return; }
+    state.citasPendientes = citas;
     grid.innerHTML=citas.map(c=>`
-      <div class="cita-card" onclick='abrirDescargos(${JSON.stringify(c).replace(/'/g,"&apos;")})'>
+      <div class="cita-card" data-cita-id="${escapeHtml(c.id)}" onclick="abrirDescargosPorId(this.dataset.citaId)">
         <span class="cita-estado">Pendiente</span>
-        <div class="cita-nombre"><i class="bi bi-person-fill" style="color:var(--purple)"></i> ${c.estudiante}</div>
-        <div class="cita-meta"><i class="bi bi-calendar3"></i> ${c.fecha}</div>
-        <div class="cita-meta"><i class="bi bi-clock"></i> ${c.hora}</div>
-        <div class="cita-meta"><i class="bi bi-chat-text"></i> ${c.motivo||'–'}</div>
+        <div class="cita-nombre"><i class="bi bi-person-fill" style="color:var(--purple)"></i> ${escapeHtml(c.estudiante)}</div>
+        <div class="cita-meta"><i class="bi bi-calendar3"></i> ${escapeHtml(c.fecha)}</div>
+        <div class="cita-meta"><i class="bi bi-clock"></i> ${escapeHtml(c.hora)}</div>
+        <div class="cita-meta"><i class="bi bi-chat-text"></i> ${escapeHtml(c.motivo||'–')}</div>
       </div>`).join('');
   } catch(e) { grid.innerHTML=`<p style="color:var(--red)">Error: ${e.message}</p>`; }
 };
 
+window.abrirDescargosPorId = function(id) {
+  const cita = state.citasPendientes.find(c=>c.id===id);
+  if (!cita) { showToast('Cita no encontrada.','error'); return; }
+  window.abrirDescargos(cita);
+};
+
 window.abrirDescargos = function(cita) {
-  if (typeof cita==='string') cita=JSON.parse(cita);
+  if (typeof cita==='string') {
+    try { cita = JSON.parse(cita); } catch(e) { showToast('Error al abrir la cita.','error'); return; }
+  }
   document.getElementById('descargosEst').value=cita.estudiante;
   document.getElementById('descargosFecha').value=cita.fecha;
   document.getElementById('descargosHora').value=cita.hora;
@@ -1242,6 +1273,7 @@ window.generarActa = function() {
   const est=state.estudiantes.find(e=>e.nombre===estudiante)||{};
   const docente=state.nombre||'';
   const fechaLarga=new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const safe = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Acta – ${estudiante}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Times New Roman',serif;font-size:12pt;color:#111;background:#fff;padding:2cm 2.5cm;max-width:21cm;margin:0 auto}
 .enc{text-align:center;margin-bottom:18px}.enc .inst{font-size:15pt;font-weight:bold;text-transform:uppercase;letter-spacing:1px;line-height:1.3}
@@ -1258,15 +1290,15 @@ table.d td{border:1px solid #aaa;padding:5px 9px;vertical-align:top}table.d td.l
 <div class="sub">Montelíbano, Córdoba &nbsp;|&nbsp; Sistema de Gestión Escolar – CESUM</div>
 <hr class="g"><div class="ta">Acta de Orientación / Coordinación</div><hr class="f"></div>
 <table class="d">
-<tr><td class="l">Fecha del acta:</td><td>${fechaLarga}</td><td class="l" style="width:22%">Hora cita:</td><td style="width:15%">${hora}</td></tr>
-<tr><td class="l">Estudiante:</td><td>${estudiante}</td><td class="l">Fecha cita:</td><td>${fecha}</td></tr>
-<tr><td class="l">Acudiente:</td><td>${est.acudiente||'–'}</td><td class="l">Acudiente presente:</td><td>${acudiente_asiste}</td></tr>
-<tr><td class="l">Docente / Orientador:</td><td colspan="3"><strong>${docente}</strong></td></tr></table>
-<div class="st">INFORME / DIAGNÓSTICO</div><div class="sc">${informe||'(Sin informe registrado)'}</div>
-<div class="st">COMPROMISOS ADQUIRIDOS</div><div class="sc">${compromisos||'(Sin compromisos registrados)'}</div>
-<div class="fi"><div class="f"><div class="l"><div class="n">${docente}</div><div class="r">Docente / Orientador</div></div></div>
-<div class="f"><div class="l"><div class="n">${est.acudiente||'Acudiente'}</div><div class="r">Acudiente / Padre de Familia</div></div></div>
-<div class="f"><div class="l"><div class="n">${estudiante}</div><div class="r">Estudiante</div></div></div></div>
+<tr><td class="l">Fecha del acta:</td><td>${fechaLarga}</td><td class="l" style="width:22%">Hora cita:</td><td style="width:15%">${safe(hora)}</td></tr>
+<tr><td class="l">Estudiante:</td><td>${safe(estudiante)}</td><td class="l">Fecha cita:</td><td>${safe(fecha)}</td></tr>
+<tr><td class="l">Acudiente:</td><td>${safe(est.acudiente||'–')}</td><td class="l">Acudiente presente:</td><td>${safe(acudiente_asiste)}</td></tr>
+<tr><td class="l">Docente / Orientador:</td><td colspan="3"><strong>${safe(docente)}</strong></td></tr></table>
+<div class="st">INFORME / DIAGNÓSTICO</div><div class="sc">${safe(informe||'(Sin informe registrado)')}</div>
+<div class="st">COMPROMISOS ADQUIRIDOS</div><div class="sc">${safe(compromisos||'(Sin compromisos registrados)')}</div>
+<div class="fi"><div class="f"><div class="l"><div class="n">${safe(docente)}</div><div class="r">Docente / Orientador</div></div></div>
+<div class="f"><div class="l"><div class="n">${safe(est.acudiente||'Acudiente')}</div><div class="r">Acudiente / Padre de Familia</div></div></div>
+<div class="f"><div class="l"><div class="n">${safe(estudiante)}</div><div class="r">Estudiante</div></div></div></div>
 <button class="btn" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
 </body></html>`;
   const v=window.open('','_blank');
@@ -1283,7 +1315,7 @@ window.cargarNovedades = async function() {
   try {
     const snap=await getDocs(collection(db,'novedades'));
     state.todasNovedades=snap.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b)=>b.inicio?.localeCompare(a.inicio||'')||0);
+      .sort((a,b)=>(b.inicio||'').localeCompare(a.inicio||''));
     renderNovedades(state.todasNovedades);
   } catch(e) { lista.innerHTML=`<p style="color:var(--red)">Error: ${e.message}</p>`; }
 };
@@ -1297,13 +1329,13 @@ function renderNovedades(novedades) {
     const ec=(n.estado||'').toLowerCase();
     const bc=ec==='activa'?'activa':ec==='pendiente'?'pendiente':'inactiva';
     return `<div style="display:grid;grid-template-columns:1fr 100px 100px 110px 80px;gap:.5rem;padding:.6rem 0;border-bottom:1px solid var(--border);align-items:center">
-      <div><div style="font-weight:500;color:var(--text-1)">${n.estudiante}</div>
-      <div style="font-size:.78rem;color:var(--text-2)">${n.motivo||''}</div>
-      <div style="font-size:.72rem;color:var(--text-3)">${n.docente||''}</div></div>
-      <div style="font-size:.82rem;color:var(--text-2)">${n.inicio||''}</div>
-      <div style="font-size:.82rem;color:var(--text-2)">${n.fin||''}</div>
-      <div><span class="novedad-badge ${bc}">${n.estado||'–'}</span></div>
-      <div><button class="btn-cesum btn-cesum-secondary sm" onclick='abrirEditarNovedad("${n.id}")'><i class="bi bi-pencil"></i></button></div>
+      <div><div style="font-weight:500;color:var(--text-1)">${escapeHtml(n.estudiante)}</div>
+      <div style="font-size:.78rem;color:var(--text-2)">${escapeHtml(n.motivo||'')}</div>
+      <div style="font-size:.72rem;color:var(--text-3)">${escapeHtml(n.docente||'')}</div></div>
+      <div style="font-size:.82rem;color:var(--text-2)">${escapeHtml(n.inicio||'')}</div>
+      <div style="font-size:.82rem;color:var(--text-2)">${escapeHtml(n.fin||'')}</div>
+      <div><span class="novedad-badge ${bc}">${escapeHtml(n.estado||'–')}</span></div>
+      <div><button class="btn-cesum btn-cesum-secondary sm" onclick='abrirEditarNovedad("${escapeHtml(n.id)}")'><i class="bi bi-pencil"></i></button></div>
     </div>`;
   }).join('');
   lista.innerHTML=header+rows;
@@ -1387,10 +1419,10 @@ window.filtrarSeguimiento = function() {
     const badge=ep
       ?`<span style="background:#4a1d9630;color:#d8b4fe;border:1px solid #a855f740;border-radius:20px;font-size:.7rem;font-weight:600;padding:.18rem .6rem">Pendiente</span>`
       :`<span style="background:#16653430;color:#4ade80;border:1px solid #22c55e40;border-radius:20px;font-size:.7rem;font-weight:600;padding:.18rem .6rem">Completada</span>`;
-    const ic=c.informe?`<span title="${c.informe}" style="font-size:.78rem;color:var(--text-2)">${c.informe.substring(0,40)}${c.informe.length>40?'…':''}</span>`:'<span style="color:var(--text-3);font-size:.75rem">–</span>';
-    const cc=c.compromisos?`<span title="${c.compromisos}" style="font-size:.78rem;color:var(--text-2)">${c.compromisos.substring(0,40)}${c.compromisos.length>40?'…':''}</span>`:'<span style="color:var(--text-3);font-size:.75rem">–</span>';
-    return `<tr><td style="font-weight:500">${c.estudiante}</td><td>${c.fecha||'–'}</td><td>${c.hora||'–'}</td>
-      <td style="font-size:.82rem;max-width:150px">${c.motivo||'–'}</td><td>${c.acudiente_asiste||'–'}</td>
+    const ic=c.informe?`<span title="${escapeHtml(c.informe)}" style="font-size:.78rem;color:var(--text-2)">${escapeHtml(c.informe.substring(0,40))}${c.informe.length>40?'…':''}</span>`:'<span style="color:var(--text-3);font-size:.75rem">–</span>';
+    const cc=c.compromisos?`<span title="${escapeHtml(c.compromisos)}" style="font-size:.78rem;color:var(--text-2)">${escapeHtml(c.compromisos.substring(0,40))}${c.compromisos.length>40?'…':''}</span>`:'<span style="color:var(--text-3);font-size:.75rem">–</span>';
+    return `<tr><td style="font-weight:500">${escapeHtml(c.estudiante)}</td><td>${escapeHtml(c.fecha||'–')}</td><td>${escapeHtml(c.hora||'–')}</td>
+      <td style="font-size:.82rem;max-width:150px">${escapeHtml(c.motivo||'–')}</td><td>${escapeHtml(c.acudiente_asiste||'–')}</td>
       <td>${badge}</td><td style="max-width:180px">${ic}</td><td style="max-width:180px">${cc}</td>
       <td style="font-size:.78rem;color:var(--text-2)">${c.docente||'–'}</td></tr>`;
   }).join('');
@@ -1444,11 +1476,11 @@ window.renderEstudiantesAdmin = function() {
   el.innerHTML=`<table class="stat-table">
     <thead><tr><th>Nombre</th><th>Grado</th><th>Acudiente</th><th>Teléfono</th><th></th></tr></thead>
     <tbody>${filtrados.map(e=>`<tr>
-      <td style="font-weight:500">${e.nombre}</td>
-      <td><span class="grado-badge">${e.grado}</span></td>
-      <td style="font-size:.82rem;color:var(--text-2)">${e.acudiente||'–'}</td>
-      <td style="font-size:.82rem;color:var(--text-2)">${e.telefono||'–'}</td>
-      <td><button class="btn-cesum btn-cesum-danger sm" onclick='eliminarEstudiante("${e.id}")'><i class="bi bi-trash"></i></button></td>
+      <td style="font-weight:500">${escapeHtml(e.nombre)}</td>
+      <td><span class="grado-badge">${escapeHtml(e.grado)}</span></td>
+      <td style="font-size:.82rem;color:var(--text-2)">${escapeHtml(e.acudiente||'–')}</td>
+      <td style="font-size:.82rem;color:var(--text-2)">${escapeHtml(e.telefono||'–')}</td>
+      <td><button class="btn-cesum btn-cesum-danger sm" onclick='eliminarEstudiante("${escapeHtml(e.id)}")'><i class="bi bi-trash"></i></button></td>
     </tr>`).join('')}</tbody></table>`;
 };
 
@@ -1458,29 +1490,7 @@ window.renderEstudiantesAdmin = function() {
 document.getElementById('asistFecha').value = todayISO();
 document.getElementById('citaFecha').value  = todayISO();
 
-// Exponer funciones necesarias globalmente para onclick en HTML
-window.switchTab      = window.switchTab;
-window.switchAdminTab = window.switchAdminTab;
-window.cargarPlanilla = window.cargarPlanilla;
-window.filtrarEstudiantes = window.filtrarEstudiantes;
-window.guardarAsistencia  = window.guardarAsistencia;
-window.confirmarReporte   = window.confirmarReporte;
-window.cargarEstadisticas = window.cargarEstadisticas;
-window.agendarCita        = window.agendarCita;
-window.cargarCitasPendientes = window.cargarCitasPendientes;
-window.abrirDescargos     = window.abrirDescargos;
-window.completarCita      = window.completarCita;
-window.generarActa        = window.generarActa;
-window.cargarNovedades    = window.cargarNovedades;
-window.guardarNovedad     = window.guardarNovedad;
-window.abrirEditarNovedad = window.abrirEditarNovedad;
-window.guardarEdicionNovedad = window.guardarEdicionNovedad;
-window.cargarSeguimiento  = window.cargarSeguimiento;
-window.filtrarSeguimiento = window.filtrarSeguimiento;
-window.guardarEstudiante  = window.guardarEstudiante;
-window.eliminarEstudiante = window.eliminarEstudiante;
-window.renderEstudiantesAdmin = window.renderEstudiantesAdmin;
-window.handleLogout       = window.handleLogout;
+// Las funciones ya están expuestas globalmente mediante window.X = function(){}
 </script>
 </body>
 </html>
