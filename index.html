@@ -569,7 +569,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
           <div class="cesum-card">
             <div class="cesum-card-header">
               <h5><i class="bi bi-hourglass-split"></i> Citas Pendientes</h5>
-              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarCitasPendientes()">
+              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarCitasPendientes(true)">
                 <i class="bi bi-arrow-clockwise"></i> Refrescar
               </button>
             </div>
@@ -673,7 +673,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
             <div class="cesum-card">
               <div class="cesum-card-header">
                 <h5><i class="bi bi-bell-fill"></i> Novedades Registradas</h5>
-                <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarNovedades()"><i class="bi bi-arrow-clockwise"></i> Refrescar</button>
+                <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarNovedades(true)"><i class="bi bi-arrow-clockwise"></i> Refrescar</button>
               </div>
               <div id="novedadesLista"><p style="color:var(--text-2);font-size:.85rem">Cargando...</p></div>
             </div>
@@ -690,7 +690,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
               <select id="filtroEstadoCita" class="form-select" style="width:auto;font-size:.82rem" onchange="filtrarSeguimiento()">
                 <option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="Completada">Completada</option>
               </select>
-              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarSeguimiento()"><i class="bi bi-arrow-clockwise"></i> Refrescar</button>
+              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarSeguimiento(true)"><i class="bi bi-arrow-clockwise"></i> Refrescar</button>
             </div>
           </div>
           <div style="overflow-x:auto">
@@ -1104,7 +1104,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc,
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  collection, doc, getDoc, getDocs, setDoc, addDoc, writeBatch,
   updateDoc, deleteDoc, query, where, orderBy, serverTimestamp, Timestamp }
   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
@@ -1122,7 +1123,15 @@ const firebaseConfig = {
 
 const fbApp  = initializeApp(firebaseConfig);
 const auth   = getAuth(fbApp);
-const db     = getFirestore(fbApp);
+// Persistencia offline via IndexedDB — reduce lecturas al servidor en visitas repetidas
+let db;
+try {
+  db = initializeFirestore(fbApp, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+} catch {
+  db = initializeFirestore(fbApp, {});
+}
 
 // ════════════════════════════════════════════
 //  ESTADO GLOBAL
@@ -1220,13 +1229,81 @@ function escapeHtml(s) {
 }
 
 // ════════════════════════════════════════════
+//  CACHÉ EN MEMORIA + CONTADORES DE LECTURAS
+// ════════════════════════════════════════════
+const DEBUG_DB = false; // true → muestra lecturas en consola
+let _dbReads = 0, _dbWrites = 0;
+
+// Wrappers para contar y loguear operaciones Firestore
+async function _getDocs(q) {
+  const snap = await getDocs(q);
+  _dbReads += snap.size;
+  if (DEBUG_DB) console.log(`📖 +${snap.size} lect (total: ${_dbReads})`);
+  return snap;
+}
+async function _getDoc(r) {
+  const snap = await getDoc(r);
+  _dbReads += 1;
+  if (DEBUG_DB) console.log(`📖 +1 lect (total: ${_dbReads})`);
+  return snap;
+}
+
+// Caché en memoria con TTL
+const _cache = new Map();
+function cacheGet(key) {
+  const e = _cache.get(key);
+  if (!e || Date.now() > e.exp) { _cache.delete(key); return null; }
+  return e.val;
+}
+function cacheSet(key, val, ttlSecs = 300) {
+  _cache.set(key, { val, exp: Date.now() + ttlSecs * 1000 });
+  return val;
+}
+function cacheDel(...keys) { keys.forEach(k => _cache.delete(k)); }
+
+// ── Funciones centralizadas de fetch (caché-first) ──
+// Una sola lectura por TTL, compartida entre todas las funciones del app
+
+async function fetchAsistenciaTodos(force = false) {
+  const KEY = 'asistencia:all';
+  if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
+  const snap = await _getDocs(collection(db, 'asistencia'));
+  const docs = snap.docs.map(d => ({ fecha: d.id, registros: d.data().registros || [] }));
+  return cacheSet(KEY, docs, 300); // 5 min TTL
+}
+async function fetchReportesTodos(force = false) {
+  const KEY = 'reportes:all';
+  if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
+  const snap = await _getDocs(collection(db, 'reportes'));
+  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 300);
+}
+async function fetchNovedadesTodos(force = false) {
+  const KEY = 'novedades:all';
+  if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
+  const snap = await _getDocs(collection(db, 'novedades'));
+  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 120); // 2 min
+}
+async function fetchNoticiasAll(force = false) {
+  const KEY = 'noticias:all';
+  if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
+  const snap = await _getDocs(collection(db, 'noticias'));
+  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 600); // 10 min
+}
+async function fetchCitasAll(force = false) {
+  const KEY = 'citas:all';
+  if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
+  const snap = await _getDocs(collection(db, 'citas'));
+  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 120); // 2 min
+}
+
+// ════════════════════════════════════════════
 //  AUTH — Observer
 // ════════════════════════════════════════════
 onAuthStateChanged(auth, async user => {
   if (user) {
     // Leer perfil desde Firestore
     try {
-      const snap = await getDoc(doc(db, 'usuarios', user.uid));
+      const snap = await _getDoc(doc(db, 'usuarios', user.uid));
       if (snap.exists()) {
         const data = snap.data();
         if (data.activo === false) {
@@ -1315,22 +1392,19 @@ function showScreen(id) {
 async function cargarDatosIniciales() {
   showLoading(true);
   try {
-    // Cargar estudiantes
-    const snap = await getDocs(collection(db,'estudiantes'));
+    // Cargar estudiantes (en state, no en caché)
+    const snap = await _getDocs(collection(db,'estudiantes'));
     state.estudiantes = snap.docs.map(d=>({id:d.id,...d.data()}))
       .sort((a,b)=>a.nombre.localeCompare(b.nombre));
 
-    // Cargar citas de hoy (para bloqueo en planilla)
     const hoy = todayISO();
-    const qCitas = query(collection(db,'citas'), where('fecha','==',hoy), where('estado','==','Pendiente'));
-    const snapCitas = await getDocs(qCitas);
-    state.citasHoy = snapCitas.docs.map(d=>({id:d.id,...d.data()}));
-
-    // Cargar novedades activas hoy
-    await refrescarNovedadesActivas();
-
-    // Cargar noticias activas (banner)
-    await cargarNoticiasActivas();
+    // Cargar citas, novedades y noticias en paralelo usando caché centralizado
+    const [citasAll] = await Promise.all([
+      fetchCitasAll(),
+      refrescarNovedadesActivas(),
+      cargarNoticiasActivas()
+    ]);
+    state.citasHoy = citasAll.filter(c => c.fecha === hoy && c.estado === 'Pendiente');
 
     poblarSelectEstudiantes();
     poblarSelectGrados();
@@ -1342,15 +1416,13 @@ async function cargarDatosIniciales() {
   } finally { showLoading(false); }
 }
 
-async function refrescarNovedadesActivas() {
+async function refrescarNovedadesActivas(force = false) {
   const hoy = todayISO();
-  const snap = await getDocs(collection(db,'novedades'));
-  state.novedadesActivas = snap.docs
-    .map(d=>({id:d.id,...d.data()}))
-    .filter(n => {
-      if (!n.inicio || n.estado==='Inactiva') return false;
-      return hoy >= n.inicio && (!n.fin || hoy <= n.fin);
-    });
+  const todas = await fetchNovedadesTodos(force);
+  state.novedadesActivas = todas.filter(n => {
+    if (!n.inicio || n.estado==='Inactiva') return false;
+    return hoy >= n.inicio && (!n.fin || hoy <= n.fin);
+  });
 }
 
 function poblarSelectEstudiantes() {
@@ -1416,17 +1488,17 @@ window.cargarPlanilla = async function() {
   const fecha = fechaEl.value;
   showLoading(true);
   try {
-    const snap = await getDoc(doc(db,'asistencia',fecha));
+    const [snap, citasAll] = await Promise.all([
+      _getDoc(doc(db,'asistencia',fecha)),
+      fetchCitasAll()
+    ]);
     state.asistenciaHoy = {};
     if (snap.exists()) {
       (snap.data().registros||[]).forEach(r => {
         state.asistenciaHoy[r.estudiante+'_'+r.hora] = r.estado;
       });
     }
-    // Refrescar citas del día seleccionado
-    const qC = query(collection(db,'citas'), where('fecha','==',fecha), where('estado','==','Pendiente'));
-    const snapC = await getDocs(qC);
-    state.citasHoy = snapC.docs.map(d=>({id:d.id,...d.data()}));
+    state.citasHoy = citasAll.filter(c => c.fecha === fecha && c.estado === 'Pendiente');
     await refrescarNovedadesActivas();
   } catch(e) { state.asistenciaHoy={}; }
   finally { showLoading(false); }
@@ -1535,8 +1607,9 @@ window.guardarAsistencia = async function() {
     await setDoc(doc(db,'asistencia',fecha), {
       fecha, registros: validos, actualizadoPor: state.nombre, ts: serverTimestamp()
     });
+    _dbWrites++;
+    cacheDel('asistencia:all'); // invalidar caché
     showToast('Asistencia guardada correctamente ✓','success');
-    // Actualizar cache local
     state.asistenciaHoy={};
     validos.forEach(r=>{ state.asistenciaHoy[r.estudiante+'_'+r.hora]=r.estado; });
   } catch(e) { showToast('Error al guardar: '+e.message,'error'); }
@@ -1574,6 +1647,7 @@ window.confirmarReporte = async function() {
       acudiente:est.acudiente||'', telefono:est.telefono||'',
       falta, observacion:obs, docente:state.nombre, ts:serverTimestamp()
     });
+    _dbWrites++; cacheDel('reportes:all');
     showToast('Reporte guardado.','success');
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
@@ -1596,17 +1670,19 @@ window.cargarEstadisticas = async function() {
   const hasta = document.getElementById('statHasta')?.value || '';
   showLoading(true);
   try {
-    const snapAsist = await getDocs(collection(db,'asistencia'));
-    const snapRep   = await getDocs(collection(db,'reportes'));
+    // Datos compartidos del caché — 0 lecturas adicionales si ya están en memoria
+    const [asistDocs, repDocs] = await Promise.all([
+      fetchAsistenciaTodos(),
+      fetchReportesTodos()
+    ]);
     const mapa = {};
     state.estudiantes.forEach(e => {
       mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, fallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
     });
-    snapAsist.docs.forEach(d => {
-      const fecha = d.id; // doc ID es la fecha YYYY-MM-DD
-      if (desde && fecha < desde) return;
-      if (hasta && fecha > hasta) return;
-      (d.data().registros||[]).forEach(r => {
+    asistDocs.forEach(d => {
+      if (desde && d.fecha < desde) return;
+      if (hasta && d.fecha > hasta) return;
+      d.registros.forEach(r => {
         if (!mapa[r.estudiante]) return;
         if (r.estado==='Falla')   mapa[r.estudiante].fallas++;
         if (r.estado==='Fuga')    mapa[r.estudiante].fugas++;
@@ -1614,8 +1690,7 @@ window.cargarEstadisticas = async function() {
         if (r.estado==='Excusa')  mapa[r.estudiante].excusas++;
       });
     });
-    snapRep.docs.forEach(d => {
-      const r=d.data();
+    repDocs.forEach(r => {
       if (desde && r.fecha < desde) return;
       if (hasta && r.fecha > hasta) return;
       if (mapa[r.estudiante]) mapa[r.estudiante].reportes++;
@@ -1690,24 +1765,23 @@ window.agendarCita = async function() {
         showToast('Número de teléfono inválido — no se envió WhatsApp.','warning');
       }
     }
+    _dbWrites++; cacheDel('citas:all');
     document.getElementById('citaEstudiante').value='';
     document.getElementById('citaFecha').value='';
     document.getElementById('citaMotivo').value='';
+    const citasRefrescadas = await fetchCitasAll(true); // forzar refresh
+    state.citasHoy = citasRefrescadas.filter(c => c.fecha === todayISO() && c.estado === 'Pendiente');
     await cargarCitasPendientes();
-    // Refrescar citas de hoy
-    const qC=query(collection(db,'citas'),where('fecha','==',todayISO()),where('estado','==','Pendiente'));
-    const sC=await getDocs(qC);
-    state.citasHoy=sC.docs.map(d=>({id:d.id,...d.data()}));
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
 
-window.cargarCitasPendientes = async function() {
+window.cargarCitasPendientes = async function(force = false) {
   const grid=document.getElementById('citasGrid');
   grid.innerHTML='<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
   try {
-    const snap=await getDocs(query(collection(db,'citas'),where('estado','==','Pendiente')));
-    const citas=snap.docs.map(d=>({id:d.id,...d.data()}))
+    const todas = await fetchCitasAll(force);
+    const citas = todas.filter(c => c.estado === 'Pendiente')
       .sort((a,b)=>a.fecha.localeCompare(b.fecha));
     if (!citas.length) { grid.innerHTML='<p style="color:var(--text-2);font-size:.85rem;padding:.5rem">No hay citas pendientes.</p>'; return; }
     state.citasPendientes = citas;
@@ -1752,8 +1826,9 @@ window.completarCita = async function() {
   showLoading(true);
   try {
     await updateDoc(doc(db,'citas',id), { estado:'Completada', acudiente_asiste, informe, compromisos, completadoPor:state.nombre });
+    _dbWrites++; cacheDel('citas:all');
     showToast('Cita completada y guardada.','success');
-    await cargarCitasPendientes();
+    await cargarCitasPendientes(true);
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
@@ -1808,13 +1883,12 @@ table.d td{border:1px solid #aaa;padding:5px 9px;vertical-align:top}table.d td.l
 // ════════════════════════════════════════════
 //  NOVEDADES
 // ════════════════════════════════════════════
-window.cargarNovedades = async function() {
+window.cargarNovedades = async function(force = false) {
   const lista=document.getElementById('novedadesLista');
   lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
   try {
-    const snap=await getDocs(collection(db,'novedades'));
-    state.todasNovedades=snap.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b)=>(b.inicio||'').localeCompare(a.inicio||''));
+    const todas = await fetchNovedadesTodos(force);
+    state.todasNovedades = [...todas].sort((a,b)=>(b.inicio||'').localeCompare(a.inicio||''));
     renderNovedades(state.todasNovedades);
   } catch(e) { lista.innerHTML=`<p style="color:var(--red)">Error: ${e.message}</p>`; }
 };
@@ -1853,10 +1927,11 @@ window.guardarNovedad = async function() {
       estudiante, inicio, fin, estado, motivo,
       docente:state.nombre, fechaReg:todayISO(), ts:serverTimestamp()
     });
+    _dbWrites++; cacheDel('novedades:all');
     showToast('Novedad guardada.','success');
     ['novEstudiante','novInicio','novFin','novMotivo'].forEach(id=>document.getElementById(id).value='');
-    await cargarNovedades();
-    await refrescarNovedadesActivas();
+    await cargarNovedades(true);
+    await refrescarNovedadesActivas(true);
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
@@ -1883,9 +1958,10 @@ window.guardarEdicionNovedad = async function() {
       estado:document.getElementById('editNovEstado').value,
       motivo:document.getElementById('editNovMotivo').value.trim()
     });
+    _dbWrites++; cacheDel('novedades:all');
     showToast('Novedad actualizada.','success');
-    await cargarNovedades();
-    await refrescarNovedadesActivas();
+    await cargarNovedades(true);
+    await refrescarNovedadesActivas(true);
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
@@ -1893,12 +1969,11 @@ window.guardarEdicionNovedad = async function() {
 // ════════════════════════════════════════════
 //  SEGUIMIENTO DE CITAS (Admin)
 // ════════════════════════════════════════════
-window.cargarSeguimiento = async function() {
+window.cargarSeguimiento = async function(force = false) {
   const tbody=document.getElementById('seguimientoBody');
   tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text-2)">Cargando...</td></tr>';
   try {
-    const snap=await getDocs(collection(db,'citas'));
-    state.todasCitas=snap.docs.map(d=>({id:d.id,...d.data()}));
+    state.todasCitas = await fetchCitasAll(force);
     filtrarSeguimiento();
   } catch(e) { tbody.innerHTML=`<tr><td colspan="9" style="color:var(--red);text-align:center;padding:1rem">Error: ${e.message}</td></tr>`; }
 };
@@ -1942,7 +2017,7 @@ window.guardarEstudiante = async function() {
     showToast('Estudiante guardado.','success');
     ['estNombre','estGrado','estAcudiente','estTelefono'].forEach(id=>document.getElementById(id).value='');
     // Recargar lista
-    const snap=await getDocs(collection(db,'estudiantes'));
+    const snap=await _getDocs(collection(db,'estudiantes'));
     state.estudiantes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.nombre.localeCompare(b.nombre));
     poblarSelectEstudiantes(); poblarSelectGrados();
     renderEstudiantesAdmin();
@@ -2025,7 +2100,7 @@ window.cargarActividades = async function() {
   const lista = document.getElementById('actividadesLista');
   lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
   try {
-    const snap = await getDocs(query(collection(db,'actividades'), orderBy('fecha','desc')));
+    const snap = await _getDocs(query(collection(db,'actividades'), orderBy('fecha','desc')));
     _actividades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderActividades();
   } catch(e) { lista.innerHTML = `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`; }
@@ -2231,28 +2306,30 @@ window.verRecordEstudiante = async function(nombre) {
   new bootstrap.Modal(document.getElementById('modalRecord')).show();
 
   try {
-    const [snapAsist, snapRep, snapNov, snapCitas] = await Promise.all([
-      getDocs(collection(db,'asistencia')),
-      getDocs(query(collection(db,'reportes'), where('estudiante','==',nombre))),
-      getDocs(query(collection(db,'novedades'), where('estudiante','==',nombre))),
-      getDocs(query(collection(db,'citas'),     where('estudiante','==',nombre))),
+    // Todos los datos vienen del caché — 0 lecturas adicionales si ya calentado
+    const [asistDocs, repDocs, novDocs, citasDocs] = await Promise.all([
+      fetchAsistenciaTodos(), fetchReportesTodos(), fetchNovedadesTodos(), fetchCitasAll()
     ]);
 
-    // ── Inasistencias ──────────────────────────
+    // ── Inasistencias — filtrado en memoria ────────────────────────
     const conteo = { fallas:0, fugas:0, retardos:0, excusas:0, psico:0 };
     const porFecha = {};
-    snapAsist.docs.forEach(d => {
-      (d.data().registros||[]).forEach(r => {
+    asistDocs.forEach(d => {
+      d.registros.forEach(r => {
         if (r.estudiante !== nombre || r.estado === 'Asistió') return;
-        if (!porFecha[d.id]) porFecha[d.id] = [];
-        porFecha[d.id].push({ hora:r.hora, estado:r.estado });
-        if (r.estado==='Falla')      conteo.fallas++;
+        if (!porFecha[d.fecha]) porFecha[d.fecha] = [];
+        porFecha[d.fecha].push({ hora:r.hora, estado:r.estado });
+        if (r.estado==='Falla')           conteo.fallas++;
         else if (r.estado==='Fuga')       conteo.fugas++;
         else if (r.estado==='Retardo')    conteo.retardos++;
         else if (r.estado==='Excusa')     conteo.excusas++;
         else if (r.estado==='Cita Psico') conteo.psico++;
       });
     });
+    // Filtrar por estudiante en memoria
+    const snapRep   = { docs: repDocs.filter(r => r.estudiante === nombre) };
+    const snapNov   = { docs: novDocs.filter(n => n.estudiante === nombre).sort((a,b)=>(b.inicio||'').localeCompare(a.inicio||'')) };
+    const snapCitas = { docs: citasDocs.filter(c => c.estudiante === nombre).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')) };
     const reportes = snapRep.docs.length;
 
     document.getElementById('recordStats').innerHTML = `
@@ -2274,8 +2351,7 @@ window.verRecordEstudiante = async function(nombre) {
       : '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem 0">Sin registros de inasistencia.</p>';
 
     // ── Novedades ──────────────────────────────
-    const novedades = snapNov.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b)=>(b.inicio||'').localeCompare(a.inicio||''));
+    const novedades = snapNov.docs;
     document.getElementById('rpanel-novedades').innerHTML = novedades.length
       ? novedades.map(n => {
           const ec = (n.estado||'').toLowerCase();
@@ -2292,8 +2368,7 @@ window.verRecordEstudiante = async function(nombre) {
       : '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem 0">Sin novedades registradas.</p>';
 
     // ── Citas psicología ───────────────────────
-    const citas = snapCitas.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    const citas = snapCitas.docs;
     document.getElementById('rpanel-citas').innerHTML = citas.length
       ? citas.map(c => {
           const pendiente = c.estado === 'Pendiente';
@@ -2370,69 +2445,44 @@ window.guardarEdicionEstudiante = async function() {
 window.cargarDashboard = async function() {
   const hoy = todayISO();
   try {
-    // KPIs
     document.getElementById('dkTotalEst').textContent = state.estudiantes.length;
-    // Ausentes hoy (fallas)
-    const snapHoy = await getDoc(doc(db,'asistencia',hoy));
+    // 1 lectura: asistencia de hoy (doc único)
+    const snapHoy = await _getDoc(doc(db,'asistencia',hoy));
     let ausentesHoy = 0, ausentes = [];
     if (snapHoy.exists()) {
-      const registros = snapHoy.data().registros || [];
       const porEst = {};
-      registros.forEach(r => { if (!porEst[r.estudiante]) porEst[r.estudiante]={}; porEst[r.estudiante][r.hora]=r.estado; });
-      Object.entries(porEst).forEach(([nombre, horas]) => {
-        const tieneF = Object.values(horas).some(e=>e==='Falla');
-        if (tieneF) { ausentesHoy++; ausentes.push(nombre); }
-      });
+      (snapHoy.data().registros||[]).forEach(r => { if (!porEst[r.estudiante]) porEst[r.estudiante]=[]; porEst[r.estudiante].push(r.estado); });
+      Object.entries(porEst).forEach(([nombre,estados]) => { if (estados.some(e=>e==='Falla')) { ausentesHoy++; ausentes.push(nombre); } });
     }
     document.getElementById('dkAusentesHoy').textContent = ausentesHoy;
-    // Citas pendientes
-    const snapCP = await getDocs(query(collection(db,'citas'),where('estado','==','Pendiente')));
-    document.getElementById('dkCitasPend').textContent = snapCP.size;
-    // Noticias activas
-    const snapN = await getDocs(collection(db,'noticias'));
-    const noticiasAct = snapN.docs.filter(d=>{ const n=d.data(); return n.inicio<=hoy && (!n.fin||n.fin>=hoy); }).length;
-    document.getElementById('dkNoticias').textContent = noticiasAct;
-    // Riesgo (≥3 fallas históricas)
-    const snapA = await getDocs(collection(db,'asistencia'));
+    // Fetches paralelos desde caché (0 lecturas si ya en memoria)
+    const [citasAll, noticiasAll, asistDocs] = await Promise.all([
+      fetchCitasAll(), fetchNoticiasAll(), fetchAsistenciaTodos()
+    ]);
+    document.getElementById('dkCitasPend').textContent = citasAll.filter(c=>c.estado==='Pendiente').length;
+    document.getElementById('dkNoticias').textContent  = noticiasAll.filter(n=>n.inicio<=hoy&&(!n.fin||n.fin>=hoy)).length;
+    // Riesgo — filtrado en memoria desde caché
     const fallasPorEst = {};
-    snapA.docs.forEach(d => {
-      (d.data().registros||[]).forEach(r => {
-        if (r.estado==='Falla') fallasPorEst[r.estudiante] = (fallasPorEst[r.estudiante]||0)+1;
-      });
-    });
-    const enRiesgo = Object.entries(fallasPorEst)
-      .filter(([,n])=>n>=3)
-      .sort((a,b)=>b[1]-a[1]);
+    asistDocs.forEach(d => d.registros.forEach(r => { if (r.estado==='Falla') fallasPorEst[r.estudiante]=(fallasPorEst[r.estudiante]||0)+1; }));
+    const enRiesgo = Object.entries(fallasPorEst).filter(([,n])=>n>=3).sort((a,b)=>b[1]-a[1]);
     document.getElementById('dkRiesgo').textContent = enRiesgo.length;
-    // Top riesgo
     const topEl = document.getElementById('dashTopRiesgo');
-    if (!enRiesgo.length) {
-      topEl.innerHTML = '<p style="color:var(--green);font-size:.85rem;padding:.5rem 0">✅ Ningún estudiante en situación de riesgo.</p>';
-    } else {
-      topEl.innerHTML = '<div class="dash-top-list">'+enRiesgo.slice(0,8).map(([nombre,fallas],i)=>{
-        const est = state.estudiantes.find(e=>e.nombre===nombre)||{};
-        const nivel = fallas>=5?'🔴':'⚠️';
-        return `<div class="dash-top-row">
-          <span class="dtr-pos">${i+1}</span>
-          <div class="dtr-info"><div class="dtr-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(nombre).replace(/'/g,"&#39;")}')">${escapeHtml(nombre)}</span></div>
-          <div class="dtr-grado">${escapeHtml(est.grado||'')}</div></div>
-          <span class="riesgo-badge">${nivel} ${fallas} fallas</span>
-        </div>`;
-      }).join('')+'</div>';
-    }
-    // Ausentes hoy lista
+    topEl.innerHTML = !enRiesgo.length
+      ? '<p style="color:var(--green);font-size:.85rem;padding:.5rem 0">✅ Ningún estudiante en situación de riesgo.</p>'
+      : '<div class="dash-top-list">'+enRiesgo.slice(0,8).map(([nombre,fallas],i)=>{
+          const est=state.estudiantes.find(e=>e.nombre===nombre)||{};
+          return `<div class="dash-top-row"><span class="dtr-pos">${i+1}</span>
+            <div><div class="dtr-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(nombre).replace(/'/g,"&#39;")}')">${escapeHtml(nombre)}</span></div>
+            <div class="dtr-grado">${escapeHtml(est.grado||'')}</div></div>
+            <span class="riesgo-badge">${fallas>=5?'🔴':'⚠️'} ${fallas} fallas</span></div>`;
+        }).join('')+'</div>';
     const ausEl = document.getElementById('dashAusentesHoy');
-    if (!ausentes.length) {
-      ausEl.innerHTML = '<p style="color:var(--green);font-size:.85rem;padding:.5rem 0">✅ Sin fallas registradas hoy.</p>';
-    } else {
-      ausEl.innerHTML = '<div class="dash-top-list">'+ausentes.map(nombre=>{
-        const est = state.estudiantes.find(e=>e.nombre===nombre)||{};
-        return `<div class="dash-top-row">
-          <span style="font-size:.85rem">❌</span>
-          <div><div class="dtr-nombre">${escapeHtml(nombre)}</div><div class="dtr-grado">${escapeHtml(est.grado||'')}</div></div>
-        </div>`;
-      }).join('')+'</div>';
-    }
+    ausEl.innerHTML = !ausentes.length
+      ? '<p style="color:var(--green);font-size:.85rem;padding:.5rem 0">✅ Sin fallas registradas hoy.</p>'
+      : '<div class="dash-top-list">'+ausentes.map(nombre=>{
+          const est=state.estudiantes.find(e=>e.nombre===nombre)||{};
+          return `<div class="dash-top-row"><span>❌</span><div><div class="dtr-nombre">${escapeHtml(nombre)}</div><div class="dtr-grado">${escapeHtml(est.grado||'')}</div></div></div>`;
+        }).join('')+'</div>';
   } catch(e) { showToast('Error cargando dashboard: '+e.message,'error'); }
 };
 
@@ -2500,7 +2550,7 @@ window.cargarDocentesAdmin = async function() {
   if (!lista) return;
   lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
   try {
-    const snap = await getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
+    const snap = await _getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
     const docs = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
     if (!docs.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">No hay docentes registrados.</p>'; return; }
     lista.innerHTML = '<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">'+docs.map(d=>{
@@ -2581,19 +2631,21 @@ window.confirmarImportarCSV = async function() {
   if (!confirm(`¿Importar ${_csvParsed.length} estudiante(s)? Se agregarán a los existentes.`)) return;
   bootstrap.Modal.getInstance(document.getElementById('modalImportarCSV')).hide();
   showLoading(true);
-  let ok=0, err=0;
   try {
-    for (const est of _csvParsed) {
-      try {
-        await addDoc(collection(db,'estudiantes'), { ...est, ts: serverTimestamp() });
-        ok++;
-      } catch(e) { err++; }
+    // writeBatch: N registros en 1 commit (vs N addDoc individuales)
+    const CHUNK = 400; // Firestore permite máx 500 ops por batch
+    for (let i = 0; i < _csvParsed.length; i += CHUNK) {
+      const batch = writeBatch(db);
+      _csvParsed.slice(i, i + CHUNK).forEach(est => {
+        batch.set(doc(collection(db,'estudiantes')), { ...est, ts: serverTimestamp() });
+      });
+      await batch.commit();
+      _dbWrites++;
     }
-    // Recargar estudiantes
-    const snap = await getDocs(collection(db,'estudiantes'));
+    const snap = await _getDocs(collection(db,'estudiantes'));
     state.estudiantes = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.nombre.localeCompare(b.nombre));
     poblarSelectEstudiantes(); poblarSelectGrados(); renderEstudiantesAdmin();
-    showToast(`${ok} estudiante(s) importados${err?`, ${err} con error`:''}. `, ok>0?'success':'warning');
+    showToast(`${_csvParsed.length} estudiante(s) importados.`, 'success');
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
@@ -2675,12 +2727,12 @@ function renderCalendarioRecord() {
 
 async function cargarDatosCalendario(nombre) {
   try {
-    const snap = await getDocs(collection(db,'asistencia'));
+    const asistDocs = await fetchAsistenciaTodos(); // desde caché — 0 lecturas si ya cargado
     const datos = {};
-    snap.docs.forEach(d => {
-      (d.data().registros||[]).filter(r=>r.estudiante===nombre).forEach(r => {
-        if (!datos[d.id]) datos[d.id] = [];
-        datos[d.id].push(r.estado);
+    asistDocs.forEach(d => {
+      d.registros.filter(r => r.estudiante === nombre).forEach(r => {
+        if (!datos[d.fecha]) datos[d.fecha] = [];
+        datos[d.fecha].push(r.estado);
       });
     });
     _calRecordData = datos;
@@ -2758,7 +2810,7 @@ const NOTICIA_CSS_CLASS = {
 async function cargarDocentes() {
   if (_docentes.length > 0) return _docentes;
   try {
-    const snap = await getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
+    const snap = await _getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
     _docentes = snap.docs.map(d=>({id:d.id,...d.data()}))
       .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
   } catch(e) { _docentes = []; }
@@ -2821,6 +2873,7 @@ window.guardarNoticia = async function() {
       inicio, fin: fin || null,
       creadoPor: state.usuario, ts: serverTimestamp()
     });
+    _dbWrites++; cacheDel('noticias:all');
     showToast('Noticia publicada correctamente.','success');
     document.getElementById('notTitulo').value   = '';
     document.getElementById('notMensaje').value  = '';
@@ -2828,19 +2881,19 @@ window.guardarNoticia = async function() {
     document.getElementById('notFin').value      = '';
     document.getElementById('notDestinatarios').value = 'todos';
     document.getElementById('notDocentesWrap').style.display = 'none';
-    cargarNoticias();
+    cargarNoticias(true);
     cargarNoticiasActivas();
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
 
-window.cargarNoticias = async function() {
+window.cargarNoticias = async function(force = false) {
   const lista = document.getElementById('noticiasAdminLista');
   if (!lista) return;
   lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
   try {
-    const snap = await getDocs(query(collection(db,'noticias'), orderBy('ts','desc')));
-    const items = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const todas = await fetchNoticiasAll(force);
+    const items = [...todas].sort((a,b)=>(b.ts?.seconds||0)-(a.ts?.seconds||0));
     if (!items.length) {
       lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">No hay noticias publicadas.</p>';
       return;
@@ -2887,8 +2940,9 @@ window.eliminarNoticia = async function(id) {
   try {
     await deleteDoc(doc(db,'noticias',id));
     _dismissedNoticias.delete(id);
+    cacheDel('noticias:all');
     showToast('Noticia eliminada.','info');
-    cargarNoticias();
+    cargarNoticias(true);
     cargarNoticiasActivas();
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
@@ -2899,17 +2953,15 @@ async function cargarNoticiasActivas() {
   if (!banner) return;
   try {
     const hoy = todayISO();
-    const snap = await getDocs(collection(db,'noticias'));
-    const activas = snap.docs
-      .map(d => ({id:d.id,...d.data()}))
-      .filter(n => {
+    const todas = await fetchNoticiasAll(); // desde caché — 10 min TTL
+    const activas = todas.filter(n => {
         if (!n.inicio || n.inicio > hoy) return false;
         if (n.fin && hoy > n.fin) return false;
         if (_dismissedNoticias.has(n.id)) return false;
         if (n.destinatarios === 'todos') return true;
         if (Array.isArray(n.destinatarios)) return n.destinatarios.includes(state.usuario);
         return true;
-      });
+    });
     renderBannerNoticias(activas);
   } catch(e) { /* no interrumpir carga principal */ }
 }
