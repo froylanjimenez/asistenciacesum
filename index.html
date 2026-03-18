@@ -262,6 +262,39 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 .record-tab-btn:hover{color:var(--text-1)}
 .record-tab-panel{display:none}.record-tab-panel.active{display:block}
 
+/* NOTICIAS BANNER */
+.noticias-banner-wrap{margin-bottom:.75rem}
+.noticia-banner-item{display:flex;align-items:flex-start;gap:.75rem;background:var(--bg-input);
+  border:1px solid var(--border);border-left:3px solid var(--text-3);border-radius:10px;
+  padding:.75rem 1rem;margin-bottom:.4rem;position:relative;animation:fadeSlideIn .3s ease}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.noticia-banner-item.tipo-preinforme{border-left-color:var(--orange)}
+.noticia-banner-item.tipo-reunion-padres{border-left-color:var(--accent)}
+.noticia-banner-item.tipo-reunion-docente{border-left-color:var(--green)}
+.noticia-banner-item.tipo-aviso{border-left-color:var(--yellow)}
+.noticia-banner-item.tipo-otro{border-left-color:var(--purple)}
+.noticia-banner-icon{font-size:1.3rem;flex-shrink:0;padding-top:.1rem}
+.noticia-banner-body{flex:1;min-width:0}
+.noticia-banner-titulo{font-weight:600;font-size:.9rem;color:var(--text-1);margin-bottom:.15rem}
+.noticia-banner-msg{font-size:.82rem;color:var(--text-2);margin-bottom:.2rem}
+.noticia-banner-meta{font-size:.72rem;color:var(--text-3);display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.noticia-tipo-badge{display:inline-flex;align-items:center;font-size:.7rem;font-weight:600;
+  padding:.1rem .45rem;border-radius:20px;background:#ffffff10;border:1px solid #ffffff18;color:var(--text-2)}
+.noticia-dismiss{position:absolute;top:.45rem;right:.45rem;background:transparent;border:none;
+  color:var(--text-3);cursor:pointer;font-size:.8rem;padding:.2rem .35rem;border-radius:5px;
+  transition:all .15s;line-height:1}
+.noticia-dismiss:hover{background:var(--red);color:#fff}
+/* ADMIN NOTICIAS */
+.noticia-admin-card{background:var(--bg-input);border:1px solid var(--border);border-radius:10px;
+  padding:.85rem 1rem;margin-bottom:.5rem;display:flex;align-items:flex-start;gap:1rem}
+.noticia-admin-card .na-info{flex:1;min-width:0}
+.noticia-admin-card .na-titulo{font-weight:600;font-size:.9rem;color:var(--text-1);margin-bottom:.25rem}
+.noticia-admin-card .na-meta{font-size:.75rem;color:var(--text-2)}
+.na-estado{font-size:.7rem;font-weight:600;padding:.18rem .55rem;border-radius:20px;white-space:nowrap}
+.na-activa{background:#16653430;color:#4ade80;border:1px solid #22c55e40}
+.na-expirada{background:#7f1d1d30;color:#fca5a5;border:1px solid #ef444440}
+.na-futura{background:#1e3a5f30;color:#93c5fd;border:1px solid #3b82f640}
+
 @media(max-width:768px){
   .cesum-navbar{padding:.6rem 1rem}
   .main-content{padding:.75rem .5rem}
@@ -336,6 +369,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
   </nav>
 
   <div class="main-content">
+    <!-- BANNER NOTICIAS ACTIVAS -->
+    <div id="noticiasBanner" class="noticias-banner-wrap"></div>
+
     <!-- ASISTENCIA -->
     <div id="asistenciaTab" class="tab-content">
       <div class="cesum-card">
@@ -527,6 +563,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
         <button class="nav-tab-btn" id="subTabEstudiantes" onclick="switchAdminTab('estudiantes')">
           <i class="bi bi-people"></i> Estudiantes
         </button>
+        <button class="nav-tab-btn" id="subTabNoticias" onclick="switchAdminTab('noticias')">
+          <i class="bi bi-megaphone"></i> Noticias
+        </button>
       </div>
 
       <!-- Novedades -->
@@ -619,6 +658,71 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
                 </div>
               </div>
               <div id="estudiantesLista" style="overflow-x:auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- Noticias (admin) -->
+      <div id="adminNoticiasPanel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="cesum-card h-100">
+              <div class="cesum-card-header"><h5><i class="bi bi-megaphone-fill"></i> Nueva Noticia</h5></div>
+              <div class="mb-3">
+                <label class="form-label">Tipo</label>
+                <select id="notTipo" class="form-select" onchange="actualizarTituloNoticia()">
+                  <option value="Subida de preinforme">📋 Subida de preinforme</option>
+                  <option value="Reunión general de padres">👨‍👩‍👧 Reunión general de padres</option>
+                  <option value="Reunión docente">👩‍🏫 Reunión docente</option>
+                  <option value="Aviso general">📢 Aviso general</option>
+                  <option value="Otro">✏️ Otro</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Título</label>
+                <input type="text" id="notTitulo" class="form-control" placeholder="Ej: Entrega de boletines viernes...">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Detalles adicionales <span style="color:var(--text-3);">(opcional)</span></label>
+                <textarea id="notMensaje" class="form-control" rows="3" placeholder="Hora, lugar, instrucciones..."></textarea>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Desde</label>
+                  <input type="date" id="notInicio" class="form-control">
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Hasta <span style="color:var(--text-3);">(opcional)</span></label>
+                  <input type="date" id="notFin" class="form-control">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Destinatarios</label>
+                <select id="notDestinatarios" class="form-select" onchange="toggleSelectDocentes()">
+                  <option value="todos">Todos los docentes</option>
+                  <option value="seleccionar">Seleccionar docentes específicos</option>
+                </select>
+              </div>
+              <div id="notDocentesWrap" style="display:none;margin-bottom:1rem">
+                <label class="form-label">Docentes</label>
+                <div id="notDocentesList" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;max-height:160px;overflow-y:auto"></div>
+              </div>
+              <button class="btn-cesum btn-cesum-primary w-100" onclick="guardarNoticia()">
+                <i class="bi bi-send"></i> Publicar Noticia
+              </button>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="cesum-card">
+              <div class="cesum-card-header">
+                <h5><i class="bi bi-list-ul"></i> Noticias Publicadas</h5>
+                <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarNoticias()">
+                  <i class="bi bi-arrow-clockwise"></i> Refrescar
+                </button>
+              </div>
+              <div id="noticiasAdminLista"><p style="color:var(--text-2);font-size:.85rem">Cargando...</p></div>
             </div>
           </div>
         </div>
@@ -1048,6 +1152,9 @@ async function cargarDatosIniciales() {
     // Cargar novedades activas hoy
     await refrescarNovedadesActivas();
 
+    // Cargar noticias activas (banner)
+    await cargarNoticiasActivas();
+
     poblarSelectEstudiantes();
     poblarSelectGrados();
     document.getElementById('asistFecha').value = hoy;
@@ -1110,14 +1217,15 @@ window.switchTab = function(tab) {
 };
 
 window.switchAdminTab = function(sub) {
-  ['novedades','seguimiento','estudiantes'].forEach(s => {
+  ['novedades','seguimiento','estudiantes','noticias'].forEach(s => {
     const el=document.getElementById('admin'+s.charAt(0).toUpperCase()+s.slice(1)+'Panel');
     const btn=document.getElementById('subTab'+s.charAt(0).toUpperCase()+s.slice(1));
     if(el)  el.style.display = s===sub?'block':'none';
     if(btn) btn.classList.toggle('active', s===sub);
   });
   if (sub==='seguimiento') cargarSeguimiento();
-  if (sub==='estudiantes') { renderEstudiantesAdmin(); }
+  if (sub==='estudiantes') renderEstudiantesAdmin();
+  if (sub==='noticias')    { cargarNoticias(); cargarDocentes().then(renderDocentesCheckboxes); }
 };
 
 // ════════════════════════════════════════════
@@ -2056,6 +2164,214 @@ window.guardarEdicionEstudiante = async function() {
     showToast('Estudiante actualizado.','success');
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  NOTICIAS
+// ════════════════════════════════════════════
+const _dismissedNoticias = new Set();
+let _docentes = [];
+
+const NOTICIA_ICONS = {
+  'Subida de preinforme':      '📋',
+  'Reunión general de padres': '👨‍👩‍👧',
+  'Reunión docente':           '👩‍🏫',
+  'Aviso general':             '📢',
+  'Otro':                      '📣',
+};
+const NOTICIA_CSS_CLASS = {
+  'Subida de preinforme':      'tipo-preinforme',
+  'Reunión general de padres': 'tipo-reunion-padres',
+  'Reunión docente':           'tipo-reunion-docente',
+  'Aviso general':             'tipo-aviso',
+  'Otro':                      'tipo-otro',
+};
+
+async function cargarDocentes() {
+  if (_docentes.length > 0) return _docentes;
+  try {
+    const snap = await getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
+    _docentes = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+  } catch(e) { _docentes = []; }
+  return _docentes;
+}
+
+function renderDocentesCheckboxes() {
+  const cont = document.getElementById('notDocentesList');
+  if (!cont) return;
+  if (!_docentes.length) {
+    cont.innerHTML = '<p style="color:var(--text-2);font-size:.8rem">No hay docentes disponibles.</p>';
+    return;
+  }
+  cont.innerHTML = _docentes.map(d =>
+    `<label style="display:flex;align-items:center;gap:.5rem;padding:.3rem .1rem;font-size:.83rem;cursor:pointer;color:var(--text-1)">
+      <input type="checkbox" class="docente-check" value="${escapeHtml(d.id)}" style="accent-color:var(--accent);width:15px;height:15px">
+      ${escapeHtml(d.nombre || d.id)}
+    </label>`
+  ).join('');
+}
+
+window.toggleSelectDocentes = function() {
+  const val = document.getElementById('notDestinatarios').value;
+  document.getElementById('notDocentesWrap').style.display = val==='seleccionar' ? 'block' : 'none';
+};
+
+window.actualizarTituloNoticia = function() {
+  const tipo   = document.getElementById('notTipo').value;
+  const titulo = document.getElementById('notTitulo');
+  // Solo auto-rellenar si está vacío o era un tipo anterior
+  const tiposConocidos = Object.keys(NOTICIA_ICONS);
+  if (!titulo.value || tiposConocidos.includes(titulo.value)) {
+    titulo.value = tipo;
+  }
+};
+
+window.guardarNoticia = async function() {
+  const tipo    = document.getElementById('notTipo').value;
+  const titulo  = document.getElementById('notTitulo').value.trim();
+  const mensaje = document.getElementById('notMensaje').value.trim();
+  const inicio  = document.getElementById('notInicio').value;
+  const fin     = document.getElementById('notFin').value;
+  const destVal = document.getElementById('notDestinatarios').value;
+
+  if (!titulo) { showToast('El título es obligatorio.','warning'); return; }
+  if (!inicio) { showToast('La fecha de inicio es obligatoria.','warning'); return; }
+  if (fin && fin < inicio) { showToast('La fecha fin no puede ser antes del inicio.','warning'); return; }
+
+  let destinatarios = 'todos';
+  if (destVal === 'seleccionar') {
+    const checked = [...document.querySelectorAll('.docente-check:checked')].map(c => c.value);
+    if (!checked.length) { showToast('Selecciona al menos un docente.','warning'); return; }
+    destinatarios = checked;
+  }
+
+  showLoading(true);
+  try {
+    await addDoc(collection(db,'noticias'), {
+      tipo, titulo, mensaje, destinatarios,
+      inicio, fin: fin || null,
+      creadoPor: state.usuario, ts: serverTimestamp()
+    });
+    showToast('Noticia publicada correctamente.','success');
+    document.getElementById('notTitulo').value   = '';
+    document.getElementById('notMensaje').value  = '';
+    document.getElementById('notInicio').value   = '';
+    document.getElementById('notFin').value      = '';
+    document.getElementById('notDestinatarios').value = 'todos';
+    document.getElementById('notDocentesWrap').style.display = 'none';
+    cargarNoticias();
+    cargarNoticiasActivas();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.cargarNoticias = async function() {
+  const lista = document.getElementById('noticiasAdminLista');
+  if (!lista) return;
+  lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+  try {
+    const snap = await getDocs(query(collection(db,'noticias'), orderBy('ts','desc')));
+    const items = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if (!items.length) {
+      lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">No hay noticias publicadas.</p>';
+      return;
+    }
+    const hoy = todayISO();
+    lista.innerHTML = items.map(n => {
+      let estadoClass, estadoTxt;
+      if (!n.inicio || n.inicio > hoy)  { estadoClass='na-futura';   estadoTxt='Programada'; }
+      else if (n.fin && hoy > n.fin)    { estadoClass='na-expirada'; estadoTxt='Expirada';   }
+      else                              { estadoClass='na-activa';    estadoTxt='Activa';     }
+      const dest = n.destinatarios === 'todos'
+        ? 'Todos los docentes'
+        : Array.isArray(n.destinatarios) ? `${n.destinatarios.length} docente(s)` : 'Todos';
+      const icono = NOTICIA_ICONS[n.tipo] || '📣';
+      const vigencia = n.fin
+        ? `${escapeHtml(n.inicio)} → ${escapeHtml(n.fin)}`
+        : `desde ${escapeHtml(n.inicio)}`;
+      return `<div class="noticia-admin-card">
+        <div class="na-info">
+          <div class="na-titulo">${icono} ${escapeHtml(n.titulo)}</div>
+          <div class="na-meta">
+            <span class="noticia-tipo-badge" style="margin-right:.4rem">${escapeHtml(n.tipo)}</span>
+            <i class="bi bi-calendar3"></i> ${vigencia} &nbsp;·&nbsp;
+            <i class="bi bi-people"></i> ${escapeHtml(dest)}
+            ${n.mensaje ? `<div style="margin-top:.3rem;color:var(--text-2)">${escapeHtml(n.mensaje.substring(0,100))}${n.mensaje.length>100?'…':''}</div>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0">
+          <span class="na-estado ${estadoClass}">${estadoTxt}</span>
+          <button class="btn-cesum btn-cesum-danger sm" onclick="eliminarNoticia('${n.id}')">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    lista.innerHTML = `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`;
+  }
+};
+
+window.eliminarNoticia = async function(id) {
+  if (!confirm('¿Eliminar esta noticia? Ya no será visible para los docentes.')) return;
+  showLoading(true);
+  try {
+    await deleteDoc(doc(db,'noticias',id));
+    _dismissedNoticias.delete(id);
+    showToast('Noticia eliminada.','info');
+    cargarNoticias();
+    cargarNoticiasActivas();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+async function cargarNoticiasActivas() {
+  const banner = document.getElementById('noticiasBanner');
+  if (!banner) return;
+  try {
+    const hoy = todayISO();
+    const snap = await getDocs(collection(db,'noticias'));
+    const activas = snap.docs
+      .map(d => ({id:d.id,...d.data()}))
+      .filter(n => {
+        if (!n.inicio || n.inicio > hoy) return false;
+        if (n.fin && hoy > n.fin) return false;
+        if (_dismissedNoticias.has(n.id)) return false;
+        if (n.destinatarios === 'todos') return true;
+        if (Array.isArray(n.destinatarios)) return n.destinatarios.includes(state.usuario);
+        return true;
+      });
+    renderBannerNoticias(activas);
+  } catch(e) { /* no interrumpir carga principal */ }
+}
+
+function renderBannerNoticias(items) {
+  const banner = document.getElementById('noticiasBanner');
+  if (!banner) return;
+  if (!items.length) { banner.innerHTML = ''; return; }
+  banner.innerHTML = items.map(n =>
+    `<div class="noticia-banner-item ${NOTICIA_CSS_CLASS[n.tipo]||'tipo-otro'}" id="nbanner-${n.id}">
+      <span class="noticia-banner-icon">${NOTICIA_ICONS[n.tipo]||'📣'}</span>
+      <div class="noticia-banner-body">
+        <div class="noticia-banner-titulo">${escapeHtml(n.titulo)}</div>
+        ${n.mensaje ? `<div class="noticia-banner-msg">${escapeHtml(n.mensaje)}</div>` : ''}
+        <div class="noticia-banner-meta">
+          <span class="noticia-tipo-badge">${escapeHtml(n.tipo)}</span>
+          ${n.fin ? `Vigente hasta ${escapeHtml(n.fin)}` : 'Sin fecha límite'}
+        </div>
+      </div>
+      <button class="noticia-dismiss" onclick="dismissNoticia('${n.id}')" title="Cerrar aviso">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>`
+  ).join('');
+}
+
+window.dismissNoticia = function(id) {
+  _dismissedNoticias.add(id);
+  const el = document.getElementById('nbanner-' + id);
+  if (el) { el.style.opacity='0'; el.style.transform='translateY(-4px)'; el.style.transition='all .2s'; setTimeout(()=>el.remove(), 200); }
 };
 
 // Las funciones ya están expuestas globalmente mediante window.X = function(){}
