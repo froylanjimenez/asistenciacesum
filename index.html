@@ -252,6 +252,15 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 .chip-psico{background:#4a1d9640;color:#d8b4fe;border:1px solid #a855f740}
 .est-nombre-link{cursor:pointer;color:var(--text-1);text-decoration:none;border-bottom:1px dashed var(--text-3);transition:border-color .15s}
 .est-nombre-link:hover{border-bottom-color:var(--accent-lt);color:var(--accent-lt)}
+.wa-link{color:var(--green);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;font-weight:500;transition:opacity .15s}
+.wa-link:hover{opacity:.75}
+.record-tabs{display:flex;gap:.25rem;border-bottom:1px solid var(--border);margin-bottom:.75rem}
+.record-tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text-2);
+  font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:500;padding:.4rem .75rem;cursor:pointer;
+  transition:all .18s;margin-bottom:-1px}
+.record-tab-btn.active{color:var(--accent-lt);border-bottom-color:var(--accent-lt)}
+.record-tab-btn:hover{color:var(--text-1)}
+.record-tab-panel{display:none}.record-tab-panel.active{display:block}
 
 @media(max-width:768px){
   .cesum-navbar{padding:.6rem 1rem}
@@ -714,19 +723,68 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
   </div>
 </div>
 
+<!-- MODAL EDITAR ESTUDIANTE -->
+<div class="modal fade modal-cesum" id="modalEditarEstudiante" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-gear me-2" style="color:var(--accent-lt)"></i>Editar Estudiante</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="editEstId">
+        <div class="mb-3 edit-solo-admin" style="display:none">
+          <label class="form-label">Nombre completo</label>
+          <input type="text" id="editEstNombre" class="form-control">
+        </div>
+        <div class="mb-3 edit-solo-admin" style="display:none">
+          <label class="form-label">Grado</label>
+          <select id="editEstGrado" class="form-select">
+            <option value="">-- Seleccionar --</option>
+            <option>6°A</option><option>6°B</option><option>7°A</option><option>7°B</option>
+            <option>8°A</option><option>8°B</option><option>9°A</option><option>9°B</option>
+            <option>10°A</option><option>10°B</option><option>11°A</option><option>11°B</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Acudiente</label>
+          <input type="text" id="editEstAcudiente" class="form-control" placeholder="Nombre del acudiente">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Teléfono acudiente</label>
+          <input type="text" id="editEstTelefono" class="form-control" placeholder="3001234567">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-success" onclick="guardarEdicionEstudiante()"><i class="bi bi-save"></i> Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RECORD ESTUDIANTE -->
 <div class="modal fade modal-cesum" id="modalRecord" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2" style="color:var(--accent-lt)"></i><span id="recordNombre">Estudiante</span></h5>
+        <button class="btn-cesum btn-cesum-secondary sm" id="btnEditarDesdeRecord" onclick="abrirEditarEstudianteDesdeRecord()" style="margin-right:.5rem">
+          <i class="bi bi-pencil"></i> Editar
+        </button>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4">
         <div id="recordInfoEst" style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;padding:.75rem 1rem;background:var(--bg-input);border-radius:10px;font-size:.85rem;color:var(--text-2)"></div>
-        <div class="stat-summary-grid" id="recordStats" style="margin-bottom:1.25rem"></div>
-        <div style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);margin-bottom:.6rem">Historial detallado</div>
-        <div id="recordHistorial" style="max-height:320px;overflow-y:auto"></div>
+        <div class="stat-summary-grid" id="recordStats" style="margin-bottom:1rem"></div>
+        <div class="record-tabs">
+          <button class="record-tab-btn active" id="rtab-inasistencias" onclick="switchRecordTab('inasistencias')"><i class="bi bi-calendar-x"></i> Inasistencias</button>
+          <button class="record-tab-btn" id="rtab-novedades" onclick="switchRecordTab('novedades')"><i class="bi bi-bell"></i> Novedades</button>
+          <button class="record-tab-btn" id="rtab-citas" onclick="switchRecordTab('citas')"><i class="bi bi-heart-pulse"></i> Citas</button>
+        </div>
+        <div id="rpanel-inasistencias" class="record-tab-panel active" style="max-height:280px;overflow-y:auto"></div>
+        <div id="rpanel-novedades"     class="record-tab-panel" style="max-height:280px;overflow-y:auto"></div>
+        <div id="rpanel-citas"         class="record-tab-panel" style="max-height:280px;overflow-y:auto"></div>
       </div>
       <div class="modal-footer">
         <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -1614,11 +1672,14 @@ window.renderEstudiantesAdmin = function() {
   el.innerHTML=`<table class="stat-table">
     <thead><tr><th>Nombre</th><th>Grado</th><th>Acudiente</th><th>Teléfono</th><th></th></tr></thead>
     <tbody>${filtrados.map(e=>`<tr>
-      <td style="font-weight:500">${escapeHtml(e.nombre)}</td>
+      <td style="font-weight:500"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(e.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(e.nombre)}</span></td>
       <td><span class="grado-badge">${escapeHtml(e.grado)}</span></td>
       <td style="font-size:.82rem;color:var(--text-2)">${escapeHtml(e.acudiente||'–')}</td>
-      <td style="font-size:.82rem;color:var(--text-2)">${escapeHtml(e.telefono||'–')}</td>
-      <td><button class="btn-cesum btn-cesum-danger sm" onclick='eliminarEstudiante("${escapeHtml(e.id)}")'><i class="bi bi-trash"></i></button></td>
+      <td style="font-size:.82rem">${waLink(e.telefono)}</td>
+      <td style="display:flex;gap:.3rem">
+        <button class="btn-cesum btn-cesum-secondary sm" onclick='abrirEditarEstudiante("${escapeHtml(e.id)}")'><i class="bi bi-pencil"></i></button>
+        <button class="btn-cesum btn-cesum-danger sm" onclick='eliminarEstudiante("${escapeHtml(e.id)}")'><i class="bi bi-trash"></i></button>
+      </td>
     </tr>`).join('')}</tbody></table>`;
 };
 
@@ -1831,40 +1892,61 @@ window.exportarNotasCSV = async function() {
 // ════════════════════════════════════════════
 //  RECORD DE ESTUDIANTE
 // ════════════════════════════════════════════
+function waLink(tel) {
+  if (!tel) return '<span style="color:var(--text-3)">–</span>';
+  const num = tel.toString().replace(/\D/g,'');
+  if (num.length < 10) return `<span style="color:var(--text-2)">${escapeHtml(tel)}</span>`;
+  return `<a class="wa-link" href="https://wa.me/57${num}" target="_blank" rel="noopener">
+    <i class="bi bi-whatsapp"></i>${escapeHtml(tel)}</a>`;
+}
+
+window.switchRecordTab = function(tab) {
+  ['inasistencias','novedades','citas'].forEach(t => {
+    document.getElementById('rtab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('rpanel-'+t).classList.toggle('active', t===tab);
+  });
+};
+
+let _recordNombreActual = null;
+
 window.verRecordEstudiante = async function(nombre) {
+  _recordNombreActual = nombre;
   const est = state.estudiantes.find(e => e.nombre === nombre) || {};
   document.getElementById('recordNombre').textContent = nombre;
   document.getElementById('recordInfoEst').innerHTML =
     `<span><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> ${escapeHtml(est.grado||'–')}</span>` +
     `<span><i class="bi bi-person" style="color:var(--accent-lt)"></i> ${escapeHtml(est.acudiente||'–')}</span>` +
-    `<span><i class="bi bi-telephone" style="color:var(--accent-lt)"></i> ${escapeHtml(est.telefono||'–')}</span>`;
-  document.getElementById('recordStats').innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-2);font-size:.82rem">Cargando...</div>';
-  document.getElementById('recordHistorial').innerHTML = '';
+    `<span><i class="bi bi-whatsapp" style="color:var(--green)"></i> ${waLink(est.telefono)}</span>`;
+  document.getElementById('recordStats').innerHTML =
+    '<div style="text-align:center;padding:1rem;color:var(--text-2);font-size:.82rem">Cargando...</div>';
+  ['inasistencias','novedades','citas'].forEach(t =>
+    document.getElementById('rpanel-'+t).innerHTML = '<p style="color:var(--text-2);font-size:.82rem;padding:.5rem">Cargando...</p>');
+  switchRecordTab('inasistencias');
   new bootstrap.Modal(document.getElementById('modalRecord')).show();
 
   try {
-    const snapAsist = await getDocs(collection(db, 'asistencia'));
-    const snapRep   = await getDocs(query(collection(db,'reportes'), where('estudiante','==',nombre)));
+    const [snapAsist, snapRep, snapNov, snapCitas] = await Promise.all([
+      getDocs(collection(db,'asistencia')),
+      getDocs(query(collection(db,'reportes'), where('estudiante','==',nombre))),
+      getDocs(query(collection(db,'novedades'), where('estudiante','==',nombre))),
+      getDocs(query(collection(db,'citas'),     where('estudiante','==',nombre))),
+    ]);
 
+    // ── Inasistencias ──────────────────────────
     const conteo = { fallas:0, fugas:0, retardos:0, excusas:0, psico:0 };
     const porFecha = {};
-
     snapAsist.docs.forEach(d => {
-      const fecha = d.id;
-      (d.data().registros || []).forEach(r => {
-        if (r.estudiante !== nombre) return;
-        const estado = r.estado;
-        if (estado === 'Asistió') return;
-        if (!porFecha[fecha]) porFecha[fecha] = [];
-        porFecha[fecha].push({ hora: r.hora, estado });
-        if (estado === 'Falla')      conteo.fallas++;
-        else if (estado === 'Fuga')       conteo.fugas++;
-        else if (estado === 'Retardo')    conteo.retardos++;
-        else if (estado === 'Excusa')     conteo.excusas++;
-        else if (estado === 'Cita Psico') conteo.psico++;
+      (d.data().registros||[]).forEach(r => {
+        if (r.estudiante !== nombre || r.estado === 'Asistió') return;
+        if (!porFecha[d.id]) porFecha[d.id] = [];
+        porFecha[d.id].push({ hora:r.hora, estado:r.estado });
+        if (r.estado==='Falla')      conteo.fallas++;
+        else if (r.estado==='Fuga')       conteo.fugas++;
+        else if (r.estado==='Retardo')    conteo.retardos++;
+        else if (r.estado==='Excusa')     conteo.excusas++;
+        else if (r.estado==='Cita Psico') conteo.psico++;
       });
     });
-
     const reportes = snapRep.docs.length;
 
     document.getElementById('recordStats').innerHTML = `
@@ -1875,24 +1957,105 @@ window.verRecordEstudiante = async function(nombre) {
       <div class="stat-summary-card"><div class="num" style="color:var(--purple)">${conteo.psico}</div><div class="lbl">Citas Psico</div></div>
       <div class="stat-summary-card"><div class="num" style="color:var(--green)">${reportes}</div><div class="lbl">Reportes</div></div>`;
 
-    const fechas = Object.keys(porFecha).sort().reverse();
-    if (!fechas.length) {
-      document.getElementById('recordHistorial').innerHTML =
-        '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem 0">Sin registros de inasistencia.</p>';
-      return;
-    }
-
     const chipClass = { 'Falla':'chip-falla','Fuga':'chip-fuga','Retardo':'chip-retardo','Excusa':'chip-excusa','Cita Psico':'chip-psico' };
-    document.getElementById('recordHistorial').innerHTML = fechas.map(fecha => {
-      const chips = porFecha[fecha].sort((a,b)=>a.hora.localeCompare(b.hora)).map(r =>
-        `<span class="record-chip ${chipClass[r.estado]||''}">${escapeHtml(r.hora)} ${escapeHtml(r.estado)}</span>`
-      ).join('');
-      return `<div class="record-fila"><span class="record-fecha">${escapeHtml(fecha)}</span><div class="record-chips">${chips}</div></div>`;
-    }).join('');
+    const fechas = Object.keys(porFecha).sort().reverse();
+    document.getElementById('rpanel-inasistencias').innerHTML = fechas.length
+      ? fechas.map(f => {
+          const chips = porFecha[f].sort((a,b)=>a.hora.localeCompare(b.hora)).map(r =>
+            `<span class="record-chip ${chipClass[r.estado]||''}">${escapeHtml(r.hora)} ${escapeHtml(r.estado)}</span>`).join('');
+          return `<div class="record-fila"><span class="record-fecha">${escapeHtml(f)}</span><div class="record-chips">${chips}</div></div>`;
+        }).join('')
+      : '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem 0">Sin registros de inasistencia.</p>';
+
+    // ── Novedades ──────────────────────────────
+    const novedades = snapNov.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.inicio||'').localeCompare(a.inicio||''));
+    document.getElementById('rpanel-novedades').innerHTML = novedades.length
+      ? novedades.map(n => {
+          const ec = (n.estado||'').toLowerCase();
+          const bc = ec==='activa'?'activa':ec==='pendiente'?'pendiente':'inactiva';
+          return `<div class="record-fila">
+            <span class="record-fecha">${escapeHtml(n.inicio||'–')}</span>
+            <div style="flex:1">
+              <span class="novedad-badge ${bc}">${escapeHtml(n.estado||'–')}</span>
+              <span style="font-size:.8rem;color:var(--text-2);margin-left:.5rem">${escapeHtml(n.motivo||'')}</span>
+              ${n.fin?`<span style="font-size:.72rem;color:var(--text-3);margin-left:.4rem">hasta ${escapeHtml(n.fin)}</span>`:''}
+            </div>
+          </div>`;
+        }).join('')
+      : '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem 0">Sin novedades registradas.</p>';
+
+    // ── Citas psicología ───────────────────────
+    const citas = snapCitas.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    document.getElementById('rpanel-citas').innerHTML = citas.length
+      ? citas.map(c => {
+          const pendiente = c.estado === 'Pendiente';
+          const badge = pendiente
+            ? `<span style="background:#4a1d9630;color:#d8b4fe;border:1px solid #a855f740;border-radius:20px;font-size:.7rem;font-weight:600;padding:.15rem .5rem">Pendiente</span>`
+            : `<span style="background:#16653430;color:#4ade80;border:1px solid #22c55e40;border-radius:20px;font-size:.7rem;font-weight:600;padding:.15rem .5rem">Completada</span>`;
+          return `<div class="record-fila">
+            <span class="record-fecha">${escapeHtml(c.fecha||'–')}</span>
+            <div style="flex:1">
+              ${badge}
+              <span style="font-size:.8rem;color:var(--text-2);margin-left:.5rem">${escapeHtml(c.motivo||'–')}</span>
+              ${c.informe?`<div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem">📋 ${escapeHtml(c.informe.substring(0,80))}${c.informe.length>80?'…':''}</div>`:''}
+              ${c.compromisos?`<div style="font-size:.75rem;color:var(--text-3);">📌 ${escapeHtml(c.compromisos.substring(0,80))}${c.compromisos.length>80?'…':''}</div>`:''}
+            </div>
+          </div>`;
+        }).join('')
+      : '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem 0">Sin citas registradas.</p>';
+
   } catch(e) {
     document.getElementById('recordStats').innerHTML =
       `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`;
   }
+};
+
+window.abrirEditarEstudianteDesdeRecord = function() {
+  if (!_recordNombreActual) return;
+  const est = state.estudiantes.find(e => e.nombre === _recordNombreActual);
+  if (!est) return;
+  bootstrap.Modal.getInstance(document.getElementById('modalRecord')).hide();
+  setTimeout(() => abrirEditarEstudiante(est.id), 350);
+};
+
+window.abrirEditarEstudiante = function(id) {
+  const est = state.estudiantes.find(e => e.id === id);
+  if (!est) return;
+  document.getElementById('editEstId').value        = id;
+  document.getElementById('editEstNombre').value    = est.nombre  || '';
+  document.getElementById('editEstGrado').value     = est.grado   || '';
+  document.getElementById('editEstAcudiente').value = est.acudiente|| '';
+  document.getElementById('editEstTelefono').value  = est.telefono || '';
+  // Mostrar campos de admin solo si es admin
+  document.querySelectorAll('.edit-solo-admin').forEach(el =>
+    el.style.display = state.isAdmin ? 'block' : 'none');
+  new bootstrap.Modal(document.getElementById('modalEditarEstudiante')).show();
+};
+
+window.guardarEdicionEstudiante = async function() {
+  const id         = document.getElementById('editEstId').value;
+  const acudiente  = document.getElementById('editEstAcudiente').value.trim();
+  const telefono   = document.getElementById('editEstTelefono').value.trim();
+  const cambios    = { acudiente, telefono };
+  if (state.isAdmin) {
+    const nombre = document.getElementById('editEstNombre').value.trim();
+    const grado  = document.getElementById('editEstGrado').value;
+    if (!nombre || !grado) { showToast('Nombre y grado son obligatorios.','warning'); return; }
+    cambios.nombre = nombre;
+    cambios.grado  = grado;
+  }
+  bootstrap.Modal.getInstance(document.getElementById('modalEditarEstudiante')).hide();
+  showLoading(true);
+  try {
+    await updateDoc(doc(db,'estudiantes',id), cambios);
+    state.estudiantes = state.estudiantes.map(e => e.id===id ? {...e,...cambios} : e);
+    poblarSelectEstudiantes(); poblarSelectGrados();
+    renderEstudiantesAdmin();
+    showToast('Estudiante actualizado.','success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
 };
 
 // Las funciones ya están expuestas globalmente mediante window.X = function(){}
