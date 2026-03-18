@@ -1730,7 +1730,8 @@ function renderEstadisticas(stats, desde='', hasta='') {
   const alertMsg = document.getElementById('riesgoAlertMsg');
   if (enRiesgo.length && alertEl) {
     alertEl.classList.add('show');
-    alertMsg.innerHTML = `<strong>${enRiesgo.length} estudiante(s) en riesgo</strong> con 3 o más fallas: ${enRiesgo.slice(0,5).map(s=>`<strong>${escapeHtml(s.nombre)}</strong> (${s.fallas} fallas)`).join(', ')}${enRiesgo.length>5?` y ${enRiesgo.length-5} más.':''}`;
+    const masInfo = enRiesgo.length > 5 ? ' y ' + (enRiesgo.length - 5) + ' más.' : '';
+    alertMsg.innerHTML = `<strong>${enRiesgo.length} estudiante(s) en riesgo</strong> con 3 o más fallas: ${enRiesgo.slice(0,5).map(s=>`<strong>${escapeHtml(s.nombre)}</strong> (${s.fallas} fallas)`).join(', ')}${masInfo}`;
   } else if (alertEl) { alertEl.classList.remove('show'); }
   const sorted=[...stats].sort((a,b)=>(b.fallas+b.fugas)-(a.fallas+a.fugas));
   const tbody=document.getElementById('statBody');
