@@ -1334,7 +1334,7 @@ async function fetchCitasAll(force = false) {
 // ════════════════════════════════════════════
 //  AUTH — Observer
 // ════════════════════════════════════════════
-const SUPERADMIN_EMAIL = 'fjsan10@gmail.com';
+const SUPERADMIN_EMAIL = 'froylan.jimenez@gmail.com';
 
 onAuthStateChanged(auth, async user => {
   if (user) {
@@ -2644,7 +2644,7 @@ window.cargarDocentesAdmin = async function() {
     if (!docs.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">No hay docentes registrados.</p>'; return; }
     lista.innerHTML = '<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">'+docs.map(d=>{
       const activo = d.activo !== false;
-      const esSuperAdmin = d.email === 'fjsan10@gmail.com';
+      const esSuperAdmin = d.email === 'froylan.jimenez@gmail.com';
       const grados = d.gradosPermitidos && d.gradosPermitidos.length > 0
         ? d.gradosPermitidos.join(', ')
         : '<span style="color:var(--text-3);font-style:italic">Todos los grupos</span>';
