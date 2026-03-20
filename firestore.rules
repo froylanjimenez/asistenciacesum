@@ -37,8 +37,8 @@ service cloud.firestore {
       allow create: if isAdmin() || (isSuperAdmin() && request.auth.uid == uid);
       // Actualizar: admins para cualquier cuenta excepto la del superadmin;
       //             el superadmin siempre puede actualizar su propio doc
-      allow update: if (isAdmin() && resource.data.email != 'froylan.jimenez@gmail.com')
-                    || (isSuperAdmin() && request.auth.uid == uid);
+      allow update: if isSuperAdmin()
+                    || (isAdmin() && resource.data.email != 'froylan.jimenez@gmail.com');
       // Borrar: admins para cualquier cuenta excepto la del superadmin
       allow delete: if isAdmin() && resource.data.email != 'froylan.jimenez@gmail.com';
     }

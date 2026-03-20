@@ -1171,7 +1171,7 @@ try {
 //  ESTADO GLOBAL
 // ════════════════════════════════════════════
 const state = {
-  usuario: null, nombre: null, isAdmin: false, rol: null,
+  usuario: null, nombre: null, isAdmin: false, rol: null, _isSuperAdmin: false,
   gradosPermitidos: [],
   estudiantes: [], citasHoy: [], novedadesActivas: [],
   asistenciaHoy: {}, todasNovedades: [], todasCitas: [], citasPendientes: []
@@ -1355,6 +1355,7 @@ onAuthStateChanged(auth, async user => {
         state.nombre           = data.nombre || user.email;
         state.rol              = esSuperAdmin ? 'admin' : (data.rol || 'docente');
         state.isAdmin          = esSuperAdmin || data.rol === 'admin';
+        state._isSuperAdmin    = esSuperAdmin;
         state.gradosPermitidos = data.gradosPermitidos || [];
       } else {
         // Documento no existe en Firestore
@@ -1362,6 +1363,7 @@ onAuthStateChanged(auth, async user => {
         state.nombre           = user.email;
         state.rol              = esSuperAdmin ? 'admin' : 'docente';
         state.isAdmin          = esSuperAdmin;
+        state._isSuperAdmin    = esSuperAdmin;
         state.gradosPermitidos = [];
         // Auto-crear perfil del superadmin si no existe
         if (esSuperAdmin) {
@@ -1379,6 +1381,7 @@ onAuthStateChanged(auth, async user => {
       state.nombre           = user.email;
       state.rol              = esSuperAdmin ? 'admin' : 'docente';
       state.isAdmin          = esSuperAdmin;
+      state._isSuperAdmin    = esSuperAdmin;
       state.gradosPermitidos = [];
     }
     document.getElementById('navNombre').textContent = state.nombre;
@@ -2639,32 +2642,42 @@ window.cargarDocentesAdmin = async function() {
   if (!lista) return;
   lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
   try {
-    const snap = await _getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
-    const docs = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
-    if (!docs.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">No hay docentes registrados.</p>'; return; }
+    // Superadmin ve todos los usuarios; admin normal solo ve docentes
+    const snapQ = state._isSuperAdmin
+      ? await _getDocs(collection(db,'usuarios'))
+      : await _getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
+    const docs = snapQ.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+    if (!docs.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">No hay usuarios registrados.</p>'; return; }
     lista.innerHTML = '<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">'+docs.map(d=>{
-      const activo = d.activo !== false;
-      const esSuperAdmin = d.email === 'froylan.jimenez@gmail.com';
-      const grados = d.gradosPermitidos && d.gradosPermitidos.length > 0
+      const activo    = d.activo !== false;
+      const esSA      = d.email === SUPERADMIN_EMAIL;
+      const rolActual = d.rol || 'docente';
+      const esAdmin   = rolActual === 'admin';
+      const grados    = d.gradosPermitidos?.length > 0
         ? d.gradosPermitidos.join(', ')
         : '<span style="color:var(--text-3);font-style:italic">Todos los grupos</span>';
+      const badgeSA   = `&nbsp;<span style="background:var(--accent-glow);color:var(--accent-lt);border:1px solid var(--accent);border-radius:20px;font-size:.65rem;font-weight:700;padding:.1rem .45rem">SUPERADMIN</span>`;
+      const badgeAdm  = `&nbsp;<span style="background:#a855f720;color:#c77dff;border:1px solid #a855f740;border-radius:20px;font-size:.65rem;font-weight:700;padding:.1rem .45rem">ADMIN</span>`;
       return `<div class="docente-row">
         <div class="dr-info">
-          <div class="dr-nombre">${escapeHtml(d.nombre||d.email)}${esSuperAdmin?'&nbsp;<span style="background:#1a6cf520;color:var(--accent-lt);border:1px solid var(--accent);border-radius:20px;font-size:.65rem;font-weight:700;padding:.1rem .45rem">SUPERADMIN</span>':''}</div>
+          <div class="dr-nombre">${escapeHtml(d.nombre||d.email)}${esSA?badgeSA:esAdmin?badgeAdm:''}</div>
           <div class="dr-email">${escapeHtml(d.email||d.id)}</div>
-          <div style="font-size:.72rem;color:var(--text-2);margin-top:.2rem"><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> ${grados}</div>
+          ${!esAdmin?`<div style="font-size:.72rem;color:var(--text-2);margin-top:.2rem"><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> ${grados}</div>`:''}
         </div>
         <span class="${activo?'badge-activo':'badge-inactivo'}">${activo?'Activo':'Inactivo'}</span>
-        ${esSuperAdmin ? '' : `
-        <button class="btn-cesum btn-cesum-secondary sm" onclick="abrirGradosDocente('${d.id}','${escapeHtml((d.nombre||d.email)).replace(/'/g,"\\'")}',${JSON.stringify(d.gradosPermitidos||[])})">
-          <i class="bi bi-funnel"></i> Grupos
-        </button>
-        <button class="btn-cesum ${activo?'btn-cesum-warning':'btn-cesum-success'} sm" onclick="toggleActivoDocente('${d.id}',${activo})">
-          <i class="bi bi-${activo?'pause':'play'}-circle"></i> ${activo?'Desactivar':'Activar'}
-        </button>`}
+        ${esSA ? '' : `
+          ${state._isSuperAdmin ? `<button class="btn-cesum ${esAdmin?'btn-cesum-secondary':'btn-cesum-purple'} sm" onclick="cambiarRolUsuario('${d.id}','${rolActual}','${escapeHtml(d.nombre||d.email).replace(/'/g,"\\'")}')">
+            <i class="bi bi-${esAdmin?'person-down':'shield-check'}"></i> ${esAdmin?'→ Docente':'→ Admin'}
+          </button>` : ''}
+          ${!esAdmin?`<button class="btn-cesum btn-cesum-secondary sm" onclick="abrirGradosDocente('${d.id}','${escapeHtml((d.nombre||d.email)).replace(/'/g,"\\'")}',${JSON.stringify(d.gradosPermitidos||[])})">
+            <i class="bi bi-funnel"></i> Grupos
+          </button>`:''}
+          <button class="btn-cesum ${activo?'btn-cesum-warning':'btn-cesum-success'} sm" onclick="toggleActivoDocente('${d.id}',${activo})">
+            <i class="bi bi-${activo?'pause':'play'}-circle"></i> ${activo?'Desactivar':'Activar'}
+          </button>`}
       </div>`;
     }).join('')+'</div>';
-    _docentes = []; // reset para que se recargue en noticias
+    _docentes = [];
   } catch(e) { lista.innerHTML=`<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`; }
 };
 
@@ -2675,6 +2688,18 @@ window.toggleActivoDocente = async function(uid, activo) {
   try {
     await updateDoc(doc(db,'usuarios',uid), { activo: !activo });
     showToast(`Cuenta ${accion}da correctamente.`,'success');
+    cargarDocentesAdmin();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.cambiarRolUsuario = async function(uid, rolActual, nombre) {
+  const nuevoRol = rolActual === 'admin' ? 'docente' : 'admin';
+  if (!confirm(`¿Cambiar el rol de ${nombre} a ${nuevoRol}?`)) return;
+  showLoading(true);
+  try {
+    await updateDoc(doc(db,'usuarios',uid), { rol: nuevoRol });
+    showToast(`${nombre} ahora es ${nuevoRol}.`, 'success');
     cargarDocentesAdmin();
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
