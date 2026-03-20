@@ -1097,6 +1097,28 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
   </div>
 </div>
 
+<!-- MODAL GRUPOS DOCENTE -->
+<div class="modal fade modal-cesum" id="modalGradosDocente" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-funnel-fill me-2" style="color:var(--accent-lt)"></i>Grupos visibles para <span id="gradosDocenteNombre"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p style="font-size:.82rem;color:var(--text-2);margin-bottom:1rem">
+          Selecciona los grupos que este docente puede ver en su menú. Si no seleccionas ninguno, verá todos los grupos.
+        </p>
+        <div id="gradosDocenteCheckboxes" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;max-height:280px;overflow-y:auto"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-primary" onclick="guardarGradosDocente()"><i class="bi bi-save"></i> Guardar grupos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Firebase SDK -->
@@ -1150,6 +1172,7 @@ try {
 // ════════════════════════════════════════════
 const state = {
   usuario: null, nombre: null, isAdmin: false, rol: null,
+  gradosPermitidos: [],
   estudiantes: [], citasHoy: [], novedadesActivas: [],
   asistenciaHoy: {}, todasNovedades: [], todasCitas: [], citasPendientes: []
 };
@@ -1324,22 +1347,25 @@ onAuthStateChanged(auth, async user => {
           if (errEl) { errEl.textContent='Cuenta desactivada. Contacta al administrador.'; errEl.style.display='block'; }
           return;
         }
-        state.usuario = user.uid;
-        state.nombre  = data.nombre || user.email;
-        state.rol     = data.rol || 'docente';
-        state.isAdmin = data.rol === 'admin';
+        state.usuario         = user.uid;
+        state.nombre          = data.nombre || user.email;
+        state.rol             = data.rol || 'docente';
+        state.isAdmin         = data.rol === 'admin';
+        state.gradosPermitidos = data.gradosPermitidos || [];
       } else {
         // Usuario existe en Auth pero no en Firestore → crear perfil básico
-        state.usuario = user.uid;
-        state.nombre  = user.email;
-        state.rol     = 'docente';
-        state.isAdmin = false;
+        state.usuario         = user.uid;
+        state.nombre          = user.email;
+        state.rol             = 'docente';
+        state.isAdmin         = false;
+        state.gradosPermitidos = [];
       }
     } catch(e) {
-      state.usuario = user.uid;
-      state.nombre  = user.email;
-      state.rol     = 'docente';
-      state.isAdmin = false;
+      state.usuario          = user.uid;
+      state.nombre           = user.email;
+      state.rol              = 'docente';
+      state.isAdmin          = false;
+      state.gradosPermitidos = [];
     }
     document.getElementById('navNombre').textContent = state.nombre;
     if (state.isAdmin) document.getElementById('tabAdmin').classList.remove('hidden');
@@ -1451,7 +1477,10 @@ function poblarSelectEstudiantes() {
 }
 
 function poblarSelectGrados() {
-  const grados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
+  let grados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
+  if (!state.isAdmin && state.gradosPermitidos.length > 0) {
+    grados = grados.filter(g => state.gradosPermitidos.includes(g));
+  }
   ['asistGrado','filtroGradoAdmin','actGrado','filtroGradoNotas'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
@@ -2568,12 +2597,19 @@ window.cargarDocentesAdmin = async function() {
     if (!docs.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">No hay docentes registrados.</p>'; return; }
     lista.innerHTML = '<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">'+docs.map(d=>{
       const activo = d.activo !== false;
+      const grados = d.gradosPermitidos && d.gradosPermitidos.length > 0
+        ? d.gradosPermitidos.join(', ')
+        : '<span style="color:var(--text-3);font-style:italic">Todos los grupos</span>';
       return `<div class="docente-row">
         <div class="dr-info">
           <div class="dr-nombre">${escapeHtml(d.nombre||d.email)}</div>
           <div class="dr-email">${escapeHtml(d.email||d.id)}</div>
+          <div style="font-size:.72rem;color:var(--text-2);margin-top:.2rem"><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> ${grados}</div>
         </div>
         <span class="${activo?'badge-activo':'badge-inactivo'}">${activo?'Activo':'Inactivo'}</span>
+        <button class="btn-cesum btn-cesum-secondary sm" onclick="abrirGradosDocente('${d.id}','${escapeHtml((d.nombre||d.email)).replace(/'/g,"\\'")}',${JSON.stringify(d.gradosPermitidos||[])})">
+          <i class="bi bi-funnel"></i> Grupos
+        </button>
         <button class="btn-cesum ${activo?'btn-cesum-warning':'btn-cesum-success'} sm" onclick="toggleActivoDocente('${d.id}',${activo})">
           <i class="bi bi-${activo?'pause':'play'}-circle"></i> ${activo?'Desactivar':'Activar'}
         </button>
@@ -2590,6 +2626,35 @@ window.toggleActivoDocente = async function(uid, activo) {
   try {
     await updateDoc(doc(db,'usuarios',uid), { activo: !activo });
     showToast(`Cuenta ${accion}da correctamente.`,'success');
+    cargarDocentesAdmin();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+let _gradosDocenteUid = null;
+
+window.abrirGradosDocente = function(uid, nombre, gradosActuales) {
+  _gradosDocenteUid = uid;
+  document.getElementById('gradosDocenteNombre').textContent = nombre;
+  const todosGrados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
+  const cont = document.getElementById('gradosDocenteCheckboxes');
+  cont.innerHTML = todosGrados.map(g =>
+    `<label style="display:flex;align-items:center;gap:.5rem;padding:.35rem .1rem;font-size:.88rem;cursor:pointer;color:var(--text-1)">
+      <input type="checkbox" class="grado-check" value="${escapeHtml(g)}" ${gradosActuales.includes(g)?'checked':''} style="accent-color:var(--accent);width:15px;height:15px">
+      ${escapeHtml(g)}
+    </label>`
+  ).join('');
+  new bootstrap.Modal(document.getElementById('modalGradosDocente')).show();
+};
+
+window.guardarGradosDocente = async function() {
+  if (!_gradosDocenteUid) return;
+  const seleccionados = [...document.querySelectorAll('.grado-check:checked')].map(c => c.value);
+  showLoading(true);
+  try {
+    await updateDoc(doc(db,'usuarios',_gradosDocenteUid), { gradosPermitidos: seleccionados });
+    bootstrap.Modal.getInstance(document.getElementById('modalGradosDocente')).hide();
+    showToast('Grupos actualizados correctamente.','success');
     cargarDocentesAdmin();
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
