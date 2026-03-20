@@ -1334,37 +1334,51 @@ async function fetchCitasAll(force = false) {
 // ════════════════════════════════════════════
 //  AUTH — Observer
 // ════════════════════════════════════════════
+const SUPERADMIN_EMAIL = 'fjsan10@gmail.com';
+
 onAuthStateChanged(auth, async user => {
   if (user) {
+    const esSuperAdmin = user.email === SUPERADMIN_EMAIL;
     // Leer perfil desde Firestore
     try {
       const snap = await _getDoc(doc(db, 'usuarios', user.uid));
       if (snap.exists()) {
         const data = snap.data();
-        if (data.activo === false) {
+        // El superadmin nunca puede ser desactivado
+        if (data.activo === false && !esSuperAdmin) {
           await signOut(auth);
           const errEl = document.getElementById('loginError');
           if (errEl) { errEl.textContent='Cuenta desactivada. Contacta al administrador.'; errEl.style.display='block'; }
           return;
         }
-        state.usuario         = user.uid;
-        state.nombre          = data.nombre || user.email;
-        state.rol             = data.rol || 'docente';
-        state.isAdmin         = data.rol === 'admin';
+        state.usuario          = user.uid;
+        state.nombre           = data.nombre || user.email;
+        state.rol              = esSuperAdmin ? 'admin' : (data.rol || 'docente');
+        state.isAdmin          = esSuperAdmin || data.rol === 'admin';
         state.gradosPermitidos = data.gradosPermitidos || [];
       } else {
-        // Usuario existe en Auth pero no en Firestore → crear perfil básico
-        state.usuario         = user.uid;
-        state.nombre          = user.email;
-        state.rol             = 'docente';
-        state.isAdmin         = false;
+        // Documento no existe en Firestore
+        state.usuario          = user.uid;
+        state.nombre           = user.email;
+        state.rol              = esSuperAdmin ? 'admin' : 'docente';
+        state.isAdmin          = esSuperAdmin;
         state.gradosPermitidos = [];
+        // Auto-crear perfil del superadmin si no existe
+        if (esSuperAdmin) {
+          try {
+            await setDoc(doc(db, 'usuarios', user.uid), {
+              nombre: 'Super Admin', email: SUPERADMIN_EMAIL,
+              rol: 'admin', activo: true, ts: serverTimestamp()
+            });
+          } catch(_) { /* se creará en el próximo login */ }
+        }
       }
     } catch(e) {
+      // Ante cualquier error, el superadmin conserva acceso de admin
       state.usuario          = user.uid;
       state.nombre           = user.email;
-      state.rol              = 'docente';
-      state.isAdmin          = false;
+      state.rol              = esSuperAdmin ? 'admin' : 'docente';
+      state.isAdmin          = esSuperAdmin;
       state.gradosPermitidos = [];
     }
     document.getElementById('navNombre').textContent = state.nombre;

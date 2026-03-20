@@ -2,34 +2,45 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: el usuario autenticado tiene un perfil activo
+    // Superadmin identificado por Firebase Auth token — no depende de Firestore
+    function isSuperAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'fjsan10@gmail.com';
+    }
+
+    // Usuario activo con documento en Firestore
     function isActivo() {
       return request.auth != null
         && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.activo != false;
     }
 
-    // Helper: el usuario es admin activo
+    // Admin: superadmin siempre pasa; otros necesitan rol en Firestore
     function isAdmin() {
-      return isActivo()
-        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+      return isSuperAdmin()
+        || (isActivo()
+            && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin');
     }
 
-    // Helper: nombre del usuario actual en Firestore
+    // Nombre del usuario en Firestore (para compatibilidad con actividades antiguas)
     function miNombre() {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nombre;
     }
 
     // ── Usuarios ──────────────────────────────────────────────────────────
     match /usuarios/{uid} {
-      // get (un doc): propio perfil sin helper para evitar ciclo; otros requieren isActivo
+      // Propio perfil sin helper (evita ciclo); otros requieren isActivo
       allow get: if request.auth != null && (request.auth.uid == uid || isActivo());
-      // list (query colección): solo admins (cargarDocentesAdmin)
+      // Solo admins pueden listar usuarios (cargarDocentesAdmin)
       allow list: if isAdmin();
-      // Solo admins crean/modifican/borran usuarios,
-      // pero nadie puede tocar la cuenta superadmin (fjsan10@gmail.com)
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && resource.data.email != 'fjsan10@gmail.com';
+      // Crear: admins O superadmin creando su propio perfil si no existe
+      allow create: if isAdmin() || (isSuperAdmin() && request.auth.uid == uid);
+      // Actualizar: admins para cualquier cuenta excepto la del superadmin;
+      //             el superadmin siempre puede actualizar su propio doc
+      allow update: if (isAdmin() && resource.data.email != 'fjsan10@gmail.com')
+                    || (isSuperAdmin() && request.auth.uid == uid);
+      // Borrar: admins para cualquier cuenta excepto la del superadmin
+      allow delete: if isAdmin() && resource.data.email != 'fjsan10@gmail.com';
     }
 
     // ── Estudiantes ───────────────────────────────────────────────────────
@@ -81,8 +92,6 @@ service cloud.firestore {
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid)
         || (isActivo() && resource.data.docenteUid == request.auth.uid)
-        // Compatibilidad con actividades antiguas (sin docenteUid/creadoPor):
-        // permite si el campo 'docente' coincide con el nombre del usuario actual
         || (isActivo() && resource.data.docente == miNombre());
     }
 
