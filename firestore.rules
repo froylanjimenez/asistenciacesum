@@ -22,11 +22,14 @@ service cloud.firestore {
 
     // ── Usuarios ──────────────────────────────────────────────────────────
     match /usuarios/{uid} {
-      // Propio perfil: sin helper (evita ciclo al leer doc que valida isActivo)
-      // Otros perfiles: cualquier usuario activo (necesario para lista de docentes)
-      allow read: if request.auth != null && (request.auth.uid == uid || isActivo());
-      // Solo admins crean/modifican/borran usuarios
-      allow create, update, delete: if isAdmin();
+      // get (un doc): propio perfil sin helper para evitar ciclo; otros requieren isActivo
+      allow get: if request.auth != null && (request.auth.uid == uid || isActivo());
+      // list (query colección): solo admins (cargarDocentesAdmin)
+      allow list: if isAdmin();
+      // Solo admins crean/modifican/borran usuarios,
+      // pero nadie puede tocar la cuenta superadmin (fjsan10@gmail.com)
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && resource.data.email != 'fjsan10@gmail.com';
     }
 
     // ── Estudiantes ───────────────────────────────────────────────────────
