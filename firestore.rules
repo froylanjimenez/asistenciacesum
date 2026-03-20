@@ -95,6 +95,12 @@ service cloud.firestore {
         || (isActivo() && resource.data.docente == miNombre());
     }
 
+    // ── Eventos / calendario institucional ───────────────────────────────
+    match /eventos/{evId} {
+      allow read: if isActivo();
+      allow create, update, delete: if isAdmin();
+    }
+
     // ── Bloqueo por defecto ───────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;

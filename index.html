@@ -342,6 +342,44 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
   .asis-table td:first-child{min-width:88px}
   .estado-btn{width:30px;height:30px;font-size:.75rem;border-radius:6px}
 }
+
+/* ── CALENDARIO ───────────────────────────── */
+.cal-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:.5rem;flex-wrap:wrap}
+.cal-month-label{font-size:1.1rem;font-weight:700;color:var(--text-1);white-space:nowrap}
+.cal-leyenda{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1rem}
+.cal-ley-item{display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:var(--text-2);
+  background:var(--bg-input);border:1px solid var(--border);border-radius:20px;padding:.15rem .55rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-dow{text-align:center;font-size:.7rem;font-weight:600;color:var(--text-3);padding:.35rem 0}
+.cal-day{background:var(--bg-input);border:1px solid var(--border);border-radius:8px;
+  min-height:72px;padding:.3rem .35rem;cursor:default;transition:border-color .15s,background .15s;position:relative}
+.cal-day.has-events{cursor:pointer}
+.cal-day.has-events:hover{border-color:var(--accent);background:var(--accent-glow)}
+.cal-day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.cal-day.other-month{opacity:.28;pointer-events:none}
+.cal-day-num{font-size:.78rem;font-weight:600;color:var(--text-2);margin-bottom:.2rem;line-height:1}
+.cal-day.today .cal-day-num{color:var(--accent-lt);font-weight:800}
+.cal-chips{display:flex;flex-direction:column;gap:2px}
+.cal-chip{font-size:.62rem;font-weight:600;border-radius:4px;padding:.06rem .28rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:1.45}
+.cal-more{font-size:.6rem;color:var(--text-3);margin-top:2px}
+.cal-dot-row{display:none;flex-wrap:wrap;gap:2px;margin-top:.2rem}
+.cal-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+/* modal evento */
+.ev-item{background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;margin-bottom:.5rem}
+.ev-item-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;flex-wrap:wrap}
+.ev-tipo-badge{font-size:.7rem;font-weight:700;border-radius:20px;padding:.1rem .5rem;white-space:nowrap}
+.ev-titulo{font-weight:600;font-size:.95rem;color:var(--text-1);margin-bottom:.2rem}
+.ev-meta{font-size:.76rem;color:var(--text-2);display:flex;align-items:center;gap:.3rem}
+.ev-detalle{font-size:.82rem;color:var(--text-2);background:var(--bg-dark);border-radius:6px;padding:.45rem .65rem;margin-top:.4rem;line-height:1.5}
+@media(max-width:600px){
+  .cal-day{min-height:48px;padding:.25rem .2rem}
+  .cal-chips{display:none}
+  .cal-more{display:none}
+  .cal-dot-row{display:flex}
+  .cal-day-num{font-size:.7rem}
+}
 </style>
 </head>
 <body>
@@ -396,6 +434,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
       </button>
       <button class="nav-tab-btn" id="tabNotas" onclick="switchTab('notas')">
         <i class="bi bi-journal-text"></i><span>Notas</span>
+      </button>
+      <button class="nav-tab-btn" id="tabCalendario" onclick="switchTab('calendario')">
+        <i class="bi bi-calendar3"></i><span>Calendario</span>
       </button>
       <button class="nav-tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">
         <i class="bi bi-shield-lock"></i><span>Admin</span>
@@ -627,6 +668,27 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
             <div id="actividadesLista"><p style="color:var(--text-2);font-size:.85rem">Carga o crea una actividad para comenzar.</p></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- CALENDARIO -->
+    <div id="calendarioTab" class="tab-content" style="display:none">
+      <div class="cal-wrap">
+        <div class="cal-nav">
+          <div style="display:flex;gap:.4rem;align-items:center">
+            <button class="btn-cesum btn-cesum-secondary sm" onclick="calNavMes(-1)"><i class="bi bi-chevron-left"></i></button>
+            <button class="btn-cesum btn-cesum-secondary sm" onclick="calHoy()" style="font-size:.78rem;padding:.3rem .7rem">Hoy</button>
+            <button class="btn-cesum btn-cesum-secondary sm" onclick="calNavMes(1)"><i class="bi bi-chevron-right"></i></button>
+          </div>
+          <span id="calMonthLabel" class="cal-month-label"></span>
+          <div id="calAdminBtns" style="display:none">
+            <button class="btn-cesum btn-cesum-primary sm" onclick="abrirModalEvento(null)">
+              <i class="bi bi-plus-circle"></i> Nuevo evento
+            </button>
+          </div>
+        </div>
+        <div class="cal-leyenda" id="calLeyenda"></div>
+        <div class="cal-grid" id="calGrid"></div>
       </div>
     </div>
 
@@ -1056,6 +1118,74 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 </div>
 
 <!-- MODAL IMPORTAR CSV -->
+<!-- MODAL VER EVENTOS DEL DÍA -->
+<div class="modal fade modal-cesum" id="modalVerEvento" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-calendar-event me-2" style="color:var(--accent-lt)"></i><span id="modalVerEventoFecha"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4" id="modalVerEventoBody"></div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button class="btn-cesum btn-cesum-primary" id="btnAgregarEventoDia" onclick="abrirModalEventoDesdeDia()" style="display:none">
+          <i class="bi bi-plus-circle"></i> Agregar evento
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CREAR / EDITAR EVENTO -->
+<div class="modal fade modal-cesum" id="modalCrearEvento" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalEvento"><i class="bi bi-calendar-plus me-2" style="color:var(--accent-lt)"></i>Nuevo evento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="evId">
+        <div class="mb-3">
+          <label class="form-label">Tipo de evento</label>
+          <select id="evTipo" class="form-select" onchange="actualizarTituloEvento()">
+            <option value="Preinforme">📋 Preinforme</option>
+            <option value="Elecciones">🗳️ Elecciones</option>
+            <option value="Entrega de preguntas de período">❓ Entrega de preguntas de período</option>
+            <option value="Examen periódico">📝 Examen periódico</option>
+            <option value="Capacitación">🎓 Capacitación</option>
+            <option value="Jornada sindical">✊ Jornada sindical</option>
+            <option value="Otro">✏️ Otro</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Título</label>
+          <input type="text" id="evTitulo" class="form-control" placeholder="Ej: Subida de preinforme primer período">
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Fecha inicio</label>
+            <input type="date" id="evFecha" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Fecha fin <span style="color:var(--text-3)">(opcional)</span></label>
+            <input type="date" id="evFechaFin" class="form-control">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Detalle <span style="color:var(--text-3)">(opcional)</span></label>
+          <textarea id="evDetalle" class="form-control" rows="3" placeholder="Hora, lugar, instrucciones específicas..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-success" onclick="guardarEvento()"><i class="bi bi-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade modal-cesum" id="modalImportarCSV" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
@@ -1511,7 +1641,7 @@ function poblarSelectGrados() {
 //  NAVEGACIÓN
 // ════════════════════════════════════════════
 window.switchTab = function(tab) {
-  ['inicio','asistencia','estadisticas','psicologia','notas','admin'].forEach(t => {
+  ['inicio','asistencia','estadisticas','psicologia','notas','calendario','admin'].forEach(t => {
     const el=document.getElementById(t+'Tab');
     const btn=document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1));
     if(el)  el.style.display  = t===tab?'block':'none';
@@ -1521,6 +1651,7 @@ window.switchTab = function(tab) {
   if (tab==='estadisticas') cargarEstadisticas();
   if (tab==='psicologia')   cargarCitasPendientes();
   if (tab==='notas')        cargarActividades();
+  if (tab==='calendario')   cargarCalendario();
   if (tab==='admin')        { cargarNovedades(); switchAdminTab('novedades'); }
 };
 
@@ -3147,6 +3278,242 @@ window.dismissNoticia = function(id) {
 };
 
 // Las funciones ya están expuestas globalmente mediante window.X = function(){}
+
+// ════════════════════════════════════════════
+//  CALENDARIO DE EVENTOS INSTITUCIONALES
+// ════════════════════════════════════════════
+const EVENTO_TIPOS = {
+  'Preinforme':                       { color:'#f97316', icon:'📋' },
+  'Elecciones':                       { color:'#c77dff', icon:'🗳️' },
+  'Entrega de preguntas de período':  { color:'#00a8cc', icon:'❓' },
+  'Examen periódico':                 { color:'#ff4d6a', icon:'📝' },
+  'Capacitación':                     { color:'#00e896', icon:'🎓' },
+  'Jornada sindical':                 { color:'#ffd166', icon:'✊' },
+  'Otro':                             { color:'#a0aec0', icon:'📌' },
+};
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_ES  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+let _calYear  = new Date().getFullYear();
+let _calMonth = new Date().getMonth();
+let _calEventos = [];
+let _calDiaActivo = null;
+
+window.cargarCalendario = async function() {
+  document.getElementById('calAdminBtns').style.display = state.isAdmin ? 'flex' : 'none';
+  renderCalLeyenda();
+  try {
+    showLoading(true);
+    const snap = await _getDocs(collection(db,'eventos'));
+    _calEventos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+  } catch(e) {
+    showToast('Error al cargar eventos: '+e.message,'error');
+    _calEventos = [];
+  } finally { showLoading(false); }
+  renderCalendario();
+};
+
+function renderCalLeyenda() {
+  const el = document.getElementById('calLeyenda');
+  if (!el) return;
+  el.innerHTML = Object.entries(EVENTO_TIPOS).map(([tipo, cfg]) =>
+    `<span class="cal-ley-item">
+      <span style="width:8px;height:8px;border-radius:50%;background:${cfg.color};display:inline-block;flex-shrink:0"></span>
+      ${escapeHtml(tipo)}
+    </span>`
+  ).join('');
+}
+
+function renderCalendario() {
+  const labelEl = document.getElementById('calMonthLabel');
+  if (labelEl) labelEl.textContent = `${MESES_ES[_calMonth]} ${_calYear}`;
+  const grid = document.getElementById('calGrid');
+  if (!grid) return;
+  const hoy = todayISO();
+
+  // Build day → events map (handles multi-day ranges)
+  const evMap = {};
+  _calEventos.forEach(ev => {
+    if (!ev.fecha) return;
+    const end = ev.fechaFin || ev.fecha;
+    let cur = new Date(ev.fecha + 'T00:00:00');
+    const last = new Date(end + 'T00:00:00');
+    while (cur <= last) {
+      const key = cur.toISOString().slice(0,10);
+      if (!evMap[key]) evMap[key] = [];
+      evMap[key].push(ev);
+      cur.setDate(cur.getDate()+1);
+    }
+  });
+
+  const firstOfMonth = new Date(_calYear, _calMonth, 1);
+  const lastOfMonth  = new Date(_calYear, _calMonth+1, 0);
+  const startOffset  = firstOfMonth.getDay();
+  const gridStart    = new Date(_calYear, _calMonth, 1 - startOffset);
+  const totalCells   = Math.ceil((startOffset + lastOfMonth.getDate()) / 7) * 7;
+
+  let html = DIAS_ES.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  for (let i = 0; i < totalCells; i++) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    const iso = d.toISOString().slice(0,10);
+    const isThisMonth = d.getMonth() === _calMonth;
+    const isToday     = iso === hoy;
+    const evs         = evMap[iso] || [];
+    const hasEvents   = evs.length > 0;
+
+    const classes = ['cal-day', isToday?'today':'', !isThisMonth?'other-month':'', hasEvents?'has-events':'']
+      .filter(Boolean).join(' ');
+    const onclick = hasEvents ? `onclick="abrirDiaEvento('${iso}')"` : '';
+
+    const chips = evs.slice(0,2).map(ev => {
+      const cfg = EVENTO_TIPOS[ev.tipo] || EVENTO_TIPOS['Otro'];
+      return `<span class="cal-chip" style="background:${cfg.color}22;color:${cfg.color};border:1px solid ${cfg.color}50">${escapeHtml(ev.titulo||ev.tipo)}</span>`;
+    }).join('');
+    const moreText = evs.length > 2 ? `<div class="cal-more">+${evs.length-2} más</div>` : '';
+    const dots = evs.map(ev => {
+      const cfg = EVENTO_TIPOS[ev.tipo] || EVENTO_TIPOS['Otro'];
+      return `<span class="cal-dot" style="background:${cfg.color}"></span>`;
+    }).join('');
+
+    html += `<div class="${classes}" ${onclick}>
+      <div class="cal-day-num">${d.getDate()}</div>
+      <div class="cal-chips">${chips}${moreText}</div>
+      <div class="cal-dot-row">${dots}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+window.calNavMes = function(delta) {
+  _calMonth += delta;
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
+  renderCalendario();
+};
+
+window.calHoy = function() {
+  const now = new Date();
+  _calYear  = now.getFullYear();
+  _calMonth = now.getMonth();
+  renderCalendario();
+};
+
+window.abrirDiaEvento = function(fecha) {
+  _calDiaActivo = fecha;
+  const d = new Date(fecha + 'T00:00:00');
+  document.getElementById('modalVerEventoFecha').textContent =
+    `${d.getDate()} de ${MESES_ES[d.getMonth()]} ${d.getFullYear()}`;
+
+  const evs = _calEventos.filter(ev => {
+    const end = ev.fechaFin || ev.fecha;
+    return fecha >= ev.fecha && fecha <= end;
+  });
+
+  const adminBtn = document.getElementById('btnAgregarEventoDia');
+  if (adminBtn) adminBtn.style.display = state.isAdmin ? 'inline-flex' : 'none';
+
+  const body = document.getElementById('modalVerEventoBody');
+  if (!evs.length) {
+    body.innerHTML = '<p style="color:var(--text-2);font-size:.88rem;text-align:center;padding:1rem 0">No hay eventos para este día.</p>';
+  } else {
+    body.innerHTML = evs.map(ev => {
+      const cfg = EVENTO_TIPOS[ev.tipo] || EVENTO_TIPOS['Otro'];
+      const fechaStr = ev.fechaFin && ev.fechaFin !== ev.fecha
+        ? `${ev.fecha} → ${ev.fechaFin}` : ev.fecha;
+      const adminBtns = state.isAdmin
+        ? `<div style="display:flex;gap:.4rem;margin-top:.6rem">
+            <button class="btn-cesum btn-cesum-secondary sm" onclick="editarEvento('${ev.id}')"><i class="bi bi-pencil"></i> Editar</button>
+            <button class="btn-cesum btn-cesum-danger sm" onclick="eliminarEvento('${ev.id}')"><i class="bi bi-trash"></i> Eliminar</button>
+           </div>` : '';
+      return `<div class="ev-item">
+        <div class="ev-item-header">
+          <span class="ev-tipo-badge" style="background:${cfg.color}22;color:${cfg.color};border:1px solid ${cfg.color}50">${cfg.icon} ${escapeHtml(ev.tipo)}</span>
+        </div>
+        <div class="ev-titulo">${escapeHtml(ev.titulo||ev.tipo)}</div>
+        <div class="ev-meta"><i class="bi bi-calendar3"></i> ${escapeHtml(fechaStr)}</div>
+        ${ev.detalle ? `<div class="ev-detalle">${escapeHtml(ev.detalle)}</div>` : ''}
+        ${adminBtns}
+      </div>`;
+    }).join('');
+  }
+  new bootstrap.Modal(document.getElementById('modalVerEvento')).show();
+};
+
+window.abrirModalEventoDesdeDia = function() {
+  bootstrap.Modal.getInstance(document.getElementById('modalVerEvento'))?.hide();
+  setTimeout(() => abrirModalEvento(null, _calDiaActivo), 350);
+};
+
+window.abrirModalEvento = function(id, fechaPreset = null) {
+  const ev = id ? _calEventos.find(e => e.id === id) : null;
+  document.getElementById('evId').value       = ev?.id || '';
+  document.getElementById('evTipo').value     = ev?.tipo || 'Preinforme';
+  document.getElementById('evTitulo').value   = ev?.titulo || '';
+  document.getElementById('evFecha').value    = ev?.fecha || fechaPreset || todayISO();
+  document.getElementById('evFechaFin').value = ev?.fechaFin || '';
+  document.getElementById('evDetalle').value  = ev?.detalle || '';
+  document.getElementById('tituloModalEvento').innerHTML =
+    `<i class="bi bi-calendar-${ev?'check':'plus'} me-2" style="color:var(--accent-lt)"></i>${ev?'Editar evento':'Nuevo evento'}`;
+  if (!ev) actualizarTituloEvento();
+  new bootstrap.Modal(document.getElementById('modalCrearEvento')).show();
+};
+
+window.editarEvento = function(id) {
+  bootstrap.Modal.getInstance(document.getElementById('modalVerEvento'))?.hide();
+  setTimeout(() => abrirModalEvento(id), 350);
+};
+
+window.actualizarTituloEvento = function() {
+  const tipo = document.getElementById('evTipo').value;
+  const tituloEl = document.getElementById('evTitulo');
+  if (!tituloEl.value || Object.keys(EVENTO_TIPOS).includes(tituloEl.value)) {
+    tituloEl.value = tipo !== 'Otro' ? tipo : '';
+  }
+};
+
+window.guardarEvento = async function() {
+  const id       = document.getElementById('evId').value.trim();
+  const tipo     = document.getElementById('evTipo').value;
+  const titulo   = document.getElementById('evTitulo').value.trim();
+  const fecha    = document.getElementById('evFecha').value;
+  const fechaFin = document.getElementById('evFechaFin').value || fecha;
+  const detalle  = document.getElementById('evDetalle').value.trim();
+
+  if (!titulo || !fecha) { showToast('Completa el título y la fecha.','warning'); return; }
+  if (fechaFin < fecha)  { showToast('La fecha fin no puede ser anterior al inicio.','warning'); return; }
+
+  showLoading(true);
+  try {
+    const data = { tipo, titulo, fecha, fechaFin, detalle, creadoPor: state.usuario, ts: serverTimestamp() };
+    if (id) {
+      await updateDoc(doc(db,'eventos',id), data);
+    } else {
+      await addDoc(collection(db,'eventos'), data);
+    }
+    bootstrap.Modal.getInstance(document.getElementById('modalCrearEvento'))?.hide();
+    showToast(`Evento ${id?'actualizado':'creado'} correctamente.`,'success');
+    // Refresh cache
+    const snap = await _getDocs(collection(db,'eventos'));
+    _calEventos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderCalendario();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.eliminarEvento = async function(id) {
+  if (!confirm('¿Eliminar este evento del calendario?')) return;
+  showLoading(true);
+  try {
+    await deleteDoc(doc(db,'eventos',id));
+    bootstrap.Modal.getInstance(document.getElementById('modalVerEvento'))?.hide();
+    showToast('Evento eliminado.','success');
+    _calEventos = _calEventos.filter(e => e.id !== id);
+    renderCalendario();
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
 </script>
 </body>
 </html>
