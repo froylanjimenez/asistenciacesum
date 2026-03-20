@@ -63,6 +63,14 @@
         { "fieldPath": "grado", "order": "ASCENDING" },
         { "fieldPath": "fecha", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "actividades",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docenteUid", "order": "ASCENDING" },
+        { "fieldPath": "fecha",      "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -2143,13 +2143,14 @@ window.cargarActividades = async function() {
   const lista = document.getElementById('actividadesLista');
   lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
   try {
-    const snap = await _getDocs(query(collection(db,'actividades'), orderBy('fecha','desc')));
-    let all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Docentes solo ven sus propias actividades
-    if (!state.isAdmin) {
-      all = all.filter(a => a.docenteUid === state.usuario || a.docente === state.nombre);
+    let q;
+    if (state.isAdmin) {
+      q = query(collection(db,'actividades'), orderBy('fecha','desc'));
+    } else {
+      q = query(collection(db,'actividades'), where('docenteUid','==',state.usuario), orderBy('fecha','desc'));
     }
-    _actividades = all;
+    const snap = await _getDocs(q);
+    _actividades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderActividades();
   } catch(e) { lista.innerHTML = `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`; }
 };
