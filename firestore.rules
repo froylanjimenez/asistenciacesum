@@ -15,17 +15,16 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
     }
 
-    // Helper: el usuario es docente activo
-    function isDocente() {
-      return isActivo()
-        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'docente';
+    // Helper: nombre del usuario actual en Firestore
+    function miNombre() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nombre;
     }
 
     // ── Usuarios ──────────────────────────────────────────────────────────
     match /usuarios/{uid} {
-      // Cada usuario puede leer su propio perfil; admins leen todos
-      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
-      // Solo admins crean/modifican usuarios
+      // Cualquier usuario activo puede leer perfiles (necesario para lista de docentes)
+      allow read: if isActivo();
+      // Solo admins crean/modifican/borran usuarios
       allow create, update, delete: if isAdmin();
     }
 
@@ -36,10 +35,8 @@ service cloud.firestore {
     }
 
     // ── Asistencia ────────────────────────────────────────────────────────
-    // Documento por fecha; registros son array dentro del doc
     match /asistencia/{fecha} {
       allow read: if isActivo();
-      // Docentes registran/editan asistencia; admins también
       allow write: if isActivo();
     }
 
@@ -47,7 +44,6 @@ service cloud.firestore {
     match /reportes/{repId} {
       allow read: if isActivo();
       allow create: if isActivo();
-      // Solo quien creó el reporte o un admin puede editar/borrar
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
@@ -80,7 +76,10 @@ service cloud.firestore {
       allow create: if isActivo();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid)
-        || (isActivo() && resource.data.docenteUid == request.auth.uid);
+        || (isActivo() && resource.data.docenteUid == request.auth.uid)
+        // Compatibilidad con actividades antiguas (sin docenteUid/creadoPor):
+        // permite si el campo 'docente' coincide con el nombre del usuario actual
+        || (isActivo() && resource.data.docente == miNombre());
     }
 
     // ── Bloqueo por defecto ───────────────────────────────────────────────
