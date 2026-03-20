@@ -22,8 +22,9 @@ service cloud.firestore {
 
     // ── Usuarios ──────────────────────────────────────────────────────────
     match /usuarios/{uid} {
-      // Cualquier usuario activo puede leer perfiles (necesario para lista de docentes)
-      allow read: if isActivo();
+      // Propio perfil: sin helper (evita ciclo al leer doc que valida isActivo)
+      // Otros perfiles: cualquier usuario activo (necesario para lista de docentes)
+      allow read: if request.auth != null && (request.auth.uid == uid || isActivo());
       // Solo admins crean/modifican/borran usuarios
       allow create, update, delete: if isAdmin();
     }
