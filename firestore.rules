@@ -79,7 +79,8 @@ service cloud.firestore {
       allow read: if isActivo();
       allow create: if isActivo();
       allow update, delete: if isAdmin()
-        || (isActivo() && resource.data.creadoPor == request.auth.uid);
+        || (isActivo() && resource.data.creadoPor == request.auth.uid)
+        || (isActivo() && resource.data.docenteUid == request.auth.uid);
     }
 
     // ── Bloqueo por defecto ───────────────────────────────────────────────

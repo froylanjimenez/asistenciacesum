@@ -619,8 +619,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
                 <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarActividades()">
                   <i class="bi bi-arrow-clockwise"></i> Refrescar
                 </button>
-                <button class="btn-cesum btn-cesum-primary sm" onclick="exportarNotasCSV()">
-                  <i class="bi bi-download"></i> Exportar CSV
+                <button class="btn-cesum btn-cesum-primary sm" onclick="exportarNotasGrupoCSV()">
+                  <i class="bi bi-download"></i> CSV por grupo
                 </button>
               </div>
             </div>
@@ -2127,7 +2127,8 @@ window.guardarActividad = async function() {
   try {
     await addDoc(collection(db,'actividades'), {
       nombre, valoracionMax: valoracion, grado, fecha,
-      docente: state.nombre, calificaciones: {}, ts: serverTimestamp()
+      docente: state.nombre, docenteUid: state.usuario, creadoPor: state.usuario,
+      calificaciones: {}, ts: serverTimestamp()
     });
     showToast('Actividad creada.','success');
     document.getElementById('actNombre').value = '';
@@ -2143,7 +2144,12 @@ window.cargarActividades = async function() {
   lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
   try {
     const snap = await _getDocs(query(collection(db,'actividades'), orderBy('fecha','desc')));
-    _actividades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    let all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Docentes solo ven sus propias actividades
+    if (!state.isAdmin) {
+      all = all.filter(a => a.docenteUid === state.usuario || a.docente === state.nombre);
+    }
+    _actividades = all;
     renderActividades();
   } catch(e) { lista.innerHTML = `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(e.message)}</p>`; }
 };
@@ -2159,6 +2165,7 @@ window.renderActividades = function() {
   lista.innerHTML = acts.map(a => {
     const calCount = Object.keys(a.calificaciones || {}).length;
     const estudiantesGrado = state.estudiantes.filter(e => e.grado === a.grado).length;
+    const esPropia = state.isAdmin || a.docenteUid === state.usuario || a.docente === state.nombre;
     return `<div class="actividad-card" onclick="abrirCalificacion('${escapeHtml(a.id)}')">
       <div>
         <div class="ac-nombre">${escapeHtml(a.nombre)}</div>
@@ -2170,9 +2177,7 @@ window.renderActividades = function() {
       </div>
       <div style="display:flex;align-items:center;gap:.5rem">
         <span class="ac-badge">/${a.valoracionMax}</span>
-        <button class="btn-cesum btn-cesum-danger sm" onclick="event.stopPropagation();eliminarActividad('${escapeHtml(a.id)}')">
-          <i class="bi bi-trash"></i>
-        </button>
+        ${esPropia ? `<button class="btn-cesum btn-cesum-danger sm" onclick="event.stopPropagation();eliminarActividad('${escapeHtml(a.id)}')"><i class="bi bi-trash"></i></button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -2307,6 +2312,33 @@ window.exportarNotasCSV = async function() {
   a.href = url; a.download = `notas_cesum_${todayISO()}.csv`; a.click();
   URL.revokeObjectURL(url);
   showToast('📥 CSV exportado','success');
+};
+
+window.exportarNotasGrupoCSV = function() {
+  const filtro = document.getElementById('filtroGradoNotas')?.value || '';
+  if (!filtro) { showToast('Selecciona un grado en el filtro para exportar.','warning'); return; }
+  if (!_actividades.length) { showToast('No hay actividades cargadas. Refresca primero.','warning'); return; }
+  const acts = _actividades.filter(a => a.grado.toLowerCase() === filtro.toLowerCase()).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if (!acts.length) { showToast('No hay actividades para el grado seleccionado.','warning'); return; }
+  const estudiantes = state.estudiantes.filter(e => e.grado.toLowerCase() === filtro.toLowerCase());
+  if (!estudiantes.length) { showToast('No hay estudiantes en este grado.','warning'); return; }
+  // Cabecera: Estudiante + una columna por actividad
+  const header = ['Estudiante', ...acts.map(a => `${a.nombre} (/${a.valoracionMax}) ${a.fecha}`)];
+  const rows = [header];
+  estudiantes.forEach(est => {
+    const fila = [est.nombre, ...acts.map(a => {
+      const nota = a.calificaciones?.[est.nombre];
+      return nota !== undefined && nota !== '' ? nota : '';
+    })];
+    rows.push(fila);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `notas_${filtro}_${todayISO()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`CSV de ${filtro} exportado.`, 'success');
 };
 
 // ════════════════════════════════════════════
