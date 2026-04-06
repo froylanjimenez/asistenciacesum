@@ -3105,7 +3105,7 @@ window.cargarDocentesAdmin = async function() {
           ${state._isSuperAdmin ? `<button class="btn-cesum ${esAdmin?'btn-cesum-secondary':'btn-cesum-purple'} sm" onclick="cambiarRolUsuario('${d.id}','${rolActual}','${escapeHtml(d.nombre||d.email).replace(/'/g,"\\'")}')">
             <i class="bi bi-${esAdmin?'person-down':'shield-check'}"></i> ${esAdmin?'→ Docente':'→ Admin'}
           </button>` : ''}
-          ${!esAdmin?`<button class="btn-cesum btn-cesum-secondary sm" onclick="abrirGradosDocente('${d.id}','${escapeHtml((d.nombre||d.email)).replace(/'/g,"\\'")}',${JSON.stringify(d.gradosPermitidos||[])})">
+          ${!esAdmin?`<button class="btn-cesum btn-cesum-secondary sm" onclick="abrirGradosDocente('${d.id}','${escapeHtml((d.nombre||d.email)).replace(/'/g,"\\'")}',${JSON.stringify(d.gradosPermitidos||[]).replace(/"/g,'&quot;')})">
             <i class="bi bi-funnel"></i> Grupos
           </button>`:''}
           <button class="btn-cesum ${activo?'btn-cesum-warning':'btn-cesum-success'} sm" onclick="toggleActivoDocente('${d.id}',${activo})">
