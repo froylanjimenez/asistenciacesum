@@ -799,9 +799,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
                   <button class="btn-cesum btn-cesum-secondary sm" onclick="abrirImportarCSV()">
                     <i class="bi bi-upload"></i> Importar CSV
                   </button>
-                  <button class="btn-cesum btn-cesum-primary sm" onclick="migrarGruposSim2()" title="Asigna grupo_sim2 en Firebase a los estudiantes de 11° según el Simulacro 2">
-                    <i class="bi bi-lightning-charge-fill"></i> Asignar Grupos Sim2
-                  </button>
                   <input type="text" id="buscarEst" class="form-control" placeholder="Buscar..." style="width:160px;font-size:.85rem" oninput="renderEstudiantesAdmin()">
                   <select id="filtroGradoAdmin" class="form-select" style="width:auto;font-size:.82rem" onchange="renderEstudiantesAdmin()">
                     <option value="">Todos los grados</option>
@@ -1337,206 +1334,220 @@ const ESTADOS = [
 //  GRUPOS SEGUNDO SIMULACRO — GRADO 11
 //  Clasificación por desempeño (175 estudiantes, 5 grupos)
 // ════════════════════════════════════════════
-const GRUPOS_SIM2 = {
-  'JUSTIN TIRADO GARAY': 1,
-  'YEHIDER ENMANUEL VILLORINA DÍAZ': 1,
-  'ANA SOFIA FERNANDEZ MADRID': 1,
-  'STEVEN ANDRES HOYOS NAVARRO': 1,
-  'MICHELL ANDREA PEREZ CHOLES': 1,
-  'JUAN PABLO PATERNINA HINCAPIE': 1,
-  'SAMUEL VARGAS VIDES': 1,
-  'IVAN DAVID MARCELO SERPA': 1,
-  'DAYLIS PEREZ PADILLA': 1,
-  'SEBASTIAN RUIZ MONTERROZA': 1,
-  'ANGELICA MADRID SIERRA': 1,
-  'SAMUEL ALEAN ZAPATA': 1,
-  'VALENTINA AGUAS ATENCIA': 1,
-  'JULIANA CASTAÑEDA MEJIA': 1,
-  'JULIANA BANQUET MENDOZA': 1,
-  'YERMAN YAIR RUIZ GRANADOS': 1,
-  'DIEGO DAVID DUQUE HERRERA': 1,
-  'SANTIAGO CEBALLOS ZABALA': 1,
-  'SAMAHARA FLOREZ OVIEDO': 1,
-  'JULIANA ARRIETA GOMEZ': 1,
-  'YOJAN DAVID BENITEZ BARRIOS': 1,
-  'MELANI ALEJANDRA MALDONADO VILLALBA': 1,
-  'KEINER ACOSTA BUENO': 1,
-  'DAILY ALEJANDRA ARGUMEDO SALAS': 1,
-  'SYARA SOFIA DIAZ HERNANDEZ': 1,
-  'NATALIA SANCHEZ MONTERROZA': 1,
-  'KEVIN DAVID MEJIA HEREDIA': 1,
-  'KAROL DAYANA ESCOBAR VARGAS': 1,
-  'MARIA JOSE VILLEGAS HERRERA': 1,
-  'ESTEBAN DAVID CORONADO PALENCIA': 1,
-  'VALENTINA ESTREMOR PEREZ': 2,
-  'JUAN ANDRES CARVAJAL DIAZ': 2,
-  'MARIA DE LOS ANGELES PASOS SOTELO': 2,
-  'SARAY CAMILA PIMIENTA SOTO': 2,
-  'ARIATHNA MESTRA ARDILA': 2,
-  'DIEGO ARMANDO CAMPO SALAZAR': 2,
-  'LAUREN VANESSA ESTRADA GARCES': 2,
-  'SHARON LISHELL RODRIGUEZ OSORIO': 2,
-  'STIVEN DARIO CALI ESTRADA': 2,
-  'JULIANA CONTRERAS GARCIA': 2,
-  'PAMELA DENISE RUIZ VILLADIEGO': 2,
-  'LUIS FERNANDO TEJADA GUERRERO': 2,
-  'KEVIN DAVID CARRASCO MONTIEL': 2,
-  'ANGELICA MARTINEZ BALBERA': 2,
-  'MADELINE CAMPO RIVERA': 2,
-  'JULIANA ALVARADO MARTINEZ': 2,
-  'RICARDO ISABEL CASTILLO': 2,
-  'CARLOS ENRIQUE MENDOZA FERIA': 2,
-  'JUAN ESTEBAN FLOREZ MARTINEZ': 2,
-  'JAIDER DAVID MEZA AVILES': 2,
-  'JUAN CAMILO RICARDO VEGA': 2,
-  'YESID ANDRES ZEA CAMAÑO': 2,
-  'ELISEO LUNA PEREZ': 2,
-  'MARISOL MARTINEZ SALAS': 2,
-  'SARA MARCELA TORREZ MENDOZA': 2,
-  'YALENA SOFIA SALAZAR OYOLA': 2,
-  'LUISA FERNANDA BENITEZ BALTAZAR': 2,
-  'JUAN FELIPE MERCADO PEREZ': 2,
-  'LIZ EMILY ZUÑIGA OSORIO': 2,
-  'DIONI SOLA MARTINEZ': 2,
-  'ALEJANDRO ZARZA HOYOS': 2,
-  'ANDY PAOLA MANTILLA ESPITIA': 2,
-  'DIDIER ESNEIDER CASTILLO CAMARGO': 2,
-  'PATRICIA DEL CARMEN RODRIGUEZ VERTEL': 2,
-  'ANDREA LISETH CAMARGO URANGO': 2,
-  'JUNIOR ENRIQUE MERCADO ROHENES': 2,
-  'YENNIFER CASTILLO SUAREZ': 2,
-  'VICTOR ANDRES ESPITIA MORALES': 3,
-  'GARAVITO MELANI PEÑATES': 3,
-  'VALENTINA ARRIETA SIERRA': 3,
-  'TALIANA BERRIO MENDOZA': 3,
-  'ANGIE PAOLA ALARCON MENDEZ': 3,
-  'JOSE ALBEIRO CALLE MORENO': 3,
-  'MARIA ALEJANDRA RAMOS CALLE': 3,
-  'STEFANIA GUERRA VILLA': 3,
-  'JULIANA PEREZ VERGARA': 3,
-  'OSSA POLO ALEX JOSE DE LA': 3,
-  'ALYS PATRICIA HERNANDEZ PASTRANA': 3,
-  'ANA SOFIA GONZALEZ CALAO': 3,
-  'VALERI CORREA DOMINGUEZ': 3,
-  'NICOLAS ELIAS AGAMEZ ZABALA': 3,
-  'DANILSA MERCADO TIRADO': 3,
-  'CAMILO ANDRES MURILLO BUELVAS': 3,
-  'JESÚS ORLANDO FINO RICARDO': 3,
-  'ANDRES FELIPE MARTINEZ PACHECO': 3,
-  'ELIZABETH PEREIRA LOPEZ': 3,
-  'NAIDERLIN ESPITIA CASTRO': 3,
-  'MARIA ANGEL JULIO HERNANDEZ': 3,
-  'ISABELLA FLOREZ CANO': 3,
-  'MARÍA JOSÉ PÉREZ CANTERO': 3,
-  'CRISTIANO RONALDO ROMERO ZUÑIGA': 3,
-  'SHERYL ANDREA FUENTES MENDEZ': 3,
-  'SOFIA MARTINEZ HERNANDEZ': 3,
-  'YADY ISABEL RAMIREZ MORALES': 3,
-  'ANYS ANDREA GUTIERREZ ARRIETA': 3,
-  'KEILLY MICHELLE HERNANDEZ HOYOS': 3,
-  'HITA FERNANDA REYES CÓRDOBA': 3,
-  'JULIANA ANDREA PASTRANA ROMERO': 3,
-  'EVERNEY CALLE SOTELO': 3,
-  'YISEL  KAROLINA RAMOS BELEÑO': 3,
-  'MARIA ANGELICA PASTRANA RODRIGUEZ': 3,
-  'ENAN JOAQUIN TUIRAN MORENO': 3,
-  'SKARLIT YHIRET HERRERA GIL': 3,
-  'ELEMI HERNANDEZ ALVAREZ': 4,
-  'JHOJAN STIVEN ALZATE CARMONA': 4,
-  'VICTOR MANUEL TEJADA ZUÑIGA': 4,
-  'NICOLAS ELIAS CANOLE VASQUEZ': 4,
-  'NICOL STEFANY BAQUERO DIAZ': 4,
-  'DIEGO PADILLA MORA': 4,
-  'MATIAS ANDRES BARRIOS SOTELO': 4,
-  'YOINER ARRIETA JARAMILLO': 4,
-  'MARÍA ANGEL HERNÁNDEZ HOYOS': 4,
-  'ISABELLA VALENTINA HERRERA CAMAÑO': 4,
-  'ANA SOFIA VERGARA MARTINEZ': 4,
-  'JHONEIDER LONDOÑO VASQUEZ': 4,
-  'MARIANGEL SALGADO MAZO': 4,
-  'ORNELLA HEREDIA MORENO': 4,
-  'YURIS PAOLA RODRIGUEZ FLOREZ': 4,
-  'ESTHER MARIA LONDOÑO BARRIOS': 4,
-  'CARLOS DANIEL MARCHENA BARRETO': 4,
-  'GABRIELA HERNANDEZ DIAZ': 4,
-  'KELLY JOHANA MONTERROZA CASARRUBIA': 4,
-  'KATALINA PEREZ MORENO': 4,
-  'JAIVER VILLADIEGO JIMENEZ': 4,
-  'LUISA FERNANDA COLON SERRANO': 4,
-  'STEFANY RUIZ MARTINEZ': 4,
-  'GABRIELA CORONADO OJEDA': 4,
-  'TALIANA CORREA OVIEDO': 4,
-  'KELLY JOHANA ROMERO CASARRUBIA': 4,
-  'DAVID MENDOZA HOYOS': 4,
-  'SAMARA ARIZA ECHAVARRIA': 4,
-  'ENIS YULISA HERNÁNDEZ PEÑATE': 4,
-  'JESUS DAVID VERGARA OCAMPO': 4,
-  'TALIANA CARDENAS MANSILLA': 4,
-  'JIMENA ANDREA HOLGUÍN CARDEÑO': 4,
-  'JUAN DAVID MESTRA AVILA': 4,
-  'MARIA JOSE GARCIA GUERRA': 4,
-  'SAMUEL DAVID FABRA VAZQUEZ': 4,
-  'YONIER ANDRES SALA SOLIS': 4,
-  'LORENA LORETH MONTES CORDERO': 5,
-  'CAMILA ANDREA SOTELO TORRES': 5,
-  'MONICA PAOLA MONTALVO SOTO': 5,
-  'PERTUZ ELIECER DE JESUS DE LEON': 5,
-  'GENESIS ROMERO ACOSTA': 5,
-  'KATY MILENA SALGADO VERONA': 5,
-  'MICHELL ANDREA MESA RIVERA': 5,
-  'EDITH NATALIA MADERA PEREIRA': 5,
-  'ANDRES DIAZ CASTRO': 5,
-  'HOYOS LUZ ELENA PEREZ DE': 5,
-  'JUAN CAMILO GAMARRA LOPEZ': 5,
-  'FREDY JOSE RODIÑO VALLEJO': 5,
-  'BIANA LICETH CASTRO RIVERA': 5,
-  'LEONEL ANDRES RIVERA SILVA': 5,
-  'YASMILA MENDEZ HERNANDEZ': 5,
-  'HECTOR LUIS FUENTES MENDOZA': 5,
-  'DIDIEN MATIAS ROMERO SIERRA': 5,
-  'KEVIN ANDRES RUIZ PEREZ': 5,
-  'NIKOL MICHELL AVILA GARCIA': 5,
-  'MARIA CAROLINA GOMEZ MUÑOZ': 5,
-  'RONALD SAMPAYO ALVIS': 5,
-  'SAMUEL ALEXANDER RODRIGUEZ VELASQUEZ': 5,
-  'JOHN ESTEBAN FLOREZ LONDOÑO': 5,
-  'SARA IBAÑEZ CAUSIL': 5,
-  'JUAN DAVID JULIO VILLORINA': 5,
-  'JHON FREED QUINTERO SUAREZ': 5,
-  'LUIS EDUARDO SALGADO QUINTERO': 5,
-  'JOSE JULIAN PATERNINA ARCIA': 5,
-  'MARIANA FLOREZ HERNANDEZ': 5,
-  'KEINER GONZALEZ RAMOS': 5,
-  'DANNA CAROLINA SCHELEGUEL CORREA': 5,
-  'CRISTIAN DAVID MONTALVO PACHECO': 5,
-  'TALIN MARÍA GOMEZ HOYOS': 5,
-  'YAIRA ANDREA TORRES CADRASCO': 5,
-  'BRESLY QUINTERO ROSARIO': 5,
-  'JOSE DANIEL ORTEGA JIMENEZ': 5
+// ════════════════════════════════════════════
+//  GRUPOS SEGUNDO SIMULACRO — GRADO 11
+//  Fuente: indice_sim2.json (175 estudiantes, 5 grupos)
+// ════════════════════════════════════════════
+const GRUPOS_SIM2_LISTAS = {
+  1: [
+    {n:'JUSTIN TIRADO GARAY',i:378.1,r:1},
+    {n:'YEHIDER VILLORINA',i:365.1,r:2},
+    {n:'ANA SOFIA FERNANDEZ MADRID',i:362.2,r:3},
+    {n:'STEVEN ANDRES HOYOS NAVARRO',i:361.5,r:4},
+    {n:'MICHELL ANDREA PEREZ CHOLES',i:358.1,r:5},
+    {n:'JUAN PABLO PATERNINA HINCAPIE',i:357.4,r:6},
+    {n:'SAMUEL VARGAS VIDES',i:357.4,r:7},
+    {n:'IVAN DAVID MARCELO SERPA',i:356.9,r:8},
+    {n:'DAYLIS PEREZ PADILLA',i:351.3,r:9},
+    {n:'SEBASTIAN RUIZ MONTERROZA',i:351.0,r:10},
+    {n:'ANGELICA MADRID SIERRA',i:349.3,r:11},
+    {n:'SAMUEL ALEAN ZAPATA',i:341.3,r:12},
+    {n:'VALENTINA AGUAS ATENCIA',i:340.0,r:13},
+    {n:'JULIANA CASTAÑEDA MEJIA',i:335.9,r:14},
+    {n:'JULIANA BANQUET MENDOZA',i:334.9,r:15},
+    {n:'YERMAN YAIR RUIZ GRANADOS',i:326.6,r:16},
+    {n:'DIEGO DAVID DUQUE HERRERA',i:323.4,r:17},
+    {n:'SANTIAGO CEBALLOS ZABALA',i:320.7,r:18},
+    {n:'SAMAHARA FLOREZ OVIEDO',i:320.1,r:19},
+    {n:'JULIANA ARRIETA GOMEZ',i:319.8,r:20},
+    {n:'YOJAN DAVID BENITEZ BARRIOS',i:319.3,r:21},
+    {n:'MELANI ALEJANDRA MALDONADO VILLALBA',i:319.3,r:22},
+    {n:'KEINER ACOSTA BUENO',i:318.3,r:23},
+    {n:'DAILY ALEJANDRA ARGUMEDO SALAS',i:317.8,r:24},
+    {n:'SYARA SOFIA DIAZ HERNANDEZ',i:313.6,r:25},
+    {n:'NATALIA SANCHEZ MONTERROZA',i:312.4,r:26},
+    {n:'KEVIN DAVID MEJIA HEREDIA',i:309.9,r:27},
+    {n:'KAROL DAYANA ESCOBAR VARGAS',i:308.6,r:28},
+    {n:'MARIA JOSE VILLEGAS HERRERA',i:306.3,r:29},
+    {n:'ESTEBAN DAVID CORONADO PALENCIA',i:305.5,r:30}
+  ],
+  2: [
+    {n:'VALENTINA ESTREMOR PEREZ',i:304.5,r:31},
+    {n:'JUAN ANDRES CARVAJAL DIAZ',i:304.3,r:32},
+    {n:'MARIA DE LOS ANGELES PASOS SOTELO',i:304.3,r:33},
+    {n:'SARAY CAMILA PIMIENTA SOTO',i:304.0,r:34},
+    {n:'ARIATHNA MESTRA ARDILA',i:302.7,r:35},
+    {n:'DIEGO ARMANDO CAMPO SALAZAR',i:301.8,r:36},
+    {n:'LAUREN VANESSA ESTRADA GARCES',i:300.7,r:37},
+    {n:'SHARON LISHELL RODRIGUEZ OSORIO',i:300.0,r:38},
+    {n:'STIVEN DARIO CALI ESTRADA',i:299.0,r:39},
+    {n:'JULIANA CONTRERAS GARCIA',i:298.7,r:40},
+    {n:'PAMELA DENISE RUIZ VILLADIEGO',i:298.1,r:41},
+    {n:'LUIS FERNANDO TEJADA GUERRERO',i:297.5,r:42},
+    {n:'KEVIN DAVID CARRASCO MONTIEL',i:296.7,r:43},
+    {n:'ANGELICA MARTINEZ BALBERA',i:295.8,r:44},
+    {n:'MADELINE CAMPO RIVERA',i:295.4,r:45},
+    {n:'JULIANA ALVARADO MARTINEZ',i:295.1,r:46},
+    {n:'ISABEL CASTILLO RICARDO',i:294.7,r:47},
+    {n:'CARLOS ENRIQUE MENDOZA FERIA',i:294.3,r:48},
+    {n:'JUAN ESTEBAN FLOREZ MARTINEZ',i:294.0,r:49},
+    {n:'JAIDER DAVID MEZA AVILES',i:292.4,r:50},
+    {n:'JUAN CAMILO RICARDO VEGA',i:292.1,r:51},
+    {n:'YESID ANDRES ZEA CAMAÑO',i:290.9,r:52},
+    {n:'ELISEO LUNA PEREZ',i:290.5,r:53},
+    {n:'MARISOL MARTINEZ SALAS',i:289.8,r:54},
+    {n:'SARA MARCELA TORREZ MENDOZA',i:289.8,r:55},
+    {n:'YALENA SOFIA SALAZAR OYOLA',i:289.4,r:56},
+    {n:'LUISA FERNANDA BENITEZ BALTAZAR',i:289.3,r:57},
+    {n:'JUAN FELIPE MERCADO PEREZ',i:288.4,r:58},
+    {n:'LIZ EMILY ZUÑIGA OSORIO',i:287.6,r:59},
+    {n:'DIONI SOLA MARTINEZ',i:286.6,r:60},
+    {n:'ALEJANDRO ZARZA HOYOS',i:286.3,r:61},
+    {n:'ANDY PAOLA MANTILLA ESPITIA',i:284.7,r:62},
+    {n:'DIDIER ESNEIDER CASTILLO CAMARGO',i:281.9,r:63},
+    {n:'PATRICIA DEL CARMEN RODRIGUEZ VERTEL',i:281.4,r:64},
+    {n:'ANDREA LISETH CAMARGO URANGO',i:280.7,r:65},
+    {n:'JUNIOR ENRIQUE MERCADO ROHENES',i:278.5,r:66},
+    {n:'YENNIFER CASTILLO SUAREZ',i:277.1,r:67}
+  ],
+  3: [
+    {n:'VICTOR ANDRES ESPITIA MORALES',i:275.2,r:68},
+    {n:'MELANI PEÑATES GARAVITO',i:274.8,r:69},
+    {n:'VALENTINA ARRIETA SIERRA',i:272.4,r:70},
+    {n:'TALIANA BERRIO MENDOZA',i:271.6,r:71},
+    {n:'ANGIE PAOLA ALARCON MENDEZ',i:271.4,r:72},
+    {n:'JOSE ALBEIRO CALLE MORENO',i:271.1,r:73},
+    {n:'MARIA ALEJANDRA RAMOS CALLE',i:271.1,r:74},
+    {n:'STEFANIA GUERRA VILLA',i:270.9,r:75},
+    {n:'JULIANA PEREZ VERGARA',i:270.7,r:76},
+    {n:'OSSA POLO ALEX JOSE DE LA',i:270.5,r:77},
+    {n:'ALYS PATRICIA HERNANDEZ PASTRANA',i:269.8,r:78},
+    {n:'ANA SOFIA GONZALEZ CALAO',i:268.9,r:79},
+    {n:'VALERI CORREA DOMINGUEZ',i:268.7,r:80},
+    {n:'NICOLAS ELIAS AGAMEZ ZABALA',i:266.4,r:81},
+    {n:'DANILSA MERCADO TIRADO',i:265.7,r:82},
+    {n:'CAMILO ANDRES MURILLO BUELVAS',i:265.3,r:83},
+    {n:'JESUS ORLANDO FINO RICARDO',i:265.2,r:84},
+    {n:'ANDRES FELIPE MARTINEZ PACHECO',i:264.2,r:85},
+    {n:'ELIZABETH PEREIRA LOPEZ',i:263.7,r:86},
+    {n:'NAIDERLIN ESPITIA CASTRO',i:263.4,r:87},
+    {n:'MARIA ANGEL JULIO HERNANDEZ',i:261.9,r:88},
+    {n:'ISABELLA FLOREZ CANO',i:259.9,r:89},
+    {n:'MARIA JOSE PEREZ CANTERO',i:259.5,r:90},
+    {n:'CRISTIANO RONALDO ROMERO ZUÑIGA',i:258.7,r:91},
+    {n:'SHERYL ANDREA FUENTES MENDEZ',i:257.6,r:92},
+    {n:'SOFIA MARTINEZ HERNANDEZ',i:257.5,r:93},
+    {n:'YADY ISABEL RAMIREZ MORALES',i:255.4,r:94},
+    {n:'ANYS ANDREA GUTIERREZ ARRIETA',i:254.0,r:95},
+    {n:'KEILLY MICHELLE HERNANDEZ HOYOS',i:253.7,r:96},
+    {n:'HITA FERNANDA REYES CORDOBA',i:253.3,r:97},
+    {n:'JULIANA ANDREA PASTRANA ROMERO',i:251.3,r:98},
+    {n:'EVERNEY CALLE SOTELO',i:248.8,r:99},
+    {n:'YISEL KAROLINA RAMOS BELEÑO',i:247.5,r:100},
+    {n:'MARIA ANGELICA PASTRANA RODRIGUEZ',i:247.4,r:101},
+    {n:'ENAN JOAQUIN TUIRAN MORENO',i:247.3,r:102},
+    {n:'SKARLIT YHIRET HERRERA GIL',i:247.2,r:103}
+  ],
+  4: [
+    {n:'ELEMI HERNANDEZ ALVAREZ',i:245.7,r:104},
+    {n:'JHOJAN STIVEN ALZATE CARMONA',i:245.4,r:105},
+    {n:'VICTOR MANUEL TEJADA ZUÑIGA',i:243.7,r:106},
+    {n:'NICOLAS ELIAS CANOLE VASQUEZ',i:241.9,r:107},
+    {n:'NICOL STEFANY BAQUERO DIAZ',i:239.9,r:108},
+    {n:'DIEGO PADILLA MORA',i:239.6,r:109},
+    {n:'MATIAS ANDRES BARRIOS SOTELO',i:239.0,r:110},
+    {n:'YOINER ARRIETA JARAMILLO',i:238.8,r:111},
+    {n:'MARIA ANGEL HERNANDEZ HOYOS',i:238.5,r:112},
+    {n:'ISABELLA VALENTINA HERRERA CAMAÑO',i:236.1,r:113},
+    {n:'ANA SOFIA VERGARA MARTINEZ',i:234.6,r:114},
+    {n:'JHONEIDER LONDOÑO VASQUEZ',i:231.8,r:115},
+    {n:'MARIANGEL SALGADO MAZO',i:229.9,r:116},
+    {n:'ORNELLA HEREDIA MORENO',i:229.5,r:117},
+    {n:'YURIS PAOLA RODRIGUEZ FLOREZ',i:228.9,r:118},
+    {n:'ESTHER MARIA LONDOÑO BARRIOS',i:228.2,r:119},
+    {n:'CARLOS DANIEL MARCHENA BARRERO',i:225.3,r:120},
+    {n:'GABRIELA HERNANDEZ DIAZ',i:224.3,r:121},
+    {n:'KELLY JOHANA MONTERROZA CASARRUBIA',i:224.2,r:122},
+    {n:'KATALINA PEREZ MORENO',i:223.1,r:123},
+    {n:'JAIVER VILLADIEGO JIMENEZ',i:223.1,r:124},
+    {n:'LUISA FERNANDA COLON SERRANO',i:220.7,r:125},
+    {n:'STEFANY RUIZ MARTINEZ',i:218.2,r:126},
+    {n:'GABRIELA CORONADO OJEDA',i:218.1,r:127},
+    {n:'TALIANA CORREA OVIEDO',i:218.1,r:128},
+    {n:'KELLY JOHANA ROMERO CASARRUBIA',i:217.8,r:129},
+    {n:'DAVID MENDOZA HOYOS',i:216.4,r:130},
+    {n:'SAMARA ARIZA ECHAVARRIA',i:216.0,r:131},
+    {n:'ENIS YULISA HERNANDEZ PEÑATES',i:214.9,r:132},
+    {n:'JESUS DAVID VERGARA OCAMPO',i:214.9,r:133},
+    {n:'TALIANA CARDENAS MANSILLA',i:214.5,r:134},
+    {n:'JIMENA ANDREA HOLGUIN CARDEÑO',i:213.1,r:135},
+    {n:'JUAN DAVID MESTRA AVILA',i:212.8,r:136},
+    {n:'MARIA JOSE GARCIA GUERRA',i:211.3,r:137},
+    {n:'SAMUEL DAVID FABRA VAZQUEZ',i:210.8,r:138},
+    {n:'YONIER ANDRES SALA SOLIS',i:210.2,r:139}
+  ],
+  5: [
+    {n:'LORENA LORETH MONTES CORDERO',i:209.9,r:140},
+    {n:'CAMILA ANDREA SOTELO TORRES',i:209.6,r:141},
+    {n:'MONICA PAOLA MONTALVO SOTO',i:208.2,r:142},
+    {n:'PERTUZ ELIECER DE JESUS DE LEON',i:206.2,r:143},
+    {n:'GENESIS ROMERO ACOSTA',i:205.7,r:144},
+    {n:'KATY MILENA SALGADO VERONA',i:204.6,r:145},
+    {n:'MICHELL ANDREA MESA RIVERA',i:204.4,r:146},
+    {n:'EDITH NATALIA MADERA PEREIRA',i:204.2,r:147},
+    {n:'ANDRES DIAZ CASTRO',i:203.3,r:148},
+    {n:'HOYOS LUZ ELENA PEREZ DE',i:202.8,r:149},
+    {n:'JUAN CAMILO GAMARRA LOPEZ',i:200.5,r:150},
+    {n:'FREDY JOSE RODIÑO VALLEJO',i:200.2,r:151},
+    {n:'BIANA LICETH CASTRO RIVERA',i:200.1,r:152},
+    {n:'LEONEL ANDRES RIVERA SILVA',i:197.0,r:153},
+    {n:'YASMILA MENDEZ HERNANDEZ',i:191.4,r:154},
+    {n:'HECTOR LUIS FUENTES MENDOZA',i:191.3,r:155},
+    {n:'DIDIEN MATIAS ROMERO SIERRA',i:186.4,r:156},
+    {n:'KEVIN ANDRES RUIZ PEREZ',i:185.5,r:157},
+    {n:'NIKOL MICHELL AVILA GARCIA',i:180.8,r:158},
+    {n:'MARIA CAROLINA GOMEZ MUÑOZ',i:179.9,r:159},
+    {n:'RONALD SAMPAYO ALVIS',i:178.8,r:160},
+    {n:'SAMUEL ALEXANDER RODRIGUEZ VELASQUEZ',i:178.5,r:161},
+    {n:'JOHN ESTEBAN FLOREZ LONDOÑO',i:178.4,r:162},
+    {n:'SARA IBAÑEZ CAUSIL',i:177.3,r:163},
+    {n:'JUAN DAVID JULIO VILLORINA',i:176.7,r:164},
+    {n:'JHON FREED QUINTERO SUAREZ',i:175.8,r:165},
+    {n:'LUIS EDUARDO SALGADO QUINTERO',i:175.3,r:166},
+    {n:'JOSE JULIAN PATERNINA ARCIA',i:170.8,r:167},
+    {n:'MARIANA FLOREZ HERNANDEZ',i:168.1,r:168},
+    {n:'KEINER GONZALEZ RAMOS',i:167.2,r:169},
+    {n:'DANNA CAROLINA SCHELEGUEL CORREA',i:166.0,r:170},
+    {n:'CRISTIAN DAVID MONTALVO PACHECO',i:151.1,r:171},
+    {n:'TAILIN MARIA GOMEZ HOYOS',i:143.5,r:172},
+    {n:'YAIRA ANDREA TORRES CADRASCO',i:135.4,r:173},
+    {n:'BRESLY QUINTERO ROSARIO',i:133.5,r:174},
+    {n:'JOSE DANIEL ORTEGA JIMENEZ',i:130.8,r:175}
+  ]
 };
 
-// Normaliza un nombre: mayúsculas, sin tildes, espacios colapsados
-function _normNombre(s) {
-  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .toUpperCase().replace(/\s+/g,' ').trim();
-}
-
-// Mapa normalizado para lookup robusto (sin tildes, mayúsculas, espacios simples)
-const _GRUPOS_SIM2_NORM = Object.fromEntries(
-  Object.entries(GRUPOS_SIM2).map(([k, v]) => [_normNombre(k), v])
-);
-
-// Devuelve el grupo sim2 (1-5) de un estudiante de 11°, o null si no está en el mapa
-function getGrupoSim2(nombre) {
-  if (!nombre) return null;
-  return _GRUPOS_SIM2_NORM[_normNombre(nombre)] || null;
-}
-
-// Devuelve el valor del select y la etiqueta para un grupo sim2
+// Helpers
 function sim2GradoValue(n) { return `11-sim-g${n}`; }
-function sim2GradoLabel(n) { return `11° — Grupo Sim. ${n}`; }
-function isSim2Grado(val) { return /^11-sim-g[1-5]$/.test(val); }
+function sim2GradoLabel(n) { return `11° · Grupo ${n} — Sim. 2`; }
+function isSim2Grado(val)  { return /^11-sim-g[1-5]$/.test(val); }
 function sim2NumFromGrado(val) { return isSim2Grado(val) ? parseInt(val.slice(-1)) : null; }
+
+// Lookup rápido: nombre (cualquier formato) → grupo sim2
+const _SIM2_LOOKUP = {};
+(function() {
+  function _n(s) {
+    return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toUpperCase().replace(/\s+/g,' ').trim();
+  }
+  for (const [g, lista] of Object.entries(GRUPOS_SIM2_LISTAS)) {
+    for (const st of lista) _SIM2_LOOKUP[_n(st.n)] = parseInt(g);
+  }
+  window._normSim2 = _n;
+})();
+
+function getGrupoSim2(nombre) {
+  return _SIM2_LOOKUP[window._normSim2(nombre)] || null;
+}
 
 function getHoraActual() {
   const now = new Date();
@@ -1836,21 +1847,13 @@ function poblarSelectGrados() {
   let grados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
   const has11 = grados.some(g => g.startsWith('11'));
 
-  // Determinar si el usuario puede ver grupos sim2:
-  // - admin: siempre, si hay estudiantes de grado 11 en Firebase
-  // - docente: si tiene permisos 11°X O permisos sim2 explícitos
-  const tieneAcceso11 = state.isAdmin ||
-    state.gradosPermitidos.length === 0 ||
-    state.gradosPermitidos.some(g => g.startsWith('11'));
-
-  const sim2GruposVisibles = (has11 && tieneAcceso11)
-    ? [1,2,3,4,5].filter(n =>
-        state.isAdmin ||
-        state.gradosPermitidos.length === 0 ||
-        state.gradosPermitidos.includes(sim2GradoValue(n)) ||
-        state.gradosPermitidos.some(g => g.startsWith('11'))
-      )
-    : [];
+  // Grupos sim2 visibles: siempre los 5 para admin / sin restricción,
+  // para docentes solo los que tengan en gradosPermitidos (11-sim-gN o cualquier 11°X)
+  const sim2GruposVisibles = [1,2,3,4,5].filter(n => {
+    if (state.isAdmin || state.gradosPermitidos.length === 0) return true;
+    return state.gradosPermitidos.includes(sim2GradoValue(n)) ||
+           state.gradosPermitidos.some(g => g.startsWith('11'));
+  });
 
   if (!state.isAdmin && state.gradosPermitidos.length > 0) {
     grados = grados.filter(g => state.gradosPermitidos.includes(g));
@@ -1940,14 +1943,21 @@ window.filtrarEstudiantes = function() {
   const gradoVal = document.getElementById('asistGrado').value;
   const buscar   = document.getElementById('asistBuscar').value.toLowerCase();
   const sim2Num  = sim2NumFromGrado(gradoVal);
-  const filtrados = state.estudiantes.filter(e => {
-    const gradoOk = !gradoVal ||
-      (sim2Num !== null
-        ? (e.grupo_sim2 === sim2Num || getGrupoSim2(e.nombre) === sim2Num)
-        : e.grado.toLowerCase() === gradoVal.toLowerCase());
-    const buscarOk = !buscar || e.nombre.toLowerCase().includes(buscar);
-    return gradoOk && buscarOk;
-  });
+
+  // Si se selecciona un grupo sim2, cargar estudiantes DIRECTO desde GRUPOS_SIM2_LISTAS
+  if (sim2Num !== null) {
+    const lista = (GRUPOS_SIM2_LISTAS[sim2Num] || [])
+      .filter(s => !buscar || s.n.toLowerCase().includes(buscar))
+      .map(s => ({ nombre: s.n, grado: '11°', grupo_sim2: sim2Num, icfes: s.i, rank: s.r }));
+    renderPlanilla(lista);
+    return;
+  }
+
+  // Grado normal: filtrar desde Firebase como siempre
+  const filtrados = state.estudiantes.filter(e =>
+    (!gradoVal || e.grado.toLowerCase() === gradoVal.toLowerCase()) &&
+    (!buscar   || e.nombre.toLowerCase().includes(buscar))
+  );
   renderPlanilla(filtrados);
 };
 
