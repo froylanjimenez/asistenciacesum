@@ -1425,15 +1425,21 @@ const GRUPOS_SIM2 = {
   'BRESLY QUINTERO ROSARIO': 5,'JOSE DANIEL ORTEGA JIMENEZ': 5
 };
 
-// Mapa normalizado (MAYÚSCULAS sin espacios extra) para lookup case-insensitive
+// Normaliza un nombre: mayúsculas, sin tildes, espacios colapsados
+function _normNombre(s) {
+  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase().replace(/\s+/g,' ').trim();
+}
+
+// Mapa normalizado para lookup robusto (sin tildes, mayúsculas, espacios simples)
 const _GRUPOS_SIM2_NORM = Object.fromEntries(
-  Object.entries(GRUPOS_SIM2).map(([k, v]) => [k.toUpperCase().trim(), v])
+  Object.entries(GRUPOS_SIM2).map(([k, v]) => [_normNombre(k), v])
 );
 
 // Devuelve el grupo sim2 (1-5) de un estudiante de 11°, o null si no está en el mapa
 function getGrupoSim2(nombre) {
   if (!nombre) return null;
-  return _GRUPOS_SIM2_NORM[nombre.toUpperCase().trim()] || null;
+  return _GRUPOS_SIM2_NORM[_normNombre(nombre)] || null;
 }
 
 // Devuelve el valor del select y la etiqueta para un grupo sim2
@@ -1740,15 +1746,21 @@ function poblarSelectGrados() {
   let grados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
   const has11 = grados.some(g => g.startsWith('11'));
 
-  // Grupos sim2 permitidos (según rol/permisos)
-  const sim2Grupos = has11 ? [1,2,3,4,5].filter(n => {
-    const val = sim2GradoValue(n);
-    if (!state.isAdmin && state.gradosPermitidos.length > 0) {
-      return state.gradosPermitidos.includes(val);
-    }
-    // Mostrar solo grupos que tienen estudiantes conocidos en Firebase
-    return state.estudiantes.some(e => getGrupoSim2(e.nombre) === n);
-  }) : [];
+  // Determinar si el usuario puede ver grupos sim2:
+  // - admin: siempre, si hay estudiantes de grado 11 en Firebase
+  // - docente: si tiene permisos 11°X O permisos sim2 explícitos
+  const tieneAcceso11 = state.isAdmin ||
+    state.gradosPermitidos.length === 0 ||
+    state.gradosPermitidos.some(g => g.startsWith('11'));
+
+  const sim2GruposVisibles = (has11 && tieneAcceso11)
+    ? [1,2,3,4,5].filter(n =>
+        state.isAdmin ||
+        state.gradosPermitidos.length === 0 ||
+        state.gradosPermitidos.includes(sim2GradoValue(n)) ||
+        state.gradosPermitidos.some(g => g.startsWith('11'))
+      )
+    : [];
 
   if (!state.isAdmin && state.gradosPermitidos.length > 0) {
     grados = grados.filter(g => state.gradosPermitidos.includes(g));
@@ -1760,13 +1772,13 @@ function poblarSelectGrados() {
     const first = id==='asistGrado'?'<option value="">-- Todos --</option>':id==='actGrado'?'<option value="">-- Seleccionar --</option>':'<option value="">Todos los grados</option>';
     sel.innerHTML = first;
     grados.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o); });
-    // Agregar separador y grupos sim2 solo en selector de asistencia
-    if (id === 'asistGrado' && sim2Grupos.length > 0) {
+    // Separador y grupos sim2 (solo en asistGrado)
+    if (id === 'asistGrado' && sim2GruposVisibles.length > 0) {
       const sep = document.createElement('option');
       sep.disabled = true;
       sep.textContent = '── Grupos Sim. 2 ──';
       sel.appendChild(sep);
-      sim2Grupos.forEach(n => {
+      sim2GruposVisibles.forEach(n => {
         const o = document.createElement('option');
         o.value = sim2GradoValue(n);
         o.textContent = sim2GradoLabel(n);
