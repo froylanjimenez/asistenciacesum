@@ -1425,9 +1425,15 @@ const GRUPOS_SIM2 = {
   'BRESLY QUINTERO ROSARIO': 5,'JOSE DANIEL ORTEGA JIMENEZ': 5
 };
 
+// Mapa normalizado (MAYÚSCULAS sin espacios extra) para lookup case-insensitive
+const _GRUPOS_SIM2_NORM = Object.fromEntries(
+  Object.entries(GRUPOS_SIM2).map(([k, v]) => [k.toUpperCase().trim(), v])
+);
+
 // Devuelve el grupo sim2 (1-5) de un estudiante de 11°, o null si no está en el mapa
 function getGrupoSim2(nombre) {
-  return GRUPOS_SIM2[nombre] || null;
+  if (!nombre) return null;
+  return _GRUPOS_SIM2_NORM[nombre.toUpperCase().trim()] || null;
 }
 
 // Devuelve el valor del select y la etiqueta para un grupo sim2
