@@ -1645,14 +1645,23 @@ function cacheSet(key, val, ttlSecs = 300) {
   return val;
 }
 function cacheDel(...keys) { keys.forEach(k => _cache.delete(k)); }
+function cacheDelPrefix(prefix) { for (const k of _cache.keys()) { if (k.startsWith(prefix)) _cache.delete(k); } }
 
 // ── Funciones centralizadas de fetch (caché-first) ──
 // Una sola lectura por TTL, compartida entre todas las funciones del app
 
-async function fetchAsistenciaTodos(force = false) {
-  const KEY = 'asistencia:all';
+async function fetchAsistenciaTodos(force = false, fechaDesde = null) {
+  // Por defecto cargar solo los últimos 30 días para reducir lecturas Firebase
+  if (fechaDesde === null) {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    fechaDesde = d.toISOString().slice(0, 10);
+  }
+  // fechaDesde='' significa sin límite (todos los registros)
+  const KEY = fechaDesde ? `asistencia:all:${fechaDesde}` : 'asistencia:all';
   if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
-  const snap = await _getDocs(collection(db, 'asistencia'));
+  const col = collection(db, 'asistencia');
+  const snap = await _getDocs(fechaDesde ? query(col, where('fecha', '>=', fechaDesde)) : col);
   const docs = snap.docs.map(d => ({ fecha: d.id, registros: d.data().registros || [] }));
   return cacheSet(KEY, docs, 300); // 5 min TTL
 }
@@ -1797,18 +1806,16 @@ function showScreen(id) {
 async function cargarDatosIniciales() {
   showLoading(true);
   try {
-    // Cargar estudiantes (en state, no en caché)
-    const snap = await _getDocs(collection(db,'estudiantes'));
-    state.estudiantes = snap.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b)=>a.nombre.localeCompare(b.nombre));
-
     const hoy = todayISO();
-    // Cargar citas, novedades y noticias en paralelo usando caché centralizado
-    const [citasAll] = await Promise.all([
+    // Cargar todas las colecciones en paralelo para minimizar tiempo de inicio
+    const [snap, citasAll] = await Promise.all([
+      _getDocs(collection(db,'estudiantes')),
       fetchCitasAll(),
       refrescarNovedadesActivas(),
       cargarNoticiasActivas()
     ]);
+    state.estudiantes = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>a.nombre.localeCompare(b.nombre));
     state.citasHoy = citasAll.filter(c => c.fecha === hoy && c.estado === 'Pendiente');
 
     poblarSelectEstudiantes();
@@ -1831,6 +1838,20 @@ async function refrescarNovedadesActivas(force = false) {
 }
 
 function poblarSelectEstudiantes() {
+  // Nombres ya en Firebase (normalizados para comparar)
+  const _norm = window._normSim2 || (s => (s||'').toUpperCase().trim());
+  const nombresFirebase = new Set(state.estudiantes.map(e => _norm(e.nombre)));
+
+  // Colectar todos los estudiantes sim2 que no estén ya en Firebase
+  const sim2Extra = [];
+  for (const [g, lista] of Object.entries(GRUPOS_SIM2_LISTAS)) {
+    for (const st of lista) {
+      if (!nombresFirebase.has(_norm(st.n))) {
+        sim2Extra.push({ nombre: st.n, grado: '11°', grupo: parseInt(g) });
+      }
+    }
+  }
+
   ['citaEstudiante','novEstudiante'].forEach(id => {
     const sel = document.getElementById(id);
     sel.innerHTML = '<option value="">-- Seleccionar --</option>';
@@ -1840,6 +1861,18 @@ function poblarSelectEstudiantes() {
       opt.textContent = `${e.nombre} (${e.grado})`;
       sel.appendChild(opt);
     });
+    // Agregar estudiantes Sim2 virtuales agrupados
+    if (sim2Extra.length > 0) {
+      const grp = document.createElement('optgroup');
+      grp.label = 'Grupos Sim. 2 — 11°';
+      sim2Extra.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.nombre;
+        opt.textContent = `${s.nombre} (11° · G${s.grupo} Sim.2)`;
+        grp.appendChild(opt);
+      });
+      sel.appendChild(grp);
+    }
   });
 }
 
@@ -2055,7 +2088,7 @@ window.guardarAsistencia = async function() {
       fecha, registros: validos, actualizadoPor: state.nombre, ts: serverTimestamp()
     });
     _dbWrites++;
-    cacheDel('asistencia:all'); // invalidar caché
+    cacheDelPrefix('asistencia:all'); // invalidar caché (todas las claves con rango de fechas)
     showToast('Asistencia guardada correctamente ✓','success');
     state.asistenciaHoy={};
     validos.forEach(r=>{ state.asistenciaHoy[r.estudiante+'_'+r.hora]=r.estado; });
@@ -2117,17 +2150,28 @@ window.cargarEstadisticas = async function() {
   const hasta = document.getElementById('statHasta')?.value || '';
   showLoading(true);
   try {
-    // Datos compartidos del caché — 0 lecturas adicionales si ya están en memoria
+    // Pasar el rango de fecha a fetchAsistenciaTodos para reducir lecturas Firebase
+    // Si hay un desde definido úsalo; si no, cargar últimos 30 días (default)
     const [asistDocs, repDocs] = await Promise.all([
-      fetchAsistenciaTodos(),
+      fetchAsistenciaTodos(false, desde || null),
       fetchReportesTodos()
     ]);
     const mapa = {};
+    // Incluir estudiantes de Firebase
     state.estudiantes.forEach(e => {
       mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, fallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
     });
+    // Incluir estudiantes Sim2 virtuales (no en Firebase) para que sus registros aparezcan
+    const _norm = window._normSim2 || (s => (s||'').toUpperCase().trim());
+    const nombresFirebase = new Set(state.estudiantes.map(e => _norm(e.nombre)));
+    for (const [g, lista] of Object.entries(GRUPOS_SIM2_LISTAS)) {
+      for (const st of lista) {
+        if (!nombresFirebase.has(_norm(st.n)) && !mapa[st.n]) {
+          mapa[st.n] = { nombre:st.n, grado:'11°', fallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+        }
+      }
+    }
     asistDocs.forEach(d => {
-      if (desde && d.fecha < desde) return;
       if (hasta && d.fecha > hasta) return;
       d.registros.forEach(r => {
         if (!mapa[r.estudiante]) return;
@@ -2773,11 +2817,14 @@ let _recordNombreActual = null;
 window.verRecordEstudiante = async function(nombre) {
   _recordNombreActual = nombre;
   _calRecordYear = null; _calRecordMonth = null; _calRecordData = {};
+  // Fallback a {} para estudiantes sim2 virtuales que no existen en Firebase
   const est = state.estudiantes.find(e => e.nombre === nombre) || {};
+  // Para sim2 virtuales, inferir grado '11°' si no se encontró en Firebase
+  const gradoDisplay = est.grado || (getGrupoSim2(nombre) ? '11°' : '–');
   document.getElementById('recordNombre').textContent = nombre;
   document.getElementById('recordInfoEst').innerHTML =
-    `<span><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> ${escapeHtml(est.grado||'–')}</span>` +
-    `<span><i class="bi bi-person" style="color:var(--accent-lt)"></i> ${escapeHtml(est.acudiente||'–')}</span>` +
+    `<span><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> ${escapeHtml(gradoDisplay)}</span>` +
+    `<span><i class="bi bi-person" style="color:var(--accent-lt)"></i> ${escapeHtml(est.acudiente||'N/D')}</span>` +
     `<span><i class="bi bi-whatsapp" style="color:var(--green)"></i> ${waLink(est.telefono)}</span>`;
   document.getElementById('recordStats').innerHTML =
     '<div style="text-align:center;padding:1rem;color:var(--text-2);font-size:.82rem">Cargando...</div>';
