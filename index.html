@@ -151,8 +151,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 .grado-badge{display:inline-block;background:var(--bg-input);border:1px solid var(--border);
   border-radius:5px;font-size:.68rem;font-family:'JetBrains Mono',monospace;
   padding:.08rem .4rem;color:var(--text-2);margin-left:.3rem}
-.est-nombre{font-size:.82rem;line-height:1.2}
+.est-nombre{font-size:.82rem;line-height:1.2;display:flex;align-items:center;flex-wrap:wrap;gap:3px}
 .est-meta{font-size:.68rem;color:var(--text-2);margin-top:2px}
+.sim2-badge{background:#1565c0;color:#fff;font-size:.58rem;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.03em;flex-shrink:0}
 .leyenda-wrap{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
 .leyenda-item{display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--text-2)}
 .leyenda-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
@@ -1329,6 +1330,112 @@ const ESTADOS = [
   { value:'Cita Psico', short:'🧠', label:'Cita Psico', css:'eb-psico'   },
 ];
 
+// ════════════════════════════════════════════
+//  GRUPOS SEGUNDO SIMULACRO — GRADO 11
+//  Clasificación por desempeño (175 estudiantes, 5 grupos)
+// ════════════════════════════════════════════
+const GRUPOS_SIM2 = {
+  'JUSTIN TIRADO GARAY': 1,'YEHIDER VILLORINA': 1,'ANA SOFIA FERNANDEZ MADRID': 1,
+  'STEVEN ANDRES HOYOS NAVARRO': 1,'MICHELL ANDREA PEREZ CHOLES': 1,
+  'JUAN PABLO PATERNINA HINCAPIE': 1,'SAMUEL VARGAS VIDES': 1,
+  'IVAN DAVID MARCELO SERPA': 1,'DAYLIS PEREZ PADILLA': 1,
+  'SEBASTIAN RUIZ MONTERROZA': 1,'ANGELICA MADRID SIERRA': 1,
+  'SAMUEL ALEAN ZAPATA': 1,'VALENTINA AGUAS ATENCIA': 1,
+  'JULIANA CASTAÑEDA MEJIA': 1,'JULIANA BANQUET MENDOZA': 1,
+  'YERMAN YAIR RUIZ GRANADOS': 1,'DIEGO DAVID DUQUE HERRERA': 1,
+  'SANTIAGO CEBALLOS ZABALA': 1,'SAMAHARA FLOREZ OVIEDO': 1,
+  'JULIANA ARRIETA GOMEZ': 1,'YOJAN DAVID BENITEZ BARRIOS': 1,
+  'MELANI ALEJANDRA MALDONADO VILLALBA': 1,'KEINER ACOSTA BUENO': 1,
+  'DAILY ALEJANDRA ARGUMEDO SALAS': 1,'SYARA SOFIA DIAZ HERNANDEZ': 1,
+  'NATALIA SANCHEZ MONTERROZA': 1,'KEVIN DAVID MEJIA HEREDIA': 1,
+  'KAROL DAYANA ESCOBAR VARGAS': 1,'MARIA JOSE VILLEGAS HERRERA': 1,
+  'ESTEBAN DAVID CORONADO PALENCIA': 1,
+  'VALENTINA ESTREMOR PEREZ': 2,'JUAN ANDRES CARVAJAL DIAZ': 2,
+  'MARIA DE LOS ANGELES PASOS SOTELO': 2,'SARAY CAMILA PIMIENTA SOTO': 2,
+  'ARIATHNA MESTRA ARDILA': 2,'DIEGO ARMANDO CAMPO SALAZAR': 2,
+  'LAUREN VANESSA ESTRADA GARCES': 2,'SHARON LISHELL RODRIGUEZ OSORIO': 2,
+  'STIVEN DARIO CALI ESTRADA': 2,'JULIANA CONTRERAS GARCIA': 2,
+  'PAMELA DENISE RUIZ VILLADIEGO': 2,'LUIS FERNANDO TEJADA GUERRERO': 2,
+  'KEVIN DAVID CARRASCO MONTIEL': 2,'ANGELICA MARTINEZ BALBERA': 2,
+  'MADELINE CAMPO RIVERA': 2,'JULIANA ALVARADO MARTINEZ': 2,
+  'ISABEL CASTILLO RICARDO': 2,'CARLOS ENRIQUE MENDOZA FERIA': 2,
+  'JUAN ESTEBAN FLOREZ MARTINEZ': 2,'JAIDER DAVID MEZA AVILES': 2,
+  'JUAN CAMILO RICARDO VEGA': 2,'YESID ANDRES ZEA CAMAÑO': 2,
+  'ELISEO LUNA PEREZ': 2,'MARISOL MARTINEZ SALAS': 2,
+  'SARA MARCELA TORREZ MENDOZA': 2,'YALENA SOFIA SALAZAR OYOLA': 2,
+  'LUISA FERNANDA BENITEZ BALTAZAR': 2,'JUAN FELIPE MERCADO PEREZ': 2,
+  'LIZ EMILY ZUÑIGA OSORIO': 2,'DIONI SOLA MARTINEZ': 2,
+  'ALEJANDRO ZARZA HOYOS': 2,'ANDY PAOLA MANTILLA ESPITIA': 2,
+  'DIDIER ESNEIDER CASTILLO CAMARGO': 2,'PATRICIA DEL CARMEN RODRIGUEZ VERTEL': 2,
+  'ANDREA LISETH CAMARGO URANGO': 2,'JUNIOR ENRIQUE MERCADO ROHENES': 2,
+  'YENNIFER CASTILLO SUAREZ': 2,
+  'VICTOR ANDRES ESPITIA MORALES': 3,'MELANI PEÑATES GARAVITO': 3,
+  'VALENTINA ARRIETA SIERRA': 3,'TALIANA BERRIO MENDOZA': 3,
+  'ANGIE PAOLA ALARCON MENDEZ': 3,'JOSE ALBEIRO CALLE MORENO': 3,
+  'MARIA ALEJANDRA RAMOS CALLE': 3,'STEFANIA GUERRA VILLA': 3,
+  'JULIANA PEREZ VERGARA': 3,'OSSA POLO ALEX JOSE DE LA': 3,
+  'ALYS PATRICIA HERNANDEZ PASTRANA': 3,'ANA SOFIA GONZALEZ CALAO': 3,
+  'VALERI CORREA DOMINGUEZ': 3,'NICOLAS ELIAS AGAMEZ ZABALA': 3,
+  'DANILSA MERCADO TIRADO': 3,'CAMILO ANDRES MURILLO BUELVAS': 3,
+  'JESUS ORLANDO FINO RICARDO': 3,'ANDRES FELIPE MARTINEZ PACHECO': 3,
+  'ELIZABETH PEREIRA LOPEZ': 3,'NAIDERLIN ESPITIA CASTRO': 3,
+  'MARIA ANGEL JULIO HERNANDEZ': 3,'ISABELLA FLOREZ CANO': 3,
+  'MARIA JOSE PEREZ CANTERO': 3,'CRISTIANO RONALDO ROMERO ZUÑIGA': 3,
+  'SHERYL ANDREA FUENTES MENDEZ': 3,'SOFIA MARTINEZ HERNANDEZ': 3,
+  'YADY ISABEL RAMIREZ MORALES': 3,'ANYS ANDREA GUTIERREZ ARRIETA': 3,
+  'KEILLY MICHELLE HERNANDEZ HOYOS': 3,'HITA FERNANDA REYES CORDOBA': 3,
+  'JULIANA ANDREA PASTRANA ROMERO': 3,'EVERNEY CALLE SOTELO': 3,
+  'YISEL KAROLINA RAMOS BELEÑO': 3,'MARIA ANGELICA PASTRANA RODRIGUEZ': 3,
+  'ENAN JOAQUIN TUIRAN MORENO': 3,'SKARLIT YHIRET HERRERA GIL': 3,
+  'ELEMI HERNANDEZ ALVAREZ': 4,'JHOJAN STIVEN ALZATE CARMONA': 4,
+  'VICTOR MANUEL TEJADA ZUÑIGA': 4,'NICOLAS ELIAS CANOLE VASQUEZ': 4,
+  'NICOL STEFANY BAQUERO DIAZ': 4,'DIEGO PADILLA MORA': 4,
+  'MATIAS ANDRES BARRIOS SOTELO': 4,'YOINER ARRIETA JARAMILLO': 4,
+  'MARIA ANGEL HERNANDEZ HOYOS': 4,'ISABELLA VALENTINA HERRERA CAMAÑO': 4,
+  'ANA SOFIA VERGARA MARTINEZ': 4,'JHONEIDER LONDOÑO VASQUEZ': 4,
+  'MARIANGEL SALGADO MAZO': 4,'ORNELLA HEREDIA MORENO': 4,
+  'YURIS PAOLA RODRIGUEZ FLOREZ': 4,'ESTHER MARIA LONDOÑO BARRIOS': 4,
+  'CARLOS DANIEL MARCHENA BARRERO': 4,'GABRIELA HERNANDEZ DIAZ': 4,
+  'KELLY JOHANA MONTERROZA CASARRUBIA': 4,'KATALINA PEREZ MORENO': 4,
+  'JAIVER VILLADIEGO JIMENEZ': 4,'LUISA FERNANDA COLON SERRANO': 4,
+  'STEFANY RUIZ MARTINEZ': 4,'GABRIELA CORONADO OJEDA': 4,
+  'TALIANA CORREA OVIEDO': 4,'KELLY JOHANA ROMERO CASARRUBIA': 4,
+  'DAVID MENDOZA HOYOS': 4,'SAMARA ARIZA ECHAVARRIA': 4,
+  'ENIS YULISA HERNANDEZ PEÑATES': 4,'JESUS DAVID VERGARA OCAMPO': 4,
+  'TALIANA CARDENAS MANSILLA': 4,'JIMENA ANDREA HOLGUIN CARDEÑO': 4,
+  'JUAN DAVID MESTRA AVILA': 4,'MARIA JOSE GARCIA GUERRA': 4,
+  'SAMUEL DAVID FABRA VAZQUEZ': 4,'YONIER ANDRES SALA SOLIS': 4,
+  'LORENA LORETH MONTES CORDERO': 5,'CAMILA ANDREA SOTELO TORRES': 5,
+  'MONICA PAOLA MONTALVO SOTO': 5,'PERTUZ ELIECER DE JESUS DE LEON': 5,
+  'GENESIS ROMERO ACOSTA': 5,'KATY MILENA SALGADO VERONA': 5,
+  'MICHELL ANDREA MESA RIVERA': 5,'EDITH NATALIA MADERA PEREIRA': 5,
+  'ANDRES DIAZ CASTRO': 5,'HOYOS LUZ ELENA PEREZ DE': 5,
+  'JUAN CAMILO GAMARRA LOPEZ': 5,'FREDY JOSE RODIÑO VALLEJO': 5,
+  'BIANA LICETH CASTRO RIVERA': 5,'LEONEL ANDRES RIVERA SILVA': 5,
+  'YASMILA MENDEZ HERNANDEZ': 5,'HECTOR LUIS FUENTES MENDOZA': 5,
+  'DIDIEN MATIAS ROMERO SIERRA': 5,'KEVIN ANDRES RUIZ PEREZ': 5,
+  'NIKOL MICHELL AVILA GARCIA': 5,'MARIA CAROLINA GOMEZ MUÑOZ': 5,
+  'RONALD SAMPAYO ALVIS': 5,'SAMUEL ALEXANDER RODRIGUEZ VELASQUEZ': 5,
+  'JOHN ESTEBAN FLOREZ LONDOÑO': 5,'SARA IBAÑEZ CAUSIL': 5,
+  'JUAN DAVID JULIO VILLORINA': 5,'JHON FREED QUINTERO SUAREZ': 5,
+  'LUIS EDUARDO SALGADO QUINTERO': 5,'JOSE JULIAN PATERNINA ARCIA': 5,
+  'MARIANA FLOREZ HERNANDEZ': 5,'KEINER GONZALEZ RAMOS': 5,
+  'DANNA CAROLINA SCHELEGUEL CORREA': 5,'CRISTIAN DAVID MONTALVO PACHECO': 5,
+  'TAILIN MARIA GOMEZ HOYOS': 5,'YAIRA ANDREA TORRES CADRASCO': 5,
+  'BRESLY QUINTERO ROSARIO': 5,'JOSE DANIEL ORTEGA JIMENEZ': 5
+};
+
+// Devuelve el grupo sim2 (1-5) de un estudiante de 11°, o null si no está en el mapa
+function getGrupoSim2(nombre) {
+  return GRUPOS_SIM2[nombre] || null;
+}
+
+// Devuelve el valor del select y la etiqueta para un grupo sim2
+function sim2GradoValue(n) { return `11-sim-g${n}`; }
+function sim2GradoLabel(n) { return `11° — Grupo Sim. ${n}`; }
+function isSim2Grado(val) { return /^11-sim-g[1-5]$/.test(val); }
+function sim2NumFromGrado(val) { return isSim2Grado(val) ? parseInt(val.slice(-1)) : null; }
+
 function getHoraActual() {
   const now = new Date();
   const mins = now.getHours()*60 + now.getMinutes();
@@ -1625,15 +1732,41 @@ function poblarSelectEstudiantes() {
 
 function poblarSelectGrados() {
   let grados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
+  const has11 = grados.some(g => g.startsWith('11'));
+
+  // Grupos sim2 permitidos (según rol/permisos)
+  const sim2Grupos = has11 ? [1,2,3,4,5].filter(n => {
+    const val = sim2GradoValue(n);
+    if (!state.isAdmin && state.gradosPermitidos.length > 0) {
+      return state.gradosPermitidos.includes(val);
+    }
+    // Mostrar solo grupos que tienen estudiantes conocidos en Firebase
+    return state.estudiantes.some(e => getGrupoSim2(e.nombre) === n);
+  }) : [];
+
   if (!state.isAdmin && state.gradosPermitidos.length > 0) {
     grados = grados.filter(g => state.gradosPermitidos.includes(g));
   }
+
   ['asistGrado','filtroGradoAdmin','actGrado','filtroGradoNotas'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const first = id==='asistGrado'?'<option value="">-- Todos --</option>':id==='actGrado'?'<option value="">-- Seleccionar --</option>':'<option value="">Todos los grados</option>';
     sel.innerHTML = first;
     grados.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o); });
+    // Agregar separador y grupos sim2 solo en selector de asistencia
+    if (id === 'asistGrado' && sim2Grupos.length > 0) {
+      const sep = document.createElement('option');
+      sep.disabled = true;
+      sep.textContent = '── Grupos Sim. 2 ──';
+      sel.appendChild(sep);
+      sim2Grupos.forEach(n => {
+        const o = document.createElement('option');
+        o.value = sim2GradoValue(n);
+        o.textContent = sim2GradoLabel(n);
+        sel.appendChild(o);
+      });
+    }
   });
 }
 
@@ -1696,12 +1829,17 @@ window.cargarPlanilla = async function() {
 };
 
 window.filtrarEstudiantes = function() {
-  const grado  = document.getElementById('asistGrado').value.toLowerCase();
-  const buscar = document.getElementById('asistBuscar').value.toLowerCase();
-  const filtrados = state.estudiantes.filter(e =>
-    (!grado  || e.grado.toLowerCase()===grado) &&
-    (!buscar || e.nombre.toLowerCase().includes(buscar))
-  );
+  const gradoVal = document.getElementById('asistGrado').value;
+  const buscar   = document.getElementById('asistBuscar').value.toLowerCase();
+  const sim2Num  = sim2NumFromGrado(gradoVal);
+  const filtrados = state.estudiantes.filter(e => {
+    const gradoOk = !gradoVal ||
+      (sim2Num !== null
+        ? getGrupoSim2(e.nombre) === sim2Num
+        : e.grado.toLowerCase() === gradoVal.toLowerCase());
+    const buscarOk = !buscar || e.nombre.toLowerCase().includes(buscar);
+    return gradoOk && buscarOk;
+  });
   renderPlanilla(filtrados);
 };
 
@@ -1717,7 +1855,9 @@ function renderPlanilla(estudiantes) {
     const tr = document.createElement('tr');
     const tdNombre = document.createElement('td');
     const tieneNov = state.novedadesActivas.some(n=>n.estudiante===est.nombre);
-    tdNombre.innerHTML=`<div class="est-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(est.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(est.nombre)}</span></div>
+    const g2 = getGrupoSim2(est.nombre);
+    const g2badge = g2 ? `<span class="sim2-badge">G${g2}</span>` : '';
+    tdNombre.innerHTML=`<div class="est-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(est.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(est.nombre)}</span>${g2badge}</div>
       <div class="est-meta">${escapeHtml(est.grado)}${tieneNov?' &nbsp;<span style="color:#93c5fd;font-size:.65rem">📋 Nov</span>':''}</div>`;
     tr.appendChild(tdNombre);
 
@@ -2842,13 +2982,32 @@ window.abrirGradosDocente = function(uid, nombre, gradosActuales) {
   _gradosDocenteUid = uid;
   document.getElementById('gradosDocenteNombre').textContent = nombre;
   const todosGrados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
+  const has11 = todosGrados.some(g => g.startsWith('11'));
   const cont = document.getElementById('gradosDocenteCheckboxes');
-  cont.innerHTML = todosGrados.map(g =>
+
+  // Grados regulares
+  let html = todosGrados.map(g =>
     `<label style="display:flex;align-items:center;gap:.5rem;padding:.35rem .1rem;font-size:.88rem;cursor:pointer;color:var(--text-1)">
       <input type="checkbox" class="grado-check" value="${escapeHtml(g)}" ${gradosActuales.includes(g)?'checked':''} style="accent-color:var(--accent);width:15px;height:15px">
       ${escapeHtml(g)}
     </label>`
   ).join('');
+
+  // Grupos sim2 para grado 11
+  if (has11) {
+    html += `<div style="margin:.6rem 0 .3rem;font-size:.75rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);padding-top:.5rem">Grupos Simulacro 2 — Grado 11°</div>`;
+    [1,2,3,4,5].forEach(n => {
+      const val = sim2GradoValue(n);
+      const count = state.estudiantes.filter(e => getGrupoSim2(e.nombre) === n).length;
+      html += `<label style="display:flex;align-items:center;gap:.5rem;padding:.35rem .1rem;font-size:.88rem;cursor:pointer;color:var(--text-1)">
+        <input type="checkbox" class="grado-check" value="${val}" ${gradosActuales.includes(val)?'checked':''} style="accent-color:#1565c0;width:15px;height:15px">
+        <span style="background:#1565c0;color:#fff;font-size:.6rem;padding:1px 5px;border-radius:3px;font-weight:700">G${n}</span>
+        ${sim2GradoLabel(n)} <span style="color:var(--text-2);font-size:.78rem">(${count} est.)</span>
+      </label>`;
+    });
+  }
+
+  cont.innerHTML = html;
   new bootstrap.Modal(document.getElementById('modalGradosDocente')).show();
 };
 
