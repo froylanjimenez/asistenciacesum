@@ -2146,8 +2146,18 @@ window.guardarAsistencia = async function() {
   if (!validos.length) { showToast('No hay registros válidos.','warning'); return; }
   showLoading(true);
   try {
-    await setDoc(doc(db,'asistencia',fecha), {
-      fecha, registros: validos, actualizadoPor: state.nombre, ts: serverTimestamp()
+    // Leer registros existentes del día y fusionar (evita que un docente borre los registros de otro)
+    const docRef = doc(db,'asistencia',fecha);
+    const existing = await _getDoc(docRef);
+    const previos = existing.exists() ? (existing.data().registros || []) : [];
+    // Reemplazar solo los registros del mismo estudiante+hora; conservar el resto
+    const merged = [...previos];
+    validos.forEach(nuevo => {
+      const idx = merged.findIndex(r => r.estudiante === nuevo.estudiante && r.hora === nuevo.hora);
+      if (idx >= 0) merged[idx] = nuevo; else merged.push(nuevo);
+    });
+    await setDoc(docRef, {
+      fecha, registros: merged, actualizadoPor: state.nombre, ts: serverTimestamp()
     });
     _dbWrites++;
     cacheDelPrefix('asistencia:all'); // invalidar caché (todas las claves con rango de fechas)
@@ -2187,7 +2197,7 @@ window.confirmarReporte = async function() {
     await addDoc(collection(db,'reportes'), {
       fecha, estudiante:est.nombre, grado:est.grado,
       acudiente:est.acudiente||'', telefono:est.telefono||'',
-      falta, observacion:obs, docente:state.nombre, ts:serverTimestamp()
+      falta, observacion:obs, docente:state.nombre, creadoPor:state.usuario, ts:serverTimestamp()
     });
     _dbWrites++; cacheDel('reportes:all');
     showToast('Reporte guardado.','success');
@@ -2304,7 +2314,7 @@ window.agendarCita = async function() {
   showLoading(true);
   try {
     const ref = await addDoc(collection(db,'citas'), {
-      estudiante, fecha, hora, motivo, docente:state.nombre,
+      estudiante, fecha, hora, motivo, docente:state.nombre, creadoPor:state.usuario,
       estado:'Pendiente', informe:'', compromisos:'', acudiente_asiste:'',
       ts:serverTimestamp()
     });
@@ -2479,7 +2489,7 @@ window.guardarNovedad = async function() {
   try {
     await addDoc(collection(db,'novedades'), {
       estudiante, inicio, fin, estado, motivo,
-      docente:state.nombre, fechaReg:todayISO(), ts:serverTimestamp()
+      docente:state.nombre, creadoPor:state.usuario, fechaReg:todayISO(), ts:serverTimestamp()
     });
     _dbWrites++; cacheDel('novedades:all');
     showToast('Novedad guardada.','success');
