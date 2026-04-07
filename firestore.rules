@@ -20,6 +20,11 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.activo != false;
     }
 
+    // Acceso de lectura: superadmin SIEMPRE puede leer aunque no tenga doc en Firestore
+    function canRead() {
+      return isSuperAdmin() || isActivo();
+    }
+
     // Admin: superadmin siempre pasa; otros necesitan rol en Firestore
     function isAdmin() {
       return isSuperAdmin()
@@ -34,66 +39,65 @@ service cloud.firestore {
 
     // ── Usuarios ──────────────────────────────────────────────────────────
     match /usuarios/{uid} {
-      // Propio perfil sin helper (evita ciclo); otros requieren isActivo
-      allow get: if request.auth != null && (request.auth.uid == uid || isActivo());
+      // Propio perfil sin helper (evita ciclo); superadmin o usuario activo
+      allow get: if request.auth != null && (request.auth.uid == uid || canRead());
       // Solo admins pueden listar usuarios (cargarDocentesAdmin)
       allow list: if isAdmin();
-      // Crear: admins O cualquier superadmin creando su propio perfil si no existe
+      // Crear: admins O superadmin creando su propio perfil si no existe
       allow create: if isAdmin() || (isSuperAdmin() && request.auth.uid == uid);
-      // Actualizar: admins para cualquier cuenta excepto la del superadmin;
-      //             el superadmin siempre puede actualizar su propio doc
+      // Actualizar: superadmin siempre; admins no pueden tocar cuentas superadmin
       allow update: if isSuperAdmin()
                     || (isAdmin() && !isSuperAdminEmail(resource.data.email));
-      // Borrar: admins para cualquier cuenta excepto la de los superadmins
+      // Borrar: admins para cualquier cuenta excepto las de los superadmins
       allow delete: if isAdmin() && !isSuperAdminEmail(resource.data.email);
     }
 
     // ── Estudiantes ───────────────────────────────────────────────────────
     match /estudiantes/{estId} {
-      allow read: if isActivo();
+      allow read: if canRead();
       allow write: if isAdmin();
     }
 
     // ── Asistencia ────────────────────────────────────────────────────────
     match /asistencia/{fecha} {
-      allow read: if isActivo();
-      allow write: if isActivo();
+      allow read: if canRead();
+      allow write: if canRead();
     }
 
     // ── Reportes de comportamiento ────────────────────────────────────────
     match /reportes/{repId} {
-      allow read: if isActivo();
-      allow create: if isActivo();
+      allow read: if canRead();
+      allow create: if canRead();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
 
     // ── Novedades / ausencias justificadas ───────────────────────────────
     match /novedades/{novId} {
-      allow read: if isActivo();
-      allow create: if isActivo();
+      allow read: if canRead();
+      allow create: if canRead();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
 
     // ── Citas ─────────────────────────────────────────────────────────────
     match /citas/{citaId} {
-      allow read: if isActivo();
-      allow create: if isActivo();
+      allow read: if canRead();
+      allow create: if canRead();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
 
     // ── Noticias / comunicados ────────────────────────────────────────────
     match /noticias/{notId} {
-      allow read: if isActivo();
+      allow read: if canRead();
       allow write: if isAdmin();
     }
 
     // ── Actividades / notas ───────────────────────────────────────────────
     match /actividades/{actId} {
-      allow read: if isActivo();
-      allow create: if isActivo();
+      allow read: if canRead();
+      allow create: if canRead();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid)
         || (isActivo() && resource.data.docenteUid == request.auth.uid)
@@ -102,7 +106,7 @@ service cloud.firestore {
 
     // ── Eventos / calendario institucional ───────────────────────────────
     match /eventos/{evId} {
-      allow read: if isActivo();
+      allow read: if canRead();
       allow create, update, delete: if isAdmin();
     }
 
