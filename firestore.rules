@@ -2,10 +2,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Superadmin identificado por Firebase Auth token — no depende de Firestore
+    // Lista de emails con privilegio superadmin
+    function isSuperAdminEmail(email) {
+      return email == 'froylan.jimenez@gmail.com'
+          || email == 'fjsan10@gmail.com';
+    }
+
+    // Superadmins identificados por Firebase Auth token — no dependen de Firestore
     function isSuperAdmin() {
-      return request.auth != null
-        && request.auth.token.email == 'froylan.jimenez@gmail.com';
+      return request.auth != null && isSuperAdminEmail(request.auth.token.email);
     }
 
     // Usuario activo con documento en Firestore
@@ -33,14 +38,14 @@ service cloud.firestore {
       allow get: if request.auth != null && (request.auth.uid == uid || isActivo());
       // Solo admins pueden listar usuarios (cargarDocentesAdmin)
       allow list: if isAdmin();
-      // Crear: admins O superadmin creando su propio perfil si no existe
+      // Crear: admins O cualquier superadmin creando su propio perfil si no existe
       allow create: if isAdmin() || (isSuperAdmin() && request.auth.uid == uid);
       // Actualizar: admins para cualquier cuenta excepto la del superadmin;
       //             el superadmin siempre puede actualizar su propio doc
       allow update: if isSuperAdmin()
-                    || (isAdmin() && resource.data.email != 'froylan.jimenez@gmail.com');
-      // Borrar: admins para cualquier cuenta excepto la del superadmin
-      allow delete: if isAdmin() && resource.data.email != 'froylan.jimenez@gmail.com';
+                    || (isAdmin() && !isSuperAdminEmail(resource.data.email));
+      // Borrar: admins para cualquier cuenta excepto la de los superadmins
+      allow delete: if isAdmin() && !isSuperAdminEmail(resource.data.email);
     }
 
     // ── Estudiantes ───────────────────────────────────────────────────────
