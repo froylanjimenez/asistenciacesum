@@ -842,9 +842,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
             <div class="cesum-card">
               <div class="cesum-card-header">
                 <h5><i class="bi bi-people-fill"></i> Docentes registrados</h5>
-                <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarDocentesAdmin()">
-                  <i class="bi bi-arrow-clockwise"></i> Refrescar
-                </button>
+                <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+                  <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarDocentesAdmin()">
+                    <i class="bi bi-arrow-clockwise"></i> Refrescar
+                  </button>
+                  <button class="btn-cesum btn-cesum-primary sm" id="btnCambiarMiPassword" style="display:none" onclick="abrirCambiarPassword()">
+                    <i class="bi bi-key-fill"></i> Cambiar mi contraseña
+                  </button>
+                </div>
               </div>
               <div id="docentesAdminLista"><p style="color:var(--text-2);font-size:.85rem">Cargando...</p></div>
             </div>
@@ -1250,12 +1255,67 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
   </div>
 </div>
 
+<!-- Modal: Cambiar contraseña propia (Superadmin) -->
+<div class="modal fade modal-cesum" id="modalCambiarPassword" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-key-fill me-2" style="color:var(--accent-lt)"></i>Cambiar mi contraseña</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p style="font-size:.82rem;color:var(--text-2);margin-bottom:1.2rem">
+          <i class="bi bi-shield-lock me-1"></i> Ingresa tu contraseña actual para confirmar tu identidad, luego define la nueva.
+        </p>
+        <div class="mb-3">
+          <label class="form-label">Contraseña actual</label>
+          <div style="position:relative">
+            <input type="password" id="cpActual" class="form-control" placeholder="Tu contraseña actual" autocomplete="current-password">
+            <button type="button" onclick="togglePassVis('cpActual',this)" tabindex="-1"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-2);cursor:pointer;padding:0">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nueva contraseña</label>
+          <div style="position:relative">
+            <input type="password" id="cpNueva" class="form-control" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+            <button type="button" onclick="togglePassVis('cpNueva',this)" tabindex="-1"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-2);cursor:pointer;padding:0">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirmar nueva contraseña</label>
+          <div style="position:relative">
+            <input type="password" id="cpConfirmar" class="form-control" placeholder="Repite la nueva contraseña" autocomplete="new-password">
+            <button type="button" onclick="togglePassVis('cpConfirmar',this)" tabindex="-1"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-2);cursor:pointer;padding:0">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div id="cpError" style="display:none;background:#ef444420;border:1px solid #ef444440;border-radius:8px;padding:.6rem .9rem;font-size:.83rem;color:#f87171;margin-top:.5rem"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-primary" onclick="confirmarCambiarPassword()">
+          <i class="bi bi-key"></i> Cambiar contraseña
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
+  sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider }
   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 import { initializeFirestore, getFirestore,
   collection, doc, getDoc, getDocs, setDoc, addDoc, writeBatch,
@@ -3083,6 +3143,9 @@ window.cargarDocentesAdmin = async function() {
       ? await _getDocs(collection(db,'usuarios'))
       : await _getDocs(query(collection(db,'usuarios'), where('rol','==','docente')));
     const docs = snapQ.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+    // Mostrar botón "Cambiar mi contraseña" solo al superadmin
+    const btnMiPass = document.getElementById('btnCambiarMiPassword');
+    if (btnMiPass) btnMiPass.style.display = state._isSuperAdmin ? '' : 'none';
     if (!docs.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">No hay usuarios registrados.</p>'; return; }
     lista.innerHTML = '<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">'+docs.map(d=>{
       const activo    = d.activo !== false;
@@ -3108,6 +3171,9 @@ window.cargarDocentesAdmin = async function() {
           ${!esAdmin?`<button class="btn-cesum btn-cesum-secondary sm" onclick="abrirGradosDocente('${d.id}','${escapeHtml((d.nombre||d.email)).replace(/'/g,"\\'")}',${JSON.stringify(d.gradosPermitidos||[]).replace(/"/g,'&quot;')})">
             <i class="bi bi-funnel"></i> Grupos
           </button>`:''}
+          ${d.email ? `<button class="btn-cesum btn-cesum-secondary sm" title="Enviar email de recuperación de contraseña" onclick="resetPasswordDocente('${escapeHtml(d.email).replace(/'/g,"\\'")}','${escapeHtml(d.nombre||d.email).replace(/'/g,"\\'")}')">
+            <i class="bi bi-key"></i> Reset pass
+          </button>` : ''}
           <button class="btn-cesum ${activo?'btn-cesum-warning':'btn-cesum-success'} sm" onclick="toggleActivoDocente('${d.id}',${activo})">
             <i class="bi bi-${activo?'pause':'play'}-circle"></i> ${activo?'Desactivar':'Activar'}
           </button>`}
@@ -3187,6 +3253,79 @@ window.guardarGradosDocente = async function() {
     cargarDocentesAdmin();
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  GESTIÓN DE CONTRASEÑAS (Superadmin)
+// ════════════════════════════════════════════
+
+// Mostrar/ocultar contraseña en campos de texto
+window.togglePassVis = function(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  const mostrar = inp.type === 'password';
+  inp.type = mostrar ? 'text' : 'password';
+  btn.innerHTML = `<i class="bi bi-eye${mostrar ? '-slash' : ''}"></i>`;
+};
+
+// Enviar email de recuperación al docente seleccionado
+window.resetPasswordDocente = async function(email, nombre) {
+  if (!confirm(`¿Enviar email de recuperación de contraseña a ${nombre} (${email})?\n\nEl docente recibirá un enlace para crear una nueva contraseña.`)) return;
+  showLoading(true);
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showToast(`✅ Email de recuperación enviado a ${email}`, 'success');
+  } catch(e) {
+    const msgs = {
+      'auth/user-not-found': 'No se encontró ninguna cuenta con ese correo.',
+      'auth/invalid-email':  'Correo inválido.',
+      'auth/too-many-requests': 'Demasiados intentos. Espera un momento.'
+    };
+    showToast(msgs[e.code] || 'Error: ' + e.message, 'error');
+  } finally { showLoading(false); }
+};
+
+// Abrir modal para cambiar la contraseña propia del superadmin
+window.abrirCambiarPassword = function() {
+  ['cpActual','cpNueva','cpConfirmar'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const errEl = document.getElementById('cpError');
+  if (errEl) errEl.style.display = 'none';
+  new bootstrap.Modal(document.getElementById('modalCambiarPassword')).show();
+};
+
+// Ejecutar cambio de contraseña con re-autenticación
+window.confirmarCambiarPassword = async function() {
+  const actual    = document.getElementById('cpActual')?.value || '';
+  const nueva     = document.getElementById('cpNueva')?.value || '';
+  const confirmar = document.getElementById('cpConfirmar')?.value || '';
+  const errEl     = document.getElementById('cpError');
+
+  const showErr = msg => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } };
+
+  if (!actual)          return showErr('Ingresa tu contraseña actual.');
+  if (nueva.length < 6) return showErr('La nueva contraseña debe tener al menos 6 caracteres.');
+  if (nueva !== confirmar) return showErr('Las contraseñas nuevas no coinciden.');
+  if (nueva === actual) return showErr('La nueva contraseña debe ser diferente a la actual.');
+
+  if (errEl) errEl.style.display = 'none';
+  showLoading(true);
+  try {
+    const user = auth.currentUser;
+    // Re-autenticar con la contraseña actual antes de cambiarla
+    const credential = EmailAuthProvider.credential(user.email, actual);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, nueva);
+    bootstrap.Modal.getInstance(document.getElementById('modalCambiarPassword')).hide();
+    showToast('✅ Contraseña actualizada correctamente.', 'success');
+  } catch(e) {
+    const msgs = {
+      'auth/wrong-password':      'La contraseña actual es incorrecta.',
+      'auth/invalid-credential':  'La contraseña actual es incorrecta.',
+      'auth/too-many-requests':   'Demasiados intentos fallidos. Espera unos minutos.',
+      'auth/requires-recent-login': 'Sesión expirada. Cierra sesión y vuelve a iniciar.'
+    };
+    showErr(msgs[e.code] || 'Error: ' + e.message);
+  } finally { showLoading(false); }
 };
 
 // ════════════════════════════════════════════
