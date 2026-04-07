@@ -1753,11 +1753,13 @@ async function fetchCitasAll(force = false) {
 // ════════════════════════════════════════════
 //  AUTH — Observer
 // ════════════════════════════════════════════
-const SUPERADMIN_EMAIL = 'froylan.jimenez@gmail.com';
+const SUPERADMIN_EMAILS = new Set(['froylan.jimenez@gmail.com', 'fjsan10@gmail.com']);
+// Alias para compatibilidad con badge de lista de docentes
+const SUPERADMIN_EMAIL = 'froylan.jimenez@gmail.com'; // email original (solo para badge legacy)
 
 onAuthStateChanged(auth, async user => {
   if (user) {
-    const esSuperAdmin = user.email === SUPERADMIN_EMAIL;
+    const esSuperAdmin = SUPERADMIN_EMAILS.has(user.email);
     // Leer perfil desde Firestore
     try {
       const snap = await _getDoc(doc(db, 'usuarios', user.uid));
@@ -1788,7 +1790,7 @@ onAuthStateChanged(auth, async user => {
         if (esSuperAdmin) {
           try {
             await setDoc(doc(db, 'usuarios', user.uid), {
-              nombre: 'Super Admin', email: SUPERADMIN_EMAIL,
+              nombre: 'Super Admin', email: user.email,
               rol: 'admin', activo: true, ts: serverTimestamp()
             });
           } catch(_) { /* se creará en el próximo login */ }
@@ -3149,7 +3151,7 @@ window.cargarDocentesAdmin = async function() {
     if (!docs.length) { lista.innerHTML='<p style="color:var(--text-2);font-size:.85rem">No hay usuarios registrados.</p>'; return; }
     lista.innerHTML = '<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">'+docs.map(d=>{
       const activo    = d.activo !== false;
-      const esSA      = d.email === SUPERADMIN_EMAIL;
+      const esSA      = SUPERADMIN_EMAILS.has(d.email);
       const rolActual = d.rol || 'docente';
       const esAdmin   = rolActual === 'admin';
       const grados    = d.gradosPermitidos?.length > 0
