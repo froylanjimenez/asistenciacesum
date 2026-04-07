@@ -13,91 +13,89 @@ service cloud.firestore {
       return request.auth != null && isSuperAdminEmail(request.auth.token.email);
     }
 
-    // Usuario activo con documento en Firestore
+    // Usuario activo — usado solo en escrituras (evita lecturas extra en rules para reads)
     function isActivo() {
       return request.auth != null
         && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.activo != false;
     }
 
-    // Acceso de lectura: superadmin SIEMPRE puede leer aunque no tenga doc en Firestore
-    function canRead() {
-      return isSuperAdmin() || isActivo();
-    }
-
-    // Admin: superadmin siempre pasa; otros necesitan rol en Firestore
+    // Admin: un solo get() para leer activo + rol al mismo tiempo
     function isAdmin() {
       return isSuperAdmin()
-        || (isActivo()
-            && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin');
+        || (request.auth != null
+            && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+            && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin'
+            && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.activo != false);
     }
 
-    // Nombre del usuario en Firestore (para compatibilidad con actividades antiguas)
+    // Nombre del usuario en Firestore (solo para compatibilidad con actividades antiguas)
     function miNombre() {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nombre;
     }
 
     // ── Usuarios ──────────────────────────────────────────────────────────
     match /usuarios/{uid} {
-      // Propio perfil sin helper (evita ciclo); superadmin o usuario activo
-      allow get: if request.auth != null && (request.auth.uid == uid || canRead());
-      // Solo admins pueden listar usuarios (cargarDocentesAdmin)
+      // Lectura: cualquier usuario autenticado puede leer su propio perfil;
+      // admins y superadmins pueden leer cualquiera
+      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin() || isSuperAdmin());
       allow list: if isAdmin();
-      // Crear: admins O superadmin creando su propio perfil si no existe
       allow create: if isAdmin() || (isSuperAdmin() && request.auth.uid == uid);
-      // Actualizar: superadmin siempre; admins no pueden tocar cuentas superadmin
       allow update: if isSuperAdmin()
                     || (isAdmin() && !isSuperAdminEmail(resource.data.email));
-      // Borrar: admins para cualquier cuenta excepto las de los superadmins
       allow delete: if isAdmin() && !isSuperAdminEmail(resource.data.email);
     }
 
     // ── Estudiantes ───────────────────────────────────────────────────────
+    // Lectura: cualquier sesión autenticada (el control de activo se hace en la app)
+    // Escritura: solo admins
     match /estudiantes/{estId} {
-      allow read: if canRead();
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
     // ── Asistencia ────────────────────────────────────────────────────────
+    // Lectura: cualquier sesión autenticada
+    // Escritura: usuario activo (docentes y admins)
     match /asistencia/{fecha} {
-      allow read: if canRead();
-      allow write: if canRead();
+      allow read: if request.auth != null;
+      allow write: if isActivo();
     }
 
     // ── Reportes de comportamiento ────────────────────────────────────────
     match /reportes/{repId} {
-      allow read: if canRead();
-      allow create: if canRead();
+      allow read: if request.auth != null;
+      allow create: if isActivo();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
 
     // ── Novedades / ausencias justificadas ───────────────────────────────
     match /novedades/{novId} {
-      allow read: if canRead();
-      allow create: if canRead();
+      allow read: if request.auth != null;
+      allow create: if isActivo();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
 
     // ── Citas ─────────────────────────────────────────────────────────────
     match /citas/{citaId} {
-      allow read: if canRead();
-      allow create: if canRead();
+      allow read: if request.auth != null;
+      allow create: if isActivo();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
 
     // ── Noticias / comunicados ────────────────────────────────────────────
     match /noticias/{notId} {
-      allow read: if canRead();
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
     // ── Actividades / notas ───────────────────────────────────────────────
     match /actividades/{actId} {
-      allow read: if canRead();
-      allow create: if canRead();
+      allow read: if request.auth != null;
+      allow create: if isActivo();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid)
         || (isActivo() && resource.data.docenteUid == request.auth.uid)
@@ -106,7 +104,7 @@ service cloud.firestore {
 
     // ── Eventos / calendario institucional ───────────────────────────────
     match /eventos/{evId} {
-      allow read: if canRead();
+      allow read: if request.auth != null;
       allow create, update, delete: if isAdmin();
     }
 

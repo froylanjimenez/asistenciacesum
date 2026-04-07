@@ -1729,25 +1729,25 @@ async function fetchReportesTodos(force = false) {
   const KEY = 'reportes:all';
   if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
   const snap = await _getDocs(collection(db, 'reportes'));
-  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 300);
+  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 1800); // 30 min
 }
 async function fetchNovedadesTodos(force = false) {
   const KEY = 'novedades:all';
   if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
   const snap = await _getDocs(collection(db, 'novedades'));
-  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 120); // 2 min
+  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 1200); // 20 min
 }
 async function fetchNoticiasAll(force = false) {
   const KEY = 'noticias:all';
   if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
   const snap = await _getDocs(collection(db, 'noticias'));
-  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 600); // 10 min
+  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 1800); // 30 min
 }
 async function fetchCitasAll(force = false) {
   const KEY = 'citas:all';
   if (!force) { const hit = cacheGet(KEY); if (hit !== null) return hit; }
   const snap = await _getDocs(collection(db, 'citas'));
-  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 120); // 2 min
+  return cacheSet(KEY, snap.docs.map(d => ({ id: d.id, ...d.data() })), 1200); // 20 min
 }
 
 // ════════════════════════════════════════════
@@ -2161,6 +2161,7 @@ window.guardarAsistencia = async function() {
     });
     _dbWrites++;
     cacheDelPrefix('asistencia:all'); // invalidar caché (todas las claves con rango de fechas)
+    cacheDel('asistencia:hoy:' + fecha);  // invalidar caché del dashboard de hoy
     showToast('Asistencia guardada correctamente ✓','success');
     state.asistenciaHoy={};
     validos.forEach(r=>{ state.asistenciaHoy[r.estudiante+'_'+r.hora]=r.estado; });
@@ -3046,12 +3047,18 @@ window.cargarDashboard = async function() {
   const hoy = todayISO();
   try {
     document.getElementById('dkTotalEst').textContent = state.estudiantes.length;
-    // 1 lectura: asistencia de hoy (doc único)
-    const snapHoy = await _getDoc(doc(db,'asistencia',hoy));
+    // Asistencia de hoy: usar caché 10 min para evitar lectura en cada visita al tab
+    const KEY_HOY = 'asistencia:hoy:' + hoy;
+    let registrosHoy = cacheGet(KEY_HOY);
+    if (registrosHoy === null) {
+      const snapHoy = await _getDoc(doc(db,'asistencia',hoy));
+      registrosHoy = snapHoy.exists() ? (snapHoy.data().registros || []) : [];
+      cacheSet(KEY_HOY, registrosHoy, 600); // 10 min
+    }
     let ausentesHoy = 0, ausentes = [];
-    if (snapHoy.exists()) {
+    if (registrosHoy.length) {
       const porEst = {};
-      (snapHoy.data().registros||[]).forEach(r => { if (!porEst[r.estudiante]) porEst[r.estudiante]=[]; porEst[r.estudiante].push(r.estado); });
+      registrosHoy.forEach(r => { if (!porEst[r.estudiante]) porEst[r.estudiante]=[]; porEst[r.estudiante].push(r.estado); });
       Object.entries(porEst).forEach(([nombre,estados]) => { if (estados.some(e=>e==='Falla')) { ausentesHoy++; ausentes.push(nombre); } });
     }
     document.getElementById('dkAusentesHoy').textContent = ausentesHoy;
