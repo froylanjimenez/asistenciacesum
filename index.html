@@ -4336,14 +4336,6 @@ window.cerrarPlanIntervencion = async function(planId, nombre) {
 // ════════════════════════════════════════════
 window.exportarInformeHTML = async function(nombre) {
   if (!nombre) return;
-
-  // Abrir ventana ANTES del primer await — el navegador solo permite
-  // window.open() dentro del contexto inmediato del gesto del usuario (clic).
-  // Después de cualquier await el contexto se pierde y el popup queda bloqueado.
-  const ventana = window.open('', '_blank');
-  if (!ventana) { showToast('Activa las ventanas emergentes para exportar.', 'warning'); return; }
-  ventana.document.write('<html><body style="font-family:sans-serif;padding:2rem;color:#666"><p>⏳ Generando informe...</p></body></html>');
-
   showLoading(true);
   try {
     const est = state.estudiantes.find(e => e.nombre === nombre) || {};
@@ -4583,11 +4575,15 @@ window.exportarInformeHTML = async function(nombre) {
 </body>
 </html>`;
 
-    ventana.document.open();
-    ventana.document.write(html);
-    ventana.document.close();
+    // Descargar como archivo .html — no depende de popups ni permisos del navegador
+    const nombreArchivo = `informe_${nombre.replace(/\s+/g,'_')}_${hoy}.html`;
+    const blob = new Blob([html], { type:'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = nombreArchivo; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Informe descargado: '+nombreArchivo,'success');
   } catch(err) {
-    ventana.close();
     showToast('Error generando informe: '+err.message,'error');
   } finally { showLoading(false); }
 };
