@@ -1620,6 +1620,33 @@ function getGrupoSim2(nombre) {
   return _SIM2_LOOKUP[window._normSim2(nombre)] || null;
 }
 
+// Busca el estudiante de Firebase más parecido a un nombre Sim2.
+// Estrategia: exacto → normalizado → solapamiento de tokens (apellidos/nombre).
+function _findEstudianteFirebase(nombre) {
+  const _n = window._normSim2 || (s=>(s||'').toUpperCase().trim());
+  // 1) Exacto
+  let r = state.estudiantes.find(e => e.nombre === nombre);
+  if (r) return r;
+  // 2) Normalizado exacto (quita acentos, uniforma mayúsculas)
+  const nk = _n(nombre);
+  r = state.estudiantes.find(e => _n(e.nombre) === nk);
+  if (r) return r;
+  // 3) Solapamiento de tokens: útil cuando hay un apellido extra o distinto orden
+  const tokensA = new Set(nk.split(' ').filter(t => t.length > 2));
+  if (!tokensA.size) return null;
+  let best = null, bestScore = 0;
+  state.estudiantes.forEach(e => {
+    const tokensB = _n(e.nombre).split(' ').filter(t => t.length > 2);
+    const comunes = tokensB.filter(t => tokensA.has(t)).length;
+    // score: fracción de tokens que coinciden sobre el total único entre ambos
+    const union = new Set([...tokensA, ...tokensB]).size;
+    const score = comunes / union;
+    if (score > bestScore) { bestScore = score; best = e; }
+  });
+  // Umbral mínimo: al menos el 50% de tokens en común
+  return bestScore >= 0.5 ? best : null;
+}
+
 function getHoraActual() {
   const now = new Date();
   const mins = now.getHours()*60 + now.getMinutes();
@@ -2984,12 +3011,8 @@ let _recordNombreActual = null;
 window.verRecordEstudiante = async function(nombre) {
   _recordNombreActual = nombre;
   _calRecordYear = null; _calRecordMonth = null; _calRecordData = {};
-  // Buscar por nombre exacto; si no existe (Sim2 virtual), buscar por nombre normalizado
-  // para recuperar teléfono y acudiente del registro Firebase equivalente.
-  const _normN = window._normSim2 || (s=>(s||'').toUpperCase().trim());
-  const est = state.estudiantes.find(e => e.nombre === nombre)
-           || state.estudiantes.find(e => _normN(e.nombre) === _normN(nombre))
-           || {};
+  // Buscar estudiante Firebase (incluye fallback por tokens para nombres Sim2)
+  const est = _findEstudianteFirebase(nombre) || {};
   // Para sim2 virtuales, inferir grado '11°' si no se encontró en Firebase
   const gradoDisplay = est.grado || (getGrupoSim2(nombre) ? '11°' : '–');
   document.getElementById('recordNombre').textContent = nombre;
@@ -3561,10 +3584,7 @@ window.confirmarImportarCSV = async function() {
 function renderComunicadosRecord() {
   const panel = document.getElementById('rpanel-comunicados');
   if (!panel || !_recordNombreActual) return;
-  const _normN = window._normSim2 || (s=>(s||'').toUpperCase().trim());
-  const est = state.estudiantes.find(e=>e.nombre===_recordNombreActual)
-           || state.estudiantes.find(e=>_normN(e.nombre)===_normN(_recordNombreActual))
-           || {};
+  const est = _findEstudianteFirebase(_recordNombreActual) || {};
   const tel = (est.telefono||'').toString().replace(/\D/g,'');
   const acudiente = est.acudiente || 'Acudiente';
   const nombre = est.nombre || '';
@@ -4371,10 +4391,7 @@ window.exportarInformeHTML = async function() {
   if (!nombre) return;
   showLoading(true);
   try {
-    const _norm = window._normSim2 || (s=>(s||'').toUpperCase().trim());
-    const est = state.estudiantes.find(e => e.nombre === nombre)
-             || state.estudiantes.find(e => _norm(e.nombre) === _norm(nombre))
-             || {};
+    const est = _findEstudianteFirebase(nombre) || {};
     const gradoDisplay = est.grado || (getGrupoSim2 && getGrupoSim2(nombre) ? '11°' : '–');
 
     // Datos del caché (0 lecturas extras si ya están calentados)
