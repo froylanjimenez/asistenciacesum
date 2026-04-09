@@ -255,8 +255,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
 .est-nombre-link:hover{border-bottom-color:var(--accent-lt);color:var(--accent-lt)}
 .wa-link{color:var(--green);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;font-weight:500;transition:opacity .15s}
 .wa-link:hover{opacity:.75}
-.record-tabs{display:flex;gap:.25rem;border-bottom:1px solid var(--border);margin-bottom:.75rem}
-.record-tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text-2);
+.record-tabs{display:flex;gap:.25rem;border-bottom:1px solid var(--border);margin-bottom:.75rem;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:1px}
+.record-tabs::-webkit-scrollbar{display:none}
+.record-tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text-2);flex-shrink:0;
   font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:500;padding:.4rem .75rem;cursor:pointer;
   transition:all .18s;margin-bottom:-1px}
 .record-tab-btn.active{color:var(--accent-lt);border-bottom-color:var(--accent-lt)}
@@ -4345,16 +4346,19 @@ window.exportarInformeHTML = async function(nombre) {
       fetchAsistenciaTodos(), fetchReportesTodos(), fetchNovedadesTodos(), fetchCitasAll()
     ]);
 
-    // Nuevas colecciones (consulta directa)
-    const [obsSnap, intSnap] = await Promise.all([
-      _getDocs(query(collection(db,'observador'),    where('estudiante','==',nombre))),
-      _getDocs(query(collection(db,'intervenciones'),where('estudiante','==',nombre)))
-    ]);
-    const obsEntradas = obsSnap.docs.map(d=>({...d.data()}))
-      .sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
-    const planes = intSnap.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b)=>(b.fechaInicio||'').localeCompare(a.fechaInicio||''));
-    const planActivo = planes.find(p=>p.estado==='Activo');
+    // Nuevas colecciones (consulta directa; fallo silencioso si la colección aún no existe)
+    let obsEntradas = [], planes = [], planActivo = null;
+    try {
+      const [obsSnap, intSnap] = await Promise.all([
+        _getDocs(query(collection(db,'observador'),    where('estudiante','==',nombre))),
+        _getDocs(query(collection(db,'intervenciones'),where('estudiante','==',nombre)))
+      ]);
+      obsEntradas = obsSnap.docs.map(d=>({...d.data()}))
+        .sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+      planes = intSnap.docs.map(d=>({id:d.id,...d.data()}))
+        .sort((a,b)=>(b.fechaInicio||'').localeCompare(a.fechaInicio||''));
+      planActivo = planes.find(p=>p.estado==='Activo') || null;
+    } catch(_) { /* colecciones vacías o sin índice aún — continuar sin esos datos */ }
 
     // Procesar inasistencias por día
     const porFecha = {};

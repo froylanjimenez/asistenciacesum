@@ -110,16 +110,16 @@ service cloud.firestore {
 
     // ── Observador del estudiante ─────────────────────────────────────────
     match /observador/{obsId} {
-      allow read: if isActivo();
-      allow create: if isActivo();
+      allow read: if request.auth != null;
+      allow create: if isActivo() || isSuperAdmin();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
 
     // ── Planes de intervención (psicología) ───────────────────────────────
     match /intervenciones/{intId} {
-      allow read: if isActivo();
-      allow create: if isActivo();
+      allow read: if request.auth != null;
+      allow create: if isActivo() || isSuperAdmin();
       allow update, delete: if isAdmin()
         || (isActivo() && resource.data.creadoPor == request.auth.uid);
     }
