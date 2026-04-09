@@ -459,7 +459,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
         <div class="dash-kpi"><div class="kpi-icon" style="background:#1e3a5f">👩‍🎓</div><div><div class="kpi-num" id="dkTotalEst">–</div><div class="kpi-lbl">Estudiantes</div></div></div>
         <div class="dash-kpi"><div class="kpi-icon" style="background:#7f1d1d">❌</div><div><div class="kpi-num" style="color:var(--red)" id="dkAusentesHoy">–</div><div class="kpi-lbl">Ausentes hoy</div></div></div>
         <div class="dash-kpi"><div class="kpi-icon" style="background:#4a1d96">🧠</div><div><div class="kpi-num" style="color:var(--purple)" id="dkCitasPend">–</div><div class="kpi-lbl">Citas pendientes</div></div></div>
-        <div class="dash-kpi"><div class="kpi-icon" style="background:#7c2d12">⚠️</div><div><div class="kpi-num" style="color:var(--orange)" id="dkRiesgo">–</div><div class="kpi-lbl">En riesgo (≥3 fallas)</div></div></div>
+        <div class="dash-kpi"><div class="kpi-icon" style="background:#7c2d12">⚠️</div><div><div class="kpi-num" style="color:var(--orange)" id="dkRiesgo">–</div><div class="kpi-lbl">En riesgo (≥3 días falla)</div></div></div>
         <div class="dash-kpi"><div class="kpi-icon" style="background:#1e3a5f">📢</div><div><div class="kpi-num" style="color:var(--accent-lt)" id="dkNoticias">–</div><div class="kpi-lbl">Noticias activas</div></div></div>
       </div>
       <div class="row g-3">
@@ -554,6 +554,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
         <div class="cesum-card-header">
           <h5><i class="bi bi-bar-chart-line-fill"></i> Estadísticas de Inasistencia y Conducta</h5>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <select id="filtroGradoEst" class="form-select" style="width:auto;font-size:.82rem">
+              <option value="">-- Seleccionar grado --</option>
+            </select>
             <label style="font-size:.8rem;color:var(--text-2)">Del</label>
             <input type="date" id="statDesde" class="form-control" style="width:auto;font-size:.82rem">
             <label style="font-size:.8rem;color:var(--text-2)">al</label>
@@ -572,11 +575,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
           <table class="stat-table" id="statTable">
             <thead>
               <tr>
-                <th>Estudiante</th><th>Grado</th><th>Fallas</th>
+                <th>Estudiante</th><th>Grado</th><th>Días Falla</th>
                 <th>Fugas</th><th>Retardos</th><th>Excusas</th><th>Reportes</th><th>Estado</th>
               </tr>
             </thead>
-            <tbody id="statBody"></tbody>
+            <tbody id="statBody"><tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-2)">Selecciona un grado y presiona <strong>Aplicar</strong> para ver estadísticas.</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1954,10 +1957,10 @@ function poblarSelectGrados() {
     grados = grados.filter(g => state.gradosPermitidos.includes(g));
   }
 
-  ['asistGrado','filtroGradoAdmin','actGrado','filtroGradoNotas'].forEach(id => {
+  ['asistGrado','filtroGradoAdmin','actGrado','filtroGradoNotas','filtroGradoEst'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
-    const first = id==='asistGrado'?'<option value="">-- Todos --</option>':id==='actGrado'?'<option value="">-- Seleccionar --</option>':'<option value="">Todos los grados</option>';
+    const first = id==='asistGrado'?'<option value="">-- Todos --</option>':id==='actGrado'?'<option value="">-- Seleccionar --</option>':id==='filtroGradoEst'?'<option value="">-- Seleccionar grado --</option>':'<option value="">Todos los grados</option>';
     sel.innerHTML = first;
     grados.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o); });
     // Separador y grupos sim2 (solo en asistGrado)
@@ -1987,7 +1990,17 @@ window.switchTab = function(tab) {
     if(btn) btn.classList.toggle('active', t===tab);
   });
   if (tab==='inicio')       cargarDashboard();
-  if (tab==='estadisticas') cargarEstadisticas();
+  if (tab==='estadisticas') {
+    // No cargar automáticamente — esperar que el docente seleccione un grado
+    const statBody = document.getElementById('statBody');
+    const gradoSel = document.getElementById('filtroGradoEst');
+    if (statBody && (!gradoSel || !gradoSel.value)) {
+      statBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-2)">Selecciona un grado y presiona <strong>Aplicar</strong> para ver estadísticas.</td></tr>';
+      document.getElementById('statSummary').innerHTML = '';
+      const alertEl = document.getElementById('riesgoAlert');
+      if (alertEl) alertEl.classList.remove('show');
+    }
+  }
   if (tab==='psicologia')   cargarCitasPendientes();
   if (tab==='notas')        cargarActividades();
   if (tab==='calendario')   cargarCalendario();
@@ -2221,83 +2234,112 @@ window.confirmarReporte = async function() {
 window.cargarEstadisticas = async function() {
   const desde = document.getElementById('statDesde')?.value || '';
   const hasta = document.getElementById('statHasta')?.value || '';
+  const gradoFiltro = document.getElementById('filtroGradoEst')?.value || '';
+
+  if (!gradoFiltro) {
+    showToast('Selecciona un grado para ver estadísticas.', 'warning');
+    return;
+  }
+
   showLoading(true);
   try {
-    // Pasar el rango de fecha a fetchAsistenciaTodos para reducir lecturas Firebase
-    // Si hay un desde definido úsalo; si no, cargar últimos 30 días (default)
     const [asistDocs, repDocs] = await Promise.all([
       fetchAsistenciaTodos(false, desde || null),
       fetchReportesTodos()
     ]);
+
     const mapa = {};
-    // Incluir estudiantes de Firebase
-    state.estudiantes.forEach(e => {
-      mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, fallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
-    });
-    // Incluir estudiantes Sim2 virtuales (no en Firebase) para que sus registros aparezcan
-    const _norm = window._normSim2 || (s => (s||'').toUpperCase().trim());
-    const nombresFirebase = new Set(state.estudiantes.map(e => _norm(e.nombre)));
-    for (const [g, lista] of Object.entries(GRUPOS_SIM2_LISTAS)) {
-      for (const st of lista) {
-        if (!nombresFirebase.has(_norm(st.n)) && !mapa[st.n]) {
-          mapa[st.n] = { nombre:st.n, grado:'11°', fallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+    const gradoNorm = gradoFiltro.toLowerCase();
+
+    // Solo estudiantes del grado seleccionado
+    state.estudiantes
+      .filter(e => e.grado.toLowerCase() === gradoNorm)
+      .forEach(e => {
+        mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+      });
+
+    // Estudiantes Sim2 virtuales (solo si el grado es 11°)
+    if (gradoNorm.startsWith('11')) {
+      const _norm = window._normSim2 || (s => (s||'').toUpperCase().trim());
+      const nombresFirebase = new Set(state.estudiantes.map(e => _norm(e.nombre)));
+      for (const [g, lista] of Object.entries(GRUPOS_SIM2_LISTAS)) {
+        for (const st of lista) {
+          if (!nombresFirebase.has(_norm(st.n)) && !mapa[st.n]) {
+            mapa[st.n] = { nombre:st.n, grado:'11°', diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+          }
         }
       }
     }
+
+    // Contar por DÍA (no por hora): si un estudiante tiene ≥1 Falla en el día, cuenta como 1 día de falla
     asistDocs.forEach(d => {
       if (hasta && d.fecha > hasta) return;
+      const fallasDia = new Set();
+      const fugasDia = new Set();
+      const retardosDia = new Set();
+      const excusasDia = new Set();
       d.registros.forEach(r => {
         if (!mapa[r.estudiante]) return;
-        if (r.estado==='Falla')   mapa[r.estudiante].fallas++;
-        if (r.estado==='Fuga')    mapa[r.estudiante].fugas++;
-        if (r.estado==='Retardo') mapa[r.estudiante].retardos++;
-        if (r.estado==='Excusa')  mapa[r.estudiante].excusas++;
+        if (r.estado==='Falla')   fallasDia.add(r.estudiante);
+        if (r.estado==='Fuga')    fugasDia.add(r.estudiante);
+        if (r.estado==='Retardo') retardosDia.add(r.estudiante);
+        if (r.estado==='Excusa')  excusasDia.add(r.estudiante);
       });
+      fallasDia.forEach(n => mapa[n].diasFallas++);
+      fugasDia.forEach(n => mapa[n].fugas++);
+      retardosDia.forEach(n => mapa[n].retardos++);
+      excusasDia.forEach(n => mapa[n].excusas++);
     });
+
     repDocs.forEach(r => {
       if (desde && r.fecha < desde) return;
       if (hasta && r.fecha > hasta) return;
       if (mapa[r.estudiante]) mapa[r.estudiante].reportes++;
     });
-    renderEstadisticas(Object.values(mapa), desde, hasta);
+
+    // Solo mostrar estudiantes con al menos un registro
+    const conRegistros = Object.values(mapa).filter(s =>
+      s.diasFallas + s.fugas + s.retardos + s.excusas + s.reportes > 0
+    );
+    renderEstadisticas(conRegistros, desde, hasta);
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
 
 function renderEstadisticas(stats, desde='', hasta='') {
-  const totF=stats.reduce((a,s)=>a+s.fallas,0), totFu=stats.reduce((a,s)=>a+s.fugas,0);
+  const totF=stats.reduce((a,s)=>a+s.diasFallas,0), totFu=stats.reduce((a,s)=>a+s.fugas,0);
   const totR=stats.reduce((a,s)=>a+s.retardos,0), totE=stats.reduce((a,s)=>a+s.excusas,0);
   const totRep=stats.reduce((a,s)=>a+s.reportes,0);
-  const enRiesgo=stats.filter(s=>s.fallas>=3);
+  const enRiesgo=stats.filter(s=>s.diasFallas>=3);
   const periodo = desde||hasta ? ` · Período: ${desde||'inicio'}${hasta?' → '+hasta:''}` : ' · Período: todo el tiempo';
   document.getElementById('statSummary').innerHTML=`
-    <div class="stat-summary-card"><div class="num" style="color:var(--red)">${totF}</div><div class="lbl">Total Fallas${periodo?'':''}</div></div>
-    <div class="stat-summary-card"><div class="num" style="color:var(--text-3)">${totFu}</div><div class="lbl">Total Fugas</div></div>
-    <div class="stat-summary-card"><div class="num" style="color:var(--orange)">${totR}</div><div class="lbl">Total Retardos</div></div>
-    <div class="stat-summary-card"><div class="num" style="color:var(--accent-lt)">${totE}</div><div class="lbl">Total Excusas</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--red)">${totF}</div><div class="lbl">Días con Falla${periodo}</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--text-3)">${totFu}</div><div class="lbl">Días con Fuga</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--orange)">${totR}</div><div class="lbl">Días con Retardo</div></div>
+    <div class="stat-summary-card"><div class="num" style="color:var(--accent-lt)">${totE}</div><div class="lbl">Días con Excusa</div></div>
     <div class="stat-summary-card"><div class="num" style="color:var(--green)">${totRep}</div><div class="lbl">Reportes</div></div>
-    <div class="stat-summary-card"><div class="num" style="color:var(--red)">${enRiesgo.length}</div><div class="lbl">⚠️ En riesgo (≥3 fallas)</div></div>`;
+    <div class="stat-summary-card"><div class="num" style="color:var(--red)">${enRiesgo.length}</div><div class="lbl">⚠️ En riesgo (≥3 días)</div></div>`;
   // Alerta de riesgo
   const alertEl = document.getElementById('riesgoAlert');
   const alertMsg = document.getElementById('riesgoAlertMsg');
   if (enRiesgo.length && alertEl) {
     alertEl.classList.add('show');
     const masInfo = enRiesgo.length > 5 ? ' y ' + (enRiesgo.length - 5) + ' más.' : '';
-    alertMsg.innerHTML = `<strong>${enRiesgo.length} estudiante(s) en riesgo</strong> con 3 o más fallas: ${enRiesgo.slice(0,5).map(s=>`<strong>${escapeHtml(s.nombre)}</strong> (${s.fallas} fallas)`).join(', ')}${masInfo}`;
+    alertMsg.innerHTML = `<strong>${enRiesgo.length} estudiante(s) en riesgo</strong> con 3 o más días de falla: ${enRiesgo.slice(0,5).map(s=>`<strong>${escapeHtml(s.nombre)}</strong> (${s.diasFallas} días)`).join(', ')}${masInfo}`;
   } else if (alertEl) { alertEl.classList.remove('show'); }
-  const sorted=[...stats].sort((a,b)=>(b.fallas+b.fugas)-(a.fallas+a.fugas));
+  const sorted=[...stats].sort((a,b)=>(b.diasFallas+b.fugas)-(a.diasFallas+a.fugas));
   const tbody=document.getElementById('statBody');
-  if (!sorted.filter(s=>s.fallas+s.fugas+s.retardos+s.excusas+s.reportes>0).length) {
-    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:1.5rem;color:var(--text-2)">Sin datos de inasistencia para el período.</td></tr>';
+  if (!sorted.length) {
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:1.5rem;color:var(--text-2)">Sin datos de inasistencia para el período seleccionado.</td></tr>';
     return;
   }
   const cl=(v,t)=>v===0?`<td><span class="stat-val zero">0</span></td>`:`<td><span class="stat-val ${t}">${v}</span></td>`;
   tbody.innerHTML=sorted.map(s=>{
-    const riesgo = s.fallas >= 5 ? `<span class="riesgo-badge">🔴 Crítico</span>` : s.fallas >= 3 ? `<span class="riesgo-badge">⚠️ Riesgo</span>` : '';
+    const riesgo = s.diasFallas >= 5 ? `<span class="riesgo-badge">🔴 Crítico</span>` : s.diasFallas >= 3 ? `<span class="riesgo-badge">⚠️ Riesgo</span>` : '';
     return `<tr>
       <td style="font-weight:500"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(s.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(s.nombre)}</span></td>
       <td><span class="grado-badge">${escapeHtml(s.grado)}</span></td>
-      ${cl(s.fallas,'danger')}${cl(s.fugas,'muted')}${cl(s.retardos,'warning')}${cl(s.excusas,'info')}${cl(s.reportes,'purple')}
+      ${cl(s.diasFallas,'danger')}${cl(s.fugas,'muted')}${cl(s.retardos,'warning')}${cl(s.excusas,'info')}${cl(s.reportes,'purple')}
       <td>${riesgo}</td>
     </tr>`;
   }).join('');
@@ -3068,20 +3110,24 @@ window.cargarDashboard = async function() {
     ]);
     document.getElementById('dkCitasPend').textContent = citasAll.filter(c=>c.estado==='Pendiente').length;
     document.getElementById('dkNoticias').textContent  = noticiasAll.filter(n=>n.inicio<=hoy&&(!n.fin||n.fin>=hoy)).length;
-    // Riesgo — filtrado en memoria desde caché
+    // Riesgo — filtrado en memoria desde caché (conteo por DÍAS, no por horas)
     const fallasPorEst = {};
-    asistDocs.forEach(d => d.registros.forEach(r => { if (r.estado==='Falla') fallasPorEst[r.estudiante]=(fallasPorEst[r.estudiante]||0)+1; }));
+    asistDocs.forEach(d => {
+      const fallasDia = new Set();
+      d.registros.forEach(r => { if (r.estado==='Falla') fallasDia.add(r.estudiante); });
+      fallasDia.forEach(n => fallasPorEst[n]=(fallasPorEst[n]||0)+1);
+    });
     const enRiesgo = Object.entries(fallasPorEst).filter(([,n])=>n>=3).sort((a,b)=>b[1]-a[1]);
     document.getElementById('dkRiesgo').textContent = enRiesgo.length;
     const topEl = document.getElementById('dashTopRiesgo');
     topEl.innerHTML = !enRiesgo.length
       ? '<p style="color:var(--green);font-size:.85rem;padding:.5rem 0">✅ Ningún estudiante en situación de riesgo.</p>'
-      : '<div class="dash-top-list">'+enRiesgo.slice(0,8).map(([nombre,fallas],i)=>{
+      : '<div class="dash-top-list">'+enRiesgo.slice(0,8).map(([nombre,dias],i)=>{
           const est=state.estudiantes.find(e=>e.nombre===nombre)||{};
           return `<div class="dash-top-row"><span class="dtr-pos">${i+1}</span>
             <div><div class="dtr-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(nombre).replace(/'/g,"&#39;")}')">${escapeHtml(nombre)}</span></div>
             <div class="dtr-grado">${escapeHtml(est.grado||'')}</div></div>
-            <span class="riesgo-badge">${fallas>=5?'🔴':'⚠️'} ${fallas} fallas</span></div>`;
+            <span class="riesgo-badge">${dias>=5?'🔴':'⚠️'} ${dias} días</span></div>`;
         }).join('')+'</div>';
     const ausEl = document.getElementById('dashAusentesHoy');
     ausEl.innerHTML = !ausentes.length
