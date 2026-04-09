@@ -1963,8 +1963,8 @@ function poblarSelectGrados() {
     const first = id==='asistGrado'?'<option value="">-- Todos --</option>':id==='actGrado'?'<option value="">-- Seleccionar --</option>':id==='filtroGradoEst'?'<option value="">-- Seleccionar grado --</option>':'<option value="">Todos los grados</option>';
     sel.innerHTML = first;
     grados.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o); });
-    // Separador y grupos sim2 (solo en asistGrado)
-    if (id === 'asistGrado' && sim2GruposVisibles.length > 0) {
+    // Separador y grupos sim2 (asistencia, estadísticas, actividades y filtro de notas)
+    if (['asistGrado','filtroGradoEst','actGrado','filtroGradoNotas'].includes(id) && sim2GruposVisibles.length > 0) {
       const sep = document.createElement('option');
       sep.disabled = true;
       sep.textContent = '── Grupos Sim. 2 ──';
@@ -2250,22 +2250,32 @@ window.cargarEstadisticas = async function() {
 
     const mapa = {};
     const gradoNorm = gradoFiltro.toLowerCase();
+    const esSim2 = isSim2Grado(gradoFiltro);
+    const sim2Num = esSim2 ? sim2NumFromGrado(gradoFiltro) : null;
 
-    // Solo estudiantes del grado seleccionado
-    state.estudiantes
-      .filter(e => e.grado.toLowerCase() === gradoNorm)
-      .forEach(e => {
-        mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+    if (esSim2) {
+      // Grupo Sim2 específico: solo los estudiantes virtuales de ese grupo
+      const lista = GRUPOS_SIM2_LISTAS[sim2Num] || [];
+      lista.forEach(st => {
+        mapa[st.n] = { nombre:st.n, grado:sim2GradoLabel(sim2Num), diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
       });
+    } else {
+      // Grado normal de Firebase
+      state.estudiantes
+        .filter(e => e.grado.toLowerCase() === gradoNorm)
+        .forEach(e => {
+          mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+        });
 
-    // Estudiantes Sim2 virtuales (solo si el grado es 11°)
-    if (gradoNorm.startsWith('11')) {
-      const _norm = window._normSim2 || (s => (s||'').toUpperCase().trim());
-      const nombresFirebase = new Set(state.estudiantes.map(e => _norm(e.nombre)));
-      for (const [g, lista] of Object.entries(GRUPOS_SIM2_LISTAS)) {
-        for (const st of lista) {
-          if (!nombresFirebase.has(_norm(st.n)) && !mapa[st.n]) {
-            mapa[st.n] = { nombre:st.n, grado:'11°', diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+      // Si es 11° general, también incluir Sim2 virtuales que no estén en Firebase
+      if (gradoNorm.startsWith('11')) {
+        const _norm = window._normSim2 || (s => (s||'').toUpperCase().trim());
+        const nombresFirebase = new Set(state.estudiantes.map(e => _norm(e.nombre)));
+        for (const [g, lista] of Object.entries(GRUPOS_SIM2_LISTAS)) {
+          for (const st of lista) {
+            if (!nombresFirebase.has(_norm(st.n)) && !mapa[st.n]) {
+              mapa[st.n] = { nombre:st.n, grado:'11°', diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+            }
           }
         }
       }
@@ -2749,17 +2759,25 @@ window.renderActividades = function() {
   }).join('');
 };
 
+function _estudiantesDeGrado(grado) {
+  if (isSim2Grado(grado)) {
+    const num = sim2NumFromGrado(grado);
+    return (GRUPOS_SIM2_LISTAS[num] || []).map(st => ({ nombre: st.n, grado }));
+  }
+  return state.estudiantes.filter(e => e.grado === grado);
+}
+
 window.abrirCalificacion = function(id) {
   const act = _actividades.find(a => a.id === id);
   if (!act) return;
   _actividadActual = act;
   document.getElementById('calNombreActividad').textContent = act.nombre;
-  document.getElementById('calGrado').textContent           = act.grado;
+  document.getElementById('calGrado').textContent           = isSim2Grado(act.grado) ? sim2GradoLabel(sim2NumFromGrado(act.grado)) : act.grado;
   document.getElementById('calValoracionMax').textContent   = act.valoracionMax;
   document.getElementById('calFecha').textContent           = act.fecha;
   document.getElementById('calActividadId').value           = act.id;
   document.getElementById('calBuscar').value                = '';
-  renderFilasNotas(state.estudiantes.filter(e => e.grado === act.grado));
+  renderFilasNotas(_estudiantesDeGrado(act.grado));
   new bootstrap.Modal(document.getElementById('modalCalificaciones')).show();
 };
 
@@ -2789,8 +2807,8 @@ function renderFilasNotas(estudiantes) {
 window.filtrarNotasModal = function() {
   const buscar = document.getElementById('calBuscar').value.toLowerCase();
   const grado  = _actividadActual?.grado;
-  const filtrados = state.estudiantes.filter(e =>
-    e.grado === grado && e.nombre.toLowerCase().includes(buscar)
+  const filtrados = _estudiantesDeGrado(grado).filter(e =>
+    e.nombre.toLowerCase().includes(buscar)
   );
   renderFilasNotas(filtrados);
 };
@@ -2863,7 +2881,7 @@ window.exportarNotasCSV = async function() {
   const acts   = filtro ? _actividades.filter(a => a.grado.toLowerCase() === filtro) : _actividades;
   const rows   = [['Actividad','Valoración Máx','Grado','Fecha','Docente','Estudiante','Grado Estudiante','Nota','% Obtenido']];
   acts.forEach(act => {
-    const estGrado = state.estudiantes.filter(e => e.grado === act.grado);
+    const estGrado = _estudiantesDeGrado(act.grado);
     if (!estGrado.length) return;
     estGrado.forEach(est => {
       const nota = act.calificaciones?.[est.nombre] ?? '';
