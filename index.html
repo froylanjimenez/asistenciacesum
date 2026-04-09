@@ -1097,7 +1097,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
       </div>
       <div class="modal-footer" style="gap:.5rem;flex-wrap:wrap">
         <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button class="btn-cesum btn-cesum-primary" onclick="exportarInformeHTML(_recordNombreActual)">
+        <button class="btn-cesum btn-cesum-primary" onclick="exportarInformeHTML()">
           <i class="bi bi-file-earmark-text"></i> Exportar informe HTML
         </button>
       </div>
@@ -2289,6 +2289,30 @@ window.cargarEstadisticas = async function() {
       }
     }
 
+    // Reconciliar nombres: estudiantes de 11° pueden tener nombre ligeramente distinto
+    // en Firebase vs GRUPOS_SIM2_LISTAS. Agregar aliases para que la asistencia de
+    // cualquier sesión (11B o Sim2) acumule en el mismo objeto de estadísticas.
+    if (gradoNorm.startsWith('11') || esSim2) {
+      const _norm = window._normSim2 || (s=>(s||'').toUpperCase().trim());
+      // Índice del mapa actual por nombre normalizado
+      const normIdx = {};
+      Object.entries(mapa).forEach(([k,v]) => { normIdx[_norm(k)] = v; });
+      // Para cada nombre Sim2: si hay un alias Firebase, apuntar al mismo objeto
+      for (const lista of Object.values(GRUPOS_SIM2_LISTAS)) {
+        for (const st of lista) {
+          const nk = _norm(st.n);
+          if (normIdx[nk] && !mapa[st.n])  mapa[st.n]  = normIdx[nk]; // alias Sim2 → Firebase entry
+          else if (mapa[st.n] && !normIdx[nk]) normIdx[nk] = mapa[st.n];
+        }
+      }
+      // Para cada Firebase de 11°: si hay alias Sim2, apuntar al mismo objeto
+      state.estudiantes.forEach(e => {
+        if (!(e.grado||'').toLowerCase().startsWith('11')) return;
+        const nk = _norm(e.nombre);
+        if (normIdx[nk] && !mapa[e.nombre]) mapa[e.nombre] = normIdx[nk]; // alias Firebase → Sim2 entry
+      });
+    }
+
     // Contar por DÍA (no por hora): si un estudiante tiene ≥1 Falla en el día, cuenta como 1 día de falla
     asistDocs.forEach(d => {
       if (hasta && d.fecha > hasta) return;
@@ -2960,8 +2984,12 @@ let _recordNombreActual = null;
 window.verRecordEstudiante = async function(nombre) {
   _recordNombreActual = nombre;
   _calRecordYear = null; _calRecordMonth = null; _calRecordData = {};
-  // Fallback a {} para estudiantes sim2 virtuales que no existen en Firebase
-  const est = state.estudiantes.find(e => e.nombre === nombre) || {};
+  // Buscar por nombre exacto; si no existe (Sim2 virtual), buscar por nombre normalizado
+  // para recuperar teléfono y acudiente del registro Firebase equivalente.
+  const _normN = window._normSim2 || (s=>(s||'').toUpperCase().trim());
+  const est = state.estudiantes.find(e => e.nombre === nombre)
+           || state.estudiantes.find(e => _normN(e.nombre) === _normN(nombre))
+           || {};
   // Para sim2 virtuales, inferir grado '11°' si no se encontró en Firebase
   const gradoDisplay = est.grado || (getGrupoSim2(nombre) ? '11°' : '–');
   document.getElementById('recordNombre').textContent = nombre;
@@ -3533,7 +3561,10 @@ window.confirmarImportarCSV = async function() {
 function renderComunicadosRecord() {
   const panel = document.getElementById('rpanel-comunicados');
   if (!panel || !_recordNombreActual) return;
-  const est = state.estudiantes.find(e=>e.nombre===_recordNombreActual)||{};
+  const _normN = window._normSim2 || (s=>(s||'').toUpperCase().trim());
+  const est = state.estudiantes.find(e=>e.nombre===_recordNombreActual)
+           || state.estudiantes.find(e=>_normN(e.nombre)===_normN(_recordNombreActual))
+           || {};
   const tel = (est.telefono||'').toString().replace(/\D/g,'');
   const acudiente = est.acudiente || 'Acudiente';
   const nombre = est.nombre || '';
@@ -4334,11 +4365,16 @@ window.cerrarPlanIntervencion = async function(planId, nombre) {
 // ════════════════════════════════════════════
 //  EXPORTAR INFORME HTML POR ESTUDIANTE
 // ════════════════════════════════════════════
-window.exportarInformeHTML = async function(nombre) {
+window.exportarInformeHTML = async function() {
+  // _recordNombreActual es let (no window), no se puede pasar desde onclick
+  const nombre = _recordNombreActual;
   if (!nombre) return;
   showLoading(true);
   try {
-    const est = state.estudiantes.find(e => e.nombre === nombre) || {};
+    const _norm = window._normSim2 || (s=>(s||'').toUpperCase().trim());
+    const est = state.estudiantes.find(e => e.nombre === nombre)
+             || state.estudiantes.find(e => _norm(e.nombre) === _norm(nombre))
+             || {};
     const gradoDisplay = est.grado || (getGrupoSim2 && getGrupoSim2(nombre) ? '11°' : '–');
 
     // Datos del caché (0 lecturas extras si ya están calentados)
