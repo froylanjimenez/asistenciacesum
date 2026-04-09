@@ -4336,6 +4336,14 @@ window.cerrarPlanIntervencion = async function(planId, nombre) {
 // ════════════════════════════════════════════
 window.exportarInformeHTML = async function(nombre) {
   if (!nombre) return;
+
+  // Abrir ventana ANTES del primer await — el navegador solo permite
+  // window.open() dentro del contexto inmediato del gesto del usuario (clic).
+  // Después de cualquier await el contexto se pierde y el popup queda bloqueado.
+  const ventana = window.open('', '_blank');
+  if (!ventana) { showToast('Activa las ventanas emergentes para exportar.', 'warning'); return; }
+  ventana.document.write('<html><body style="font-family:sans-serif;padding:2rem;color:#666"><p>⏳ Generando informe...</p></body></html>');
+
   showLoading(true);
   try {
     const est = state.estudiantes.find(e => e.nombre === nombre) || {};
@@ -4364,7 +4372,7 @@ window.exportarInformeHTML = async function(nombre) {
     const porFecha = {};
     const diasSet  = { fallas: new Set(), fugas: new Set(), retardos: new Set(), excusas: new Set() };
     asistDocs.forEach(d => {
-      d.registros.forEach(r => {
+      (d.registros || []).forEach(r => {
         if (r.estudiante !== nombre || r.estado === 'Asistió') return;
         if (!porFecha[d.fecha]) porFecha[d.fecha] = [];
         porFecha[d.fecha].push({ hora:r.hora, estado:r.estado });
@@ -4575,12 +4583,13 @@ window.exportarInformeHTML = async function(nombre) {
 </body>
 </html>`;
 
-    const ventana = window.open('','_blank');
-    if (!ventana) { showToast('Activa las ventanas emergentes para exportar.','warning'); return; }
+    ventana.document.open();
     ventana.document.write(html);
     ventana.document.close();
-  } catch(err) { showToast('Error generando informe: '+err.message,'error'); }
-  finally { showLoading(false); }
+  } catch(err) {
+    ventana.close();
+    showToast('Error generando informe: '+err.message,'error');
+  } finally { showLoading(false); }
 };
 </script>
 </body>
