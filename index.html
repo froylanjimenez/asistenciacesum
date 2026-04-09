@@ -1082,16 +1082,23 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
           <button class="record-tab-btn" id="rtab-novedades" onclick="switchRecordTab('novedades')"><i class="bi bi-bell"></i> Novedades</button>
           <button class="record-tab-btn" id="rtab-citas" onclick="switchRecordTab('citas')"><i class="bi bi-heart-pulse"></i> Citas</button>
           <button class="record-tab-btn" id="rtab-calendario" onclick="switchRecordTab('calendario')"><i class="bi bi-calendar3"></i> Calendario</button>
-          <button class="record-tab-btn" id="rtab-comunicados" onclick="switchRecordTab('comunicados')"><i class="bi bi-whatsapp"></i> Comunicados</button>
+          <button class="record-tab-btn" id="rtab-comunicados"  onclick="switchRecordTab('comunicados')"><i class="bi bi-whatsapp"></i> Comunicados</button>
+          <button class="record-tab-btn" id="rtab-observador"   onclick="switchRecordTab('observador')"><i class="bi bi-journal-text"></i> Observador</button>
+          <button class="record-tab-btn" id="rtab-intervencion" onclick="switchRecordTab('intervencion')"><i class="bi bi-clipboard2-pulse"></i> Intervención</button>
         </div>
         <div id="rpanel-inasistencias" class="record-tab-panel active" style="max-height:280px;overflow-y:auto"></div>
         <div id="rpanel-novedades"     class="record-tab-panel" style="max-height:280px;overflow-y:auto"></div>
         <div id="rpanel-citas"         class="record-tab-panel" style="max-height:280px;overflow-y:auto"></div>
         <div id="rpanel-calendario"    class="record-tab-panel" style="max-height:320px;overflow-y:auto"></div>
         <div id="rpanel-comunicados"   class="record-tab-panel" style="max-height:320px;overflow-y:auto"></div>
+        <div id="rpanel-observador"    class="record-tab-panel" style="max-height:420px;overflow-y:auto"></div>
+        <div id="rpanel-intervencion"  class="record-tab-panel" style="max-height:420px;overflow-y:auto"></div>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer" style="gap:.5rem;flex-wrap:wrap">
         <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button class="btn-cesum btn-cesum-primary" onclick="exportarInformeHTML(_recordNombreActual)">
+          <i class="bi bi-file-earmark-text"></i> Exportar informe HTML
+        </button>
       </div>
     </div>
   </div>
@@ -2937,12 +2944,14 @@ function waLink(tel) {
 }
 
 window.switchRecordTab = function(tab) {
-  ['inasistencias','novedades','citas','calendario','comunicados'].forEach(t => {
+  ['inasistencias','novedades','citas','calendario','comunicados','observador','intervencion'].forEach(t => {
     document.getElementById('rtab-'+t)?.classList.toggle('active', t===tab);
     document.getElementById('rpanel-'+t)?.classList.toggle('active', t===tab);
   });
-  if (tab==='calendario')  renderCalendarioRecord();
-  if (tab==='comunicados') renderComunicadosRecord();
+  if (tab==='calendario')   renderCalendarioRecord();
+  if (tab==='comunicados')  renderComunicadosRecord();
+  if (tab==='observador')   cargarObservador(_recordNombreActual);
+  if (tab==='intervencion') cargarIntervencion(_recordNombreActual);
 };
 
 let _recordNombreActual = null;
@@ -2963,6 +2972,8 @@ window.verRecordEstudiante = async function(nombre) {
     '<div style="text-align:center;padding:1rem;color:var(--text-2);font-size:.82rem">Cargando...</div>';
   ['inasistencias','novedades','citas'].forEach(t =>
     document.getElementById('rpanel-'+t).innerHTML = '<p style="color:var(--text-2);font-size:.82rem;padding:.5rem">Cargando...</p>');
+  ['observador','intervencion'].forEach(t =>
+    document.getElementById('rpanel-'+t).innerHTML = '<p style="color:var(--text-2);font-size:.82rem;padding:.5rem">Haz clic en la pestaña para cargar.</p>');
   switchRecordTab('inasistencias');
   new bootstrap.Modal(document.getElementById('modalRecord')).show();
 
@@ -4094,6 +4105,477 @@ window.eliminarEvento = async function(id) {
     _calEventos = _calEventos.filter(e => e.id !== id);
     renderCalendario();
   } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  OBSERVADOR DEL ESTUDIANTE
+// ════════════════════════════════════════════
+const _OBS_TIPOS = ['Observación','Compromiso','Acuerdo','Seguimiento','Citación acudiente'];
+const _OBS_COLORES = {
+  'Observación':          'color:#93c5fd;background:#1e3a5f30;border-color:#93c5fd40',
+  'Compromiso':           'color:#fbbf24;background:#78350f30;border-color:#fbbf2440',
+  'Acuerdo':              'color:#4ade80;background:#16653430;border-color:#4ade8040',
+  'Seguimiento':          'color:#c4b5fd;background:#4c1d9530;border-color:#c4b5fd40',
+  'Citación acudiente':   'color:#fb923c;background:#7c2d1230;border-color:#fb923c40',
+};
+
+async function cargarObservador(nombre) {
+  if (!nombre) return;
+  const panel = document.getElementById('rpanel-observador');
+  if (!panel) return;
+  panel.innerHTML = '<p style="color:var(--text-2);font-size:.82rem;padding:.5rem">Cargando...</p>';
+  try {
+    const snap = await _getDocs(query(collection(db,'observador'), where('estudiante','==',nombre)));
+    const entradas = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+    const nomEsc = escapeHtml(nombre).replace(/'/g,"&#39;");
+    panel.innerHTML = `
+      <div style="padding:.7rem;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);margin-bottom:.75rem">
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-start">
+          <select id="obsNuevoTipo" class="form-select" style="width:auto;font-size:.8rem;flex-shrink:0">
+            ${_OBS_TIPOS.map(t=>`<option>${t}</option>`).join('')}
+          </select>
+          <textarea id="obsNuevoTexto" class="form-control" rows="2" placeholder="Descripción de la observación..." style="font-size:.82rem;flex:1;min-width:180px"></textarea>
+          <button class="btn-cesum btn-cesum-primary sm" onclick="guardarObservacion('${nomEsc}')">
+            <i class="bi bi-plus-circle"></i> Añadir
+          </button>
+        </div>
+      </div>
+      ${entradas.length
+        ? entradas.map(e => {
+            const estilo = _OBS_COLORES[e.tipo] || 'color:var(--text-2)';
+            return `<div class="record-fila" style="align-items:flex-start;gap:.6rem;padding:.55rem .1rem">
+              <span class="record-fecha" style="min-width:90px">${escapeHtml(e.fecha||'–')}</span>
+              <div style="flex:1">
+                <span style="font-size:.7rem;font-weight:700;padding:.15rem .45rem;border-radius:20px;border:1px solid transparent;${estilo}">${escapeHtml(e.tipo||'')}</span>
+                <p style="margin:.3rem 0 .1rem;font-size:.83rem;color:var(--text-1)">${escapeHtml(e.descripcion||'')}</p>
+                <span style="font-size:.71rem;color:var(--text-3)">Por: ${escapeHtml(e.docente||'–')}</span>
+              </div>
+            </div>`;
+          }).join('')
+        : '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem 0">Sin entradas en el observador.</p>'}
+    `;
+  } catch(err) {
+    panel.innerHTML = `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+window.guardarObservacion = async function(nombre) {
+  const tipo = document.getElementById('obsNuevoTipo')?.value || 'Observación';
+  const desc = document.getElementById('obsNuevoTexto')?.value.trim() || '';
+  if (!desc) { showToast('Escribe una descripción.','warning'); return; }
+  showLoading(true);
+  try {
+    await addDoc(collection(db,'observador'), {
+      estudiante:nombre, tipo, descripcion:desc,
+      fecha:todayISO(), docente:state.nombre, creadoPor:state.usuario, ts:serverTimestamp()
+    });
+    _dbWrites++;
+    showToast('Entrada guardada.','success');
+    await cargarObservador(nombre);
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  PLAN DE INTERVENCIÓN (PSICOLOGÍA)
+// ════════════════════════════════════════════
+async function cargarIntervencion(nombre) {
+  if (!nombre) return;
+  const panel = document.getElementById('rpanel-intervencion');
+  if (!panel) return;
+  panel.innerHTML = '<p style="color:var(--text-2);font-size:.82rem;padding:.5rem">Cargando...</p>';
+  try {
+    const snap = await _getDocs(query(collection(db,'intervenciones'), where('estudiante','==',nombre)));
+    const planes = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.fechaInicio||'').localeCompare(a.fechaInicio||''));
+    const activo = planes.find(p => p.estado === 'Activo');
+    const nomEsc = escapeHtml(nombre).replace(/'/g,"&#39;");
+
+    if (!activo) {
+      const archivados = planes.filter(p => p.estado === 'Cerrado');
+      panel.innerHTML = `
+        <p style="color:var(--text-2);font-size:.84rem;margin-bottom:.75rem">No hay plan de intervención activo.</p>
+        <div style="padding:.75rem;background:var(--bg-input);border-radius:8px;border:1px solid var(--border)">
+          <label style="font-size:.8rem;font-weight:600;color:var(--text-2);margin-bottom:.4rem;display:block">
+            <i class="bi bi-clipboard2-plus me-1"></i>Nuevo plan de intervención
+          </label>
+          <textarea id="intObjetivo" class="form-control mb-2" rows="2"
+            placeholder="Objetivo del plan (ej: Mejorar convivencia y rendimiento del estudiante...)" style="font-size:.82rem"></textarea>
+          <button class="btn-cesum btn-cesum-primary sm" onclick="crearPlanIntervencion('${nomEsc}')">
+            <i class="bi bi-clipboard2-check"></i> Crear plan
+          </button>
+        </div>
+        ${archivados.length ? `<p style="color:var(--text-3);font-size:.78rem;margin-top:.6rem">${archivados.length} plan(es) archivado(s).</p>` : ''}
+      `;
+      return;
+    }
+
+    const acciones = activo.acciones || [];
+    const planIdEsc = escapeHtml(activo.id).replace(/'/g,"&#39;");
+    const cumplidas = acciones.filter(a=>a.estado==='Cumplido').length;
+    const colorEstado = { 'Pendiente':'color:#fbbf24', 'En proceso':'color:#93c5fd', 'Cumplido':'color:#4ade80' };
+
+    panel.innerHTML = `
+      <div style="padding:.7rem;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);margin-bottom:.75rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem;gap:.5rem;flex-wrap:wrap">
+          <span style="font-size:.72rem;font-weight:700;color:var(--accent-lt);letter-spacing:.05em">PLAN ACTIVO</span>
+          <div style="display:flex;gap:.4rem">
+            <span style="font-size:.75rem;color:var(--text-2)">${cumplidas}/${acciones.length} acciones cumplidas</span>
+            <button class="btn-cesum sm" style="background:transparent;border:1px solid var(--border);color:var(--text-3);font-size:.72rem"
+              onclick="cerrarPlanIntervencion('${planIdEsc}','${nomEsc}')">Archivar</button>
+          </div>
+        </div>
+        <p style="font-size:.86rem;color:var(--text-1);margin:.2rem 0">${escapeHtml(activo.objetivo||'')}</p>
+        <span style="font-size:.71rem;color:var(--text-3)">Inicio: ${escapeHtml(activo.fechaInicio||'–')} · Por: ${escapeHtml(activo.docente||'–')}</span>
+      </div>
+
+      <div style="font-size:.8rem;font-weight:600;color:var(--text-2);margin-bottom:.4rem">
+        Acciones comprometidas
+      </div>
+      ${acciones.length
+        ? acciones.map((a,i) => `
+          <div class="record-fila" style="align-items:center;gap:.5rem;padding:.45rem .1rem">
+            <div style="flex:1">
+              <p style="margin:0 0 .15rem;font-size:.83rem;color:var(--text-1)">${escapeHtml(a.descripcion||'')}</p>
+              <span style="font-size:.71rem;color:var(--text-3)">Límite: ${escapeHtml(a.fechaLimite||'–')}</span>
+            </div>
+            <select class="form-select" style="width:auto;font-size:.75rem;flex-shrink:0"
+              onchange="actualizarAccionIntervencion('${planIdEsc}',${i},this.value,'${nomEsc}')">
+              <option ${a.estado==='Pendiente'?'selected':''} style="${colorEstado['Pendiente']}">Pendiente</option>
+              <option ${a.estado==='En proceso'?'selected':''}>En proceso</option>
+              <option ${a.estado==='Cumplido'?'selected':''}>Cumplido</option>
+            </select>
+          </div>`)
+          .join('')
+        : '<p style="color:var(--text-2);font-size:.82rem;padding:.25rem 0">Sin acciones registradas aún.</p>'}
+
+      <div style="padding:.6rem;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);margin-top:.75rem">
+        <div style="font-size:.78rem;font-weight:600;color:var(--text-2);margin-bottom:.4rem">Agregar acción comprometida</div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+          <input type="text" id="intAccionDesc" class="form-control" placeholder="Descripción de la acción..." style="font-size:.8rem;flex:1;min-width:140px">
+          <input type="date" id="intAccionFecha" class="form-control" style="width:auto;font-size:.8rem">
+          <button class="btn-cesum btn-cesum-success sm"
+            onclick="agregarAccionIntervencion('${planIdEsc}','${nomEsc}')">
+            <i class="bi bi-plus"></i> Agregar
+          </button>
+        </div>
+      </div>
+    `;
+  } catch(err) {
+    panel.innerHTML = `<p style="color:var(--red);font-size:.85rem">Error: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+window.crearPlanIntervencion = async function(nombre) {
+  const objetivo = document.getElementById('intObjetivo')?.value.trim() || '';
+  if (!objetivo) { showToast('Escribe el objetivo del plan.','warning'); return; }
+  showLoading(true);
+  try {
+    await addDoc(collection(db,'intervenciones'), {
+      estudiante:nombre, objetivo, estado:'Activo',
+      fechaInicio:todayISO(), acciones:[],
+      docente:state.nombre, creadoPor:state.usuario, ts:serverTimestamp()
+    });
+    _dbWrites++;
+    showToast('Plan creado correctamente.','success');
+    await cargarIntervencion(nombre);
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.agregarAccionIntervencion = async function(planId, nombre) {
+  const desc  = document.getElementById('intAccionDesc')?.value.trim() || '';
+  const fecha = document.getElementById('intAccionFecha')?.value || '';
+  if (!desc) { showToast('Escribe la descripción de la acción.','warning'); return; }
+  showLoading(true);
+  try {
+    const planRef  = doc(db,'intervenciones',planId);
+    const planSnap = await _getDoc(planRef);
+    if (!planSnap.exists()) { showToast('Plan no encontrado.','error'); return; }
+    const acciones = [...(planSnap.data().acciones || [])];
+    acciones.push({ descripcion:desc, fechaLimite:fecha, estado:'Pendiente' });
+    await updateDoc(planRef, { acciones });
+    _dbWrites++;
+    showToast('Acción agregada.','success');
+    await cargarIntervencion(nombre);
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+window.actualizarAccionIntervencion = async function(planId, idx, nuevoEstado, nombre) {
+  try {
+    const planRef  = doc(db,'intervenciones',planId);
+    const planSnap = await _getDoc(planRef);
+    if (!planSnap.exists()) return;
+    const acciones = [...(planSnap.data().acciones || [])];
+    if (!acciones[idx]) return;
+    acciones[idx] = { ...acciones[idx], estado:nuevoEstado };
+    await updateDoc(planRef, { acciones });
+    _dbWrites++;
+    await cargarIntervencion(nombre);
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
+window.cerrarPlanIntervencion = async function(planId, nombre) {
+  if (!confirm('¿Archivar este plan de intervención?')) return;
+  showLoading(true);
+  try {
+    await updateDoc(doc(db,'intervenciones',planId), { estado:'Cerrado' });
+    _dbWrites++;
+    showToast('Plan archivado.','success');
+    await cargarIntervencion(nombre);
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
+};
+
+// ════════════════════════════════════════════
+//  EXPORTAR INFORME HTML POR ESTUDIANTE
+// ════════════════════════════════════════════
+window.exportarInformeHTML = async function(nombre) {
+  if (!nombre) return;
+  showLoading(true);
+  try {
+    const est = state.estudiantes.find(e => e.nombre === nombre) || {};
+    const gradoDisplay = est.grado || (getGrupoSim2 && getGrupoSim2(nombre) ? '11°' : '–');
+
+    // Datos del caché (0 lecturas extras si ya están calentados)
+    const [asistDocs, repDocs, novDocs, citasDocs] = await Promise.all([
+      fetchAsistenciaTodos(), fetchReportesTodos(), fetchNovedadesTodos(), fetchCitasAll()
+    ]);
+
+    // Nuevas colecciones (consulta directa)
+    const [obsSnap, intSnap] = await Promise.all([
+      _getDocs(query(collection(db,'observador'),    where('estudiante','==',nombre))),
+      _getDocs(query(collection(db,'intervenciones'),where('estudiante','==',nombre)))
+    ]);
+    const obsEntradas = obsSnap.docs.map(d=>({...d.data()}))
+      .sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+    const planes = intSnap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.fechaInicio||'').localeCompare(a.fechaInicio||''));
+    const planActivo = planes.find(p=>p.estado==='Activo');
+
+    // Procesar inasistencias por día
+    const porFecha = {};
+    const diasSet  = { fallas: new Set(), fugas: new Set(), retardos: new Set(), excusas: new Set() };
+    asistDocs.forEach(d => {
+      d.registros.forEach(r => {
+        if (r.estudiante !== nombre || r.estado === 'Asistió') return;
+        if (!porFecha[d.fecha]) porFecha[d.fecha] = [];
+        porFecha[d.fecha].push({ hora:r.hora, estado:r.estado });
+        if (r.estado==='Falla')   diasSet.fallas.add(d.fecha);
+        if (r.estado==='Fuga')    diasSet.fugas.add(d.fecha);
+        if (r.estado==='Retardo') diasSet.retardos.add(d.fecha);
+        if (r.estado==='Excusa')  diasSet.excusas.add(d.fecha);
+      });
+    });
+    const fechasAbsencias = Object.keys(porFecha).sort().reverse();
+
+    const reportes = repDocs.filter(r => r.estudiante === nombre)
+      .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    const novedades = novDocs.filter(n => n.estudiante === nombre)
+      .sort((a,b)=>(b.inicio||'').localeCompare(a.inicio||''));
+    const citas = citasDocs.filter(c => c.estudiante === nombre)
+      .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+
+    const hoy = todayISO();
+    const e = (s) => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe — ${e(nombre)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff;font-size:13px;line-height:1.5}
+  .page{max-width:800px;margin:0 auto;padding:28px 32px}
+  .header{text-align:center;border-bottom:3px solid #1e3a5f;padding-bottom:14px;margin-bottom:18px}
+  .header h1{font-size:15px;font-weight:700;color:#1e3a5f;letter-spacing:.03em;text-transform:uppercase}
+  .header h2{font-size:12px;color:#555;font-weight:400;margin-top:4px}
+  .student-box{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;gap:24px;flex-wrap:wrap}
+  .student-box .name{font-size:17px;font-weight:700;color:#1e3a5f;margin-bottom:4px}
+  .student-box .meta{font-size:12px;color:#555;display:flex;gap:16px;flex-wrap:wrap}
+  .stats-grid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .stat-box{background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:10px 14px;text-align:center;min-width:90px;flex:1}
+  .stat-box .num{font-size:22px;font-weight:700}
+  .stat-box .lbl{font-size:10px;color:#777;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+  .section{margin-bottom:20px}
+  .section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1e3a5f;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#1e3a5f;color:#fff;padding:6px 10px;text-align:left;font-weight:600;font-size:11px}
+  td{padding:5px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+  tr:nth-child(even) td{background:#fafafa}
+  .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid transparent}
+  .badge-falla{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+  .badge-fuga{background:#f3f4f6;color:#374151;border-color:#d1d5db}
+  .badge-retardo{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+  .badge-excusa{background:#dbeafe;color:#1e40af;border-color:#93c5fd}
+  .badge-psico{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd}
+  .badge-obs{background:#e0f2fe;color:#0c4a6e;border-color:#7dd3fc}
+  .badge-comp{background:#fef9c3;color:#713f12;border-color:#fde047}
+  .badge-acuerdo{background:#dcfce7;color:#14532d;border-color:#86efac}
+  .badge-seg{background:#f3e8ff;color:#581c87;border-color:#d8b4fe}
+  .badge-citacion{background:#fff7ed;color:#7c2d12;border-color:#fb923c}
+  .badge-pendiente{background:#fef9c3;color:#713f12}
+  .badge-proceso{background:#dbeafe;color:#1e40af}
+  .badge-cumplido{background:#dcfce7;color:#14532d}
+  .badge-activo{background:#dbeafe;color:#1d4ed8}
+  .badge-cerrado{background:#f3f4f6;color:#374151}
+  .plan-box{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-bottom:10px}
+  .plan-box .obj{font-size:13px;font-weight:600;color:#0c4a6e;margin-bottom:6px}
+  .empty{color:#aaa;font-size:12px;font-style:italic}
+  .footer{margin-top:28px;border-top:1px solid #e2e8f0;padding-top:12px;display:flex;justify-content:space-between;font-size:11px;color:#888;flex-wrap:wrap;gap:8px}
+  .print-btn{background:#1e3a5f;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;margin-top:16px;display:block;margin-left:auto}
+  @media print{.print-btn{display:none}.page{padding:0}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <h1>Concentración Educativa del Sur de Montelibano</h1>
+    <h2>Informe de Seguimiento Estudiantil</h2>
+  </div>
+
+  <div class="student-box">
+    <div>
+      <div class="name">${e(nombre)}</div>
+      <div class="meta">
+        <span>📚 Grado: <strong>${e(gradoDisplay)}</strong></span>
+        <span>👤 Acudiente: <strong>${e(est.acudiente||'N/D')}</strong></span>
+        <span>📞 Teléfono: <strong>${e(est.telefono||'N/D')}</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-box"><div class="num" style="color:#dc2626">${diasSet.fallas.size}</div><div class="lbl">Días Falla</div></div>
+    <div class="stat-box"><div class="num" style="color:#6b7280">${diasSet.fugas.size}</div><div class="lbl">Días Fuga</div></div>
+    <div class="stat-box"><div class="num" style="color:#d97706">${diasSet.retardos.size}</div><div class="lbl">Días Retardo</div></div>
+    <div class="stat-box"><div class="num" style="color:#2563eb">${diasSet.excusas.size}</div><div class="lbl">Días Excusa</div></div>
+    <div class="stat-box"><div class="num" style="color:#7c3aed">${citas.length}</div><div class="lbl">Citas Psico</div></div>
+    <div class="stat-box"><div class="num" style="color:#059669">${reportes.length}</div><div class="lbl">Reportes</div></div>
+    <div class="stat-box"><div class="num" style="color:#0369a1">${obsEntradas.length}</div><div class="lbl">Observaciones</div></div>
+  </div>
+
+  <!-- INASISTENCIAS -->
+  <div class="section">
+    <div class="section-title">Registro de Inasistencias</div>
+    ${fechasAbsencias.length
+      ? `<table><thead><tr><th>Fecha</th><th>Detalle por hora</th></tr></thead><tbody>
+        ${fechasAbsencias.map(f=>`<tr>
+          <td>${e(f)}</td>
+          <td>${porFecha[f].sort((a,b)=>a.hora.localeCompare(b.hora)).map(r=>{
+            const cls={Falla:'badge-falla',Fuga:'badge-fuga',Retardo:'badge-retardo',Excusa:'badge-excusa','Cita Psico':'badge-psico'}[r.estado]||'badge-fuga';
+            return `<span class="badge ${cls}">${e(r.hora)} ${e(r.estado)}</span>`;
+          }).join(' ')}</td>
+        </tr>`).join('')}
+        </tbody></table>`
+      : '<p class="empty">Sin registros de inasistencia.</p>'}
+  </div>
+
+  <!-- REPORTES DE CONDUCTA -->
+  <div class="section">
+    <div class="section-title">Reportes de Conducta</div>
+    ${reportes.length
+      ? `<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Observación</th><th>Docente</th></tr></thead><tbody>
+        ${reportes.map(r=>`<tr>
+          <td>${e(r.fecha||'–')}</td>
+          <td>${e(r.falta||'–')}</td>
+          <td>${e(r.observacion||'–')}</td>
+          <td>${e(r.docente||'–')}</td>
+        </tr>`).join('')}
+        </tbody></table>`
+      : '<p class="empty">Sin reportes de conducta.</p>'}
+  </div>
+
+  <!-- NOVEDADES -->
+  <div class="section">
+    <div class="section-title">Novedades</div>
+    ${novedades.length
+      ? `<table><thead><tr><th>Inicio</th><th>Fin</th><th>Estado</th><th>Motivo</th></tr></thead><tbody>
+        ${novedades.map(n=>`<tr>
+          <td>${e(n.inicio||'–')}</td>
+          <td>${e(n.fin||'–')}</td>
+          <td>${e(n.estado||'–')}</td>
+          <td>${e(n.motivo||'–')}</td>
+        </tr>`).join('')}
+        </tbody></table>`
+      : '<p class="empty">Sin novedades registradas.</p>'}
+  </div>
+
+  <!-- CITAS PSICOLOGÍA -->
+  <div class="section">
+    <div class="section-title">Citas de Psicología</div>
+    ${citas.length
+      ? `<table><thead><tr><th>Fecha</th><th>Hora</th><th>Estado</th><th>Motivo</th><th>Informe / Compromisos</th></tr></thead><tbody>
+        ${citas.map(c=>`<tr>
+          <td>${e(c.fecha||'–')}</td>
+          <td>${e(c.hora||'–')}</td>
+          <td><span class="badge ${c.estado==='Pendiente'?'badge-pendiente':'badge-cumplido'}">${e(c.estado||'–')}</span></td>
+          <td>${e(c.motivo||'–')}</td>
+          <td style="font-size:11px">${e(c.informe||'')}${c.informe&&c.compromisos?' | ':''}${e(c.compromisos||'')}</td>
+        </tr>`).join('')}
+        </tbody></table>`
+      : '<p class="empty">Sin citas registradas.</p>'}
+  </div>
+
+  <!-- PLAN DE INTERVENCIÓN -->
+  <div class="section">
+    <div class="section-title">Plan de Intervención</div>
+    ${planActivo
+      ? `<div class="plan-box">
+          <div class="obj">${e(planActivo.objetivo||'')}</div>
+          <div style="font-size:11px;color:#555;margin-bottom:8px">Inicio: ${e(planActivo.fechaInicio||'–')} · Responsable: ${e(planActivo.docente||'–')} · <span class="badge badge-activo">Activo</span></div>
+          ${(planActivo.acciones||[]).length
+            ? `<table><thead><tr><th>Acción comprometida</th><th>Fecha límite</th><th>Estado</th></tr></thead><tbody>
+              ${(planActivo.acciones||[]).map(a=>`<tr>
+                <td>${e(a.descripcion||'')}</td>
+                <td>${e(a.fechaLimite||'–')}</td>
+                <td><span class="badge ${a.estado==='Cumplido'?'badge-cumplido':a.estado==='En proceso'?'badge-proceso':'badge-pendiente'}">${e(a.estado||'Pendiente')}</span></td>
+              </tr>`).join('')}
+              </tbody></table>`
+            : '<p class="empty">Sin acciones registradas.</p>'}
+        </div>`
+      : `<p class="empty">Sin plan de intervención activo.</p>`}
+    ${planes.filter(p=>p.estado==='Cerrado').length
+      ? `<p style="font-size:11px;color:#aaa;margin-top:4px">${planes.filter(p=>p.estado==='Cerrado').length} plan(es) archivado(s).</p>`
+      : ''}
+  </div>
+
+  <!-- OBSERVADOR DEL ESTUDIANTE -->
+  <div class="section">
+    <div class="section-title">Observador del Estudiante</div>
+    ${obsEntradas.length
+      ? `<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Registrado por</th></tr></thead><tbody>
+        ${obsEntradas.map(o=>{
+          const cls={'Observación':'badge-obs','Compromiso':'badge-comp','Acuerdo':'badge-acuerdo','Seguimiento':'badge-seg','Citación acudiente':'badge-citacion'}[o.tipo]||'';
+          return `<tr>
+            <td>${e(o.fecha||'–')}</td>
+            <td><span class="badge ${cls}">${e(o.tipo||'–')}</span></td>
+            <td>${e(o.descripcion||'–')}</td>
+            <td>${e(o.docente||'–')}</td>
+          </tr>`;
+        }).join('')}
+        </tbody></table>`
+      : '<p class="empty">Sin entradas en el observador.</p>'}
+  </div>
+
+  <div class="footer">
+    <span>Generado: ${hoy} · Por: ${e(state.nombre||'–')}</span>
+    <span>Concentración Educativa del Sur de Montelibano</span>
+  </div>
+  <button class="print-btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+</div>
+</body>
+</html>`;
+
+    const ventana = window.open('','_blank');
+    if (!ventana) { showToast('Activa las ventanas emergentes para exportar.','warning'); return; }
+    ventana.document.write(html);
+    ventana.document.close();
+  } catch(err) { showToast('Error generando informe: '+err.message,'error'); }
   finally { showLoading(false); }
 };
 </script>

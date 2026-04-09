@@ -71,6 +71,22 @@
         { "fieldPath": "docenteUid", "order": "ASCENDING" },
         { "fieldPath": "fecha",      "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "observador",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estudiante", "order": "ASCENDING" },
+        { "fieldPath": "fecha",      "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "intervenciones",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estudiante",  "order": "ASCENDING" },
+        { "fieldPath": "fechaInicio", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
