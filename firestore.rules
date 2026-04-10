@@ -56,10 +56,10 @@ service cloud.firestore {
 
     // ── Asistencia ────────────────────────────────────────────────────────
     // Lectura: cualquier sesión autenticada
-    // Escritura: usuario activo (docentes y admins)
+    // Escritura: usuario activo (docentes y admins); superadmin siempre puede
     match /asistencia/{fecha} {
       allow read: if request.auth != null;
-      allow write: if isActivo();
+      allow write: if isActivo() || isSuperAdmin();
     }
 
     // ── Reportes de comportamiento ────────────────────────────────────────
