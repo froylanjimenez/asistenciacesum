@@ -29,6 +29,14 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-1);min-height:100vh}
+/* Accesibilidad: tamaño de texto */
+html.text-grande { font-size: 19px; }
+html.text-xl     { font-size: 22px; }
+#btnTextSize{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text-2);
+  font-family:'Outfit',sans-serif;font-weight:700;font-size:.82rem;padding:.28rem .6rem;cursor:pointer;
+  transition:all .2s;letter-spacing:.03em;min-width:2.4rem;text-align:center}
+#btnTextSize:hover{background:var(--bg-input);color:var(--text-1)}
+#btnTextSize.activo{border-color:var(--accent-lt);color:var(--accent-lt)}
 #app{min-height:100vh}
 .screen{display:none!important}
 .screen.active{display:flex!important}
@@ -446,6 +454,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-
     </div>
     <div class="user-info">
       <div class="user-badge"><strong id="navNombre">Docente</strong></div>
+      <button id="btnTextSize" onclick="ciclarTextSize()" title="Ajustar tamaño de texto">A</button>
       <button id="btnLogout" onclick="handleLogout()"><i class="bi bi-box-arrow-left"></i> Salir</button>
     </div>
   </nav>
@@ -4146,6 +4155,40 @@ window.guardarEvento = async function() {
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
 };
+
+// ════════════════════════════════════════════
+//  ACCESIBILIDAD — TAMAÑO DE TEXTO
+// ════════════════════════════════════════════
+(function() {
+  const NIVELES = [
+    { clase: '',           etiqueta: 'A',   titulo: 'Tamaño normal'       },
+    { clase: 'text-grande', etiqueta: 'A+',  titulo: 'Tamaño grande'       },
+    { clase: 'text-xl',    etiqueta: 'A++', titulo: 'Tamaño extra grande'  },
+  ];
+  let nivelActual = 0;
+
+  function aplicarNivel(n) {
+    nivelActual = n;
+    const html = document.documentElement;
+    NIVELES.forEach(nv => { if (nv.clase) html.classList.remove(nv.clase); });
+    if (NIVELES[n].clase) html.classList.add(NIVELES[n].clase);
+    const btn = document.getElementById('btnTextSize');
+    if (btn) {
+      btn.textContent = NIVELES[n].etiqueta;
+      btn.title       = NIVELES[n].titulo;
+      btn.classList.toggle('activo', n > 0);
+    }
+    localStorage.setItem('cesum_textSize', n);
+  }
+
+  window.ciclarTextSize = function() {
+    aplicarNivel((nivelActual + 1) % NIVELES.length);
+  };
+
+  // Restaurar preferencia guardada al cargar
+  const guardado = parseInt(localStorage.getItem('cesum_textSize') || '0', 10);
+  if (guardado > 0 && guardado < NIVELES.length) aplicarNivel(guardado);
+})();
 
 window.eliminarEvento = async function(id) {
   if (!confirm('¿Eliminar este evento del calendario?')) return;
