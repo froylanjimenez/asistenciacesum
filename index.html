@@ -959,9 +959,15 @@ html.text-xl     { font-size: 22px; }
           </select>
         </div>
         <div class="mb-3"><label class="form-label">Observaciones</label><textarea id="reporteObs" class="form-control" rows="4" placeholder="Describa el incidente con detalle..."></textarea></div>
-        <div class="form-check form-switch">
+        <div class="form-check form-switch mb-3">
           <input class="form-check-input" type="checkbox" id="reporteWhatsapp" checked>
           <label class="form-check-label small text-muted" for="reporteWhatsapp">Enviar notificación WhatsApp al acudiente</label>
+        </div>
+        <div id="reporteAcudienteDiv" style="display:none;">
+          <label class="form-label small">Selecciona acudiente para notificar:</label>
+          <select id="reporteAcudienteSelect" class="form-select form-select-sm">
+            <option value="">-- Seleccionar --</option>
+          </select>
         </div>
       </div>
       <div class="modal-footer">
@@ -2240,6 +2246,39 @@ function abrirModalReporte(est) {
   document.getElementById('reporteFalta').value='';
   document.getElementById('reporteObs').value='';
   document.getElementById('reporteWhatsapp').checked=true;
+
+  // Llenar selector de acudientes
+  const selectAcudiente = document.getElementById('reporteAcudienteSelect');
+  selectAcudiente.innerHTML = '<option value="">-- Seleccionar --</option>';
+
+  if (est.celular1) {
+    const opt1 = document.createElement('option');
+    opt1.value = est.celular1;
+    opt1.textContent = `${est.acudiente1 || 'Acudiente 1'} (${est.celular1})`;
+    selectAcudiente.appendChild(opt1);
+  }
+  if (est.celular2) {
+    const opt2 = document.createElement('option');
+    opt2.value = est.celular2;
+    opt2.textContent = `${est.acudiente2 || 'Acudiente 2'} (${est.celular2})`;
+    selectAcudiente.appendChild(opt2);
+  }
+
+  // Si solo hay un acudiente, seleccionarlo automáticamente
+  if (selectAcudiente.options.length === 2) {
+    selectAcudiente.value = selectAcudiente.options[1].value;
+  }
+
+  // Mostrar/ocultar selector
+  const toggleAcudienteDiv = () => {
+    document.getElementById('reporteAcudienteDiv').style.display =
+      (est.celular1 || est.celular2) && document.getElementById('reporteWhatsapp').checked ? 'block' : 'none';
+  };
+  toggleAcudienteDiv();
+
+  // Agregar listener al checkbox
+  document.getElementById('reporteWhatsapp').onchange = toggleAcudienteDiv;
+
   new bootstrap.Modal(document.getElementById('modalReporte')).show();
 }
 
@@ -2249,21 +2288,25 @@ window.confirmarReporte = async function() {
   const enviarWA= document.getElementById('reporteWhatsapp').checked;
   if (!falta) { showToast('Selecciona el tipo de falta.','warning'); return; }
   if (!obs)   { showToast('Escribe las observaciones.','warning'); return; }
+  if (enviarWA && !document.getElementById('reporteAcudienteSelect').value) {
+    showToast('Selecciona un acudiente para notificar.','warning'); return;
+  }
   const est=reporteEstActual, fecha=todayISO();
   bootstrap.Modal.getInstance(document.getElementById('modalReporte')).hide();
   showLoading(true);
   try {
     await addDoc(collection(db,'reportes'), {
       fecha, estudiante:est.nombre, grado:est.grado,
-      acudiente:est.acudiente||'', telefono:est.telefono||'',
+      acudiente:est.acudiente1||est.acudiente||'', telefono:est.celular1||est.telefono||'',
       falta, observacion:obs, docente:state.nombre, creadoPor:state.usuario, ts:serverTimestamp()
     });
     _dbWrites++; cacheDel('reportes:all');
     showToast('Reporte guardado.','success');
   } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { showLoading(false); }
-  if (enviarWA && est.telefono) {
-    const num = est.telefono.toString().replace(/\D/g,'');
+  if (enviarWA) {
+    const telSeleccionado = document.getElementById('reporteAcudienteSelect').value;
+    const num = telSeleccionado.toString().replace(/\D/g,'');
     if (num.length >= 10) {
       const msg='*Concentracion Educativa del Sur de Montelibano*\n\nEstimado/a acudiente de *'+est.nombre+'*,\n\nFecha: *'+fecha+'*\nFalta: '+falta+'\nObservacion: '+obs+'\n\nDocente: '+state.nombre;
       window.open('https://wa.me/57'+num+'?text='+encodeURIComponent(msg),'_blank');
