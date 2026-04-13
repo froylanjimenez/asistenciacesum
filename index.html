@@ -3026,10 +3026,18 @@ window.verRecordEstudiante = async function(nombre) {
   // Para sim2 virtuales, inferir grado '11°' si no se encontró en Firebase
   const gradoDisplay = est.grado || (getGrupoSim2(nombre) ? '11°' : '–');
   document.getElementById('recordNombre').textContent = nombre;
+  const acudientes = [];
+  if (est.acudiente1) acudientes.push(est.acudiente1);
+  if (est.acudiente2) acudientes.push(est.acudiente2);
+  const acudienteStr = acudientes.length > 0 ? acudientes.join(' / ') : 'N/D';
+  const celulares = [];
+  if (est.celular1) celulares.push(est.celular1);
+  if (est.celular2) celulares.push(est.celular2);
+  const celularStr = celulares.length > 0 ? celulares.join(' / ') : 'N/D';
   document.getElementById('recordInfoEst').innerHTML =
     `<span><i class="bi bi-mortarboard" style="color:var(--accent-lt)"></i> ${escapeHtml(gradoDisplay)}</span>` +
-    `<span><i class="bi bi-person" style="color:var(--accent-lt)"></i> ${escapeHtml(est.acudiente||'N/D')}</span>` +
-    `<span><i class="bi bi-whatsapp" style="color:var(--green)"></i> ${waLink(est.telefono)}</span>`;
+    `<span><i class="bi bi-person" style="color:var(--accent-lt)"></i> ${escapeHtml(acudienteStr)}</span>` +
+    `<span><i class="bi bi-whatsapp" style="color:var(--green)"></i> ${waLink(celularStr)}</span>`;
   document.getElementById('recordStats').innerHTML =
     '<div style="text-align:center;padding:1rem;color:var(--text-2);font-size:.82rem">Cargando...</div>';
   ['inasistencias','novedades','citas'].forEach(t =>
@@ -3141,8 +3149,9 @@ window.abrirEditarEstudiante = function(id) {
   document.getElementById('editEstId').value        = id;
   document.getElementById('editEstNombre').value    = est.nombre  || '';
   document.getElementById('editEstGrado').value     = est.grado   || '';
-  document.getElementById('editEstAcudiente').value = est.acudiente|| '';
-  document.getElementById('editEstTelefono').value  = est.telefono || '';
+  // Usar nuevos campos si existen, sino usar antiguos para compatibilidad
+  document.getElementById('editEstAcudiente').value = (est.acudiente1 ? est.acudiente1 + (est.acudiente2 ? ' / ' + est.acudiente2 : '') : est.acudiente) || '';
+  document.getElementById('editEstTelefono').value  = (est.celular1 ? est.celular1 + (est.celular2 ? ' / ' + est.celular2 : '') : est.telefono) || '';
   // Mostrar campos de admin solo si es admin
   document.querySelectorAll('.edit-solo-admin').forEach(el =>
     el.style.display = state.isAdmin ? 'block' : 'none');
