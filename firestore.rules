@@ -65,25 +65,28 @@ service cloud.firestore {
     // ── Reportes de comportamiento ────────────────────────────────────────
     match /reportes/{repId} {
       allow read: if request.auth != null;
-      allow create: if isActivo();
+      allow create: if isActivo() || isSuperAdmin();
       allow update, delete: if isAdmin()
-        || (isActivo() && resource.data.creadoPor == request.auth.uid);
+        || (isActivo() && resource.data.creadoPor == request.auth.uid)
+        || isSuperAdmin();
     }
 
     // ── Novedades / ausencias justificadas ───────────────────────────────
     match /novedades/{novId} {
       allow read: if request.auth != null;
-      allow create: if isActivo();
+      allow create: if isActivo() || isSuperAdmin();
       allow update, delete: if isAdmin()
-        || (isActivo() && resource.data.creadoPor == request.auth.uid);
+        || (isActivo() && resource.data.creadoPor == request.auth.uid)
+        || isSuperAdmin();
     }
 
     // ── Citas ─────────────────────────────────────────────────────────────
     match /citas/{citaId} {
       allow read: if request.auth != null;
-      allow create: if isActivo();
+      allow create: if isActivo() || isSuperAdmin();
       allow update, delete: if isAdmin()
-        || (isActivo() && resource.data.creadoPor == request.auth.uid);
+        || (isActivo() && resource.data.creadoPor == request.auth.uid)
+        || isSuperAdmin();
     }
 
     // ── Noticias / comunicados ────────────────────────────────────────────
