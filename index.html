@@ -3016,7 +3016,7 @@ window.exportarNotasGrupoCSV = function() {
   if (!_actividades.length) { showToast('No hay actividades cargadas. Refresca primero.','warning'); return; }
   const acts = _actividades.filter(a => a.grado.toLowerCase() === filtro.toLowerCase()).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   if (!acts.length) { showToast('No hay actividades para el grado seleccionado.','warning'); return; }
-  const estudiantes = state.estudiantes.filter(e => e.grado.toLowerCase() === filtro.toLowerCase());
+  const estudiantes = _estudiantesDeGrado(filtro);
   if (!estudiantes.length) { showToast('No hay estudiantes en este grado.','warning'); return; }
   // Cabecera: Estudiante + una columna por actividad
   const header = ['Estudiante', ...acts.map(a => `${a.nombre} (/${a.valoracionMax}) ${a.fecha}`)];
