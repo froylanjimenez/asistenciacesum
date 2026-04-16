@@ -3014,7 +3014,7 @@ window.exportarNotasGrupoCSV = function() {
   const filtro = document.getElementById('filtroGradoNotas')?.value || '';
   if (!filtro) { showToast('Selecciona un grado en el filtro para exportar.','warning'); return; }
   if (!_actividades.length) { showToast('No hay actividades cargadas. Refresca primero.','warning'); return; }
-  const acts = _actividades.filter(a => a.grado.toLowerCase() === filtro.toLowerCase()).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const acts = _actividades.filter(a => a.grado.toLowerCase() === filtro.toLowerCase() && (state.isAdmin || a.docenteUid === state.usuario || a.docente === state.nombre)).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   if (!acts.length) { showToast('No hay actividades para el grado seleccionado.','warning'); return; }
   const estudiantes = _estudiantesDeGrado(filtro);
   if (!estudiantes.length) { showToast('No hay estudiantes en este grado.','warning'); return; }
