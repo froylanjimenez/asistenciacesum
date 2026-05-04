@@ -162,6 +162,7 @@ html.text-xl     { font-size: 22px; }
 .est-nombre{font-size:.82rem;line-height:1.2;display:flex;align-items:center;flex-wrap:wrap;gap:3px}
 .est-meta{font-size:.68rem;color:var(--text-2);margin-top:2px}
 .sim2-badge{background:#1565c0;color:#fff;font-size:.58rem;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.03em;flex-shrink:0}
+.sim3-badge{background:#1b5e20;color:#fff;font-size:.58rem;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.03em;flex-shrink:0}
 .leyenda-wrap{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
 .leyenda-item{display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--text-2)}
 .leyenda-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
@@ -1613,11 +1614,207 @@ const GRUPOS_SIM2_LISTAS = {
   ]
 };
 
+
+// ════════════════════════════════════════════
+//  GRUPOS TERCER SIMULACRO — GRADO 11
+//  Clasificación por desempeño (172 estudiantes, 5 grupos)
+//  Grupos: 30, 36, 36, 35, 35
+// ════════════════════════════════════════════
+const GRUPOS_SIM3_LISTAS = {
+  1: [
+    {n:'JUSTIN TIRADO GARAY',i:459.8,r:1},
+    {n:'KEVIN DAVID MEJIA HEREDIA',i:457.9,r:2},
+    {n:'DAYLIS PEREZ PADILLA',i:437.4,r:3},
+    {n:'SEBASTIAN RUIZ MONTERROZA',i:430.3,r:4},
+    {n:'VALERY GARCES MENDOZA',i:430.0,r:5},
+    {n:'YERMAN YAIR RUIZ GRANADOS',i:424.2,r:6},
+    {n:'LUIS MARIO TRUJILLO URANGO',i:418.8,r:7},
+    {n:'STIVEN DARIO CALI ESTRADA',i:416.9,r:8},
+    {n:'MARIA JOSE VILLEGAS HERRERA',i:414.2,r:9},
+    {n:'MELANI ALEJANDRA MALDONADO VILLALBA',i:413.8,r:10},
+    {n:'ARIATHNA MESTRA ARDILA',i:404.9,r:11},
+    {n:'STEFANIA GUERRA VILLA',i:401.8,r:12},
+    {n:'SHARON LISHELL RODRIGUEZ OSORIO',i:399.3,r:13},
+    {n:'JOSE ALBEIRO CALLE MORENO',i:399.0,r:14},
+    {n:'ALEJANDRO ZARZA HOYOS',i:395.6,r:15},
+    {n:'SAMAHARA FLOREZ OVIEDO',i:394.8,r:16},
+    {n:'STEVEN ANDRES HOYOS NAVARRO',i:393.9,r:17},
+    {n:'SAMUEL ALEAN ZAPATA',i:392.5,r:18},
+    {n:'NICOL STEFANY BAQUERO DIAZ',i:390.4,r:19},
+    {n:'SAMUEL VARGAS VIDES',i:390.4,r:20},
+    {n:'YASMILA MENDEZ HERNANDEZ',i:387.8,r:21},
+    {n:'JUAN ANDRES CARVAJAL DIAZ',i:386.7,r:22},
+    {n:'ANA SOFIA FERNANDEZ MADRID',i:384.7,r:23},
+    {n:'SYARA SOFIA DIAZ HERNANDEZ',i:384.4,r:24},
+    {n:'YESID ANDRES ZEA CAMA\u00d1O',i:383.2,r:25},
+    {n:'JUAN PABLO PATERNINA HINCAPIE',i:378.4,r:26},
+    {n:'CAMILO ANDRES MURILLO BUELVAS',i:378.2,r:27},
+    {n:'DIEGO DAVID DUQUE HERRERA',i:378.1,r:28},
+    {n:'MICHELL ANDREA PEREZ CHOLES',i:375.3,r:29},
+    {n:'MARIA ANGEL HERNANDEZ HOYOS',i:370.0,r:30},
+  ],
+  2: [
+    {n:'JUAN CAMILO RICARDO VEGA',i:369.0,r:31},
+    {n:'ISABELLA FLOREZ CANO',i:367.8,r:32},
+    {n:'JULIANA BANQUET MENDOZA',i:366.9,r:33},
+    {n:'BIANA LICETH CASTRO RIVERA',i:366.9,r:34},
+    {n:'SARAY CAMILA PIMIENTA SOTO',i:364.2,r:35},
+    {n:'NICOLAS ELIAS CANOLE VASQUEZ',i:364.1,r:36},
+    {n:'PAMELA DENISE RUIZ VILLADIEGO',i:363.4,r:37},
+    {n:'OSSA POLO ALEX JOSE DE LA',i:362.8,r:38},
+    {n:'DIEGO ARMANDO CAMPO SALAZAR',i:361.6,r:39},
+    {n:'MARISOL MARTINEZ SALAS',i:361.5,r:40},
+    {n:'YALENA SOFIA SALAZAR OYOLA',i:361.3,r:41},
+    {n:'SAMUEL DAVID FABRA VAZQUEZ',i:356.8,r:42},
+    {n:'LAUREN VANESSA ESTRADA GARCES',i:355.7,r:43},
+    {n:'YOINER ARRIETA JARAMILLO',i:355.6,r:44},
+    {n:'ANDRES FELIPE MARTINEZ PACHECO',i:353.0,r:45},
+    {n:'KATALINA PEREZ MORENO',i:352.2,r:46},
+    {n:'YOJAN DAVID BENITEZ BARRIOS',i:351.5,r:47},
+    {n:'MADELINE CAMPO RIVERA',i:351.5,r:48},
+    {n:'MARIA DE LOS ANGELES PASOS SOTELO',i:350.4,r:49},
+    {n:'IVAN DAVID MARCELO SERPA',i:349.7,r:50},
+    {n:'VALENTINA ARRIETA SIERRA',i:349.5,r:51},
+    {n:'SANTIAGO CEBALLOS ZABALA',i:347.9,r:52},
+    {n:'ANGELICA MADRID SIERRA',i:347.1,r:53},
+    {n:'NICOLAS ELIAS AGAMEZ ZABALA',i:346.8,r:54},
+    {n:'DAILY ALEJANDRA ARGUMEDO SALAS',i:345.9,r:55},
+    {n:'ANDREA LISETH CAMARGO URANGO',i:343.9,r:56},
+    {n:'JULIANA ARRIETA GOMEZ',i:343.0,r:57},
+    {n:'KEINER ACOSTA BUENO',i:342.7,r:58},
+    {n:'SARA MARCELA TORREZ MENDOZA',i:342.7,r:59},
+    {n:'YISEL KAROLINA RAMOS BELE\u00d1O',i:342.1,r:60},
+    {n:'SHERYL ANDREA FUENTES MENDEZ',i:342.0,r:61},
+    {n:'ELISEO LUNA PEREZ',i:340.9,r:62},
+    {n:'MARIA JOSE PEREZ CANTERO',i:339.8,r:63},
+    {n:'JUAN ESTEBAN FLOREZ MARTINEZ',i:339.6,r:64},
+    {n:'MICHELL ANDREA MESA RIVERA',i:339.4,r:65},
+    {n:'KEVIN DAVID CARRASCO MONTIEL',i:338.7,r:66},
+  ],
+  3: [
+    {n:'VALENTINA ESTREMOR PEREZ',i:338.7,r:67},
+    {n:'JULIANA ALVARADO MARTINEZ',i:336.7,r:68},
+    {n:'ANYS ANDREA GUTIERREZ ARRIETA',i:336.6,r:69},
+    {n:'ANDY PAOLA MANTILLA ESPITIA',i:334.1,r:70},
+    {n:'DIDIER ESNEIDER CASTILLO CAMARGO',i:333.7,r:71},
+    {n:'ANGELICA MARTINEZ BALBERA',i:333.2,r:72},
+    {n:'RONALD SAMPAYO ALVIS',i:330.6,r:73},
+    {n:'HOYOS LUZ ELENA PEREZ DE',i:328.9,r:74},
+    {n:'LUIS FERNANDO TEJADA GUERRERO',i:328.7,r:75},
+    {n:'ELEMI HERNANDEZ ALVAREZ',i:326.6,r:76},
+    {n:'JESUS ORLANDO FINO RICARDO',i:324.4,r:77},
+    {n:'MONICA PAOLA MONTALVO SOTO',i:324.4,r:78},
+    {n:'DANILSA MERCADO TIRADO',i:324.2,r:79},
+    {n:'VALENTINA AGUAS ATENCIA',i:324.1,r:80},
+    {n:'YADY ISABEL RAMIREZ MORALES',i:324.1,r:81},
+    {n:'CARLOS ENRIQUE MENDOZA FERIA',i:323.4,r:82},
+    {n:'ELIZABETH PEREIRA LOPEZ',i:322.6,r:83},
+    {n:'KAROL DAYANA ESCOBAR VARGAS',i:322.1,r:84},
+    {n:'FREDY JOSE RODI\u00d1O VALLEJO',i:320.8,r:85},
+    {n:'LUISA FERNANDA COLON SERRANO',i:320.5,r:86},
+    {n:'ANA SOFIA VERGARA MARTINEZ',i:320.2,r:87},
+    {n:'TALIANA CARDENAS MANSILLA',i:319.4,r:88},
+    {n:'ALYS PATRICIA HERNANDEZ PASTRANA',i:318.6,r:89},
+    {n:'JULIANA PEREZ VERGARA',i:318.6,r:90},
+    {n:'JUAN FELIPE MERCADO PEREZ',i:318.5,r:91},
+    {n:'MATIAS ANDRES BARRIOS SOTELO',i:317.9,r:92},
+    {n:'NATALIA SANCHEZ MONTERROZA',i:316.9,r:93},
+    {n:'SKARLIT YHIRET HERRERA GIL',i:316.2,r:94},
+    {n:'DAVID MENDOZA HOYOS',i:315.6,r:95},
+    {n:'LEONEL ANDRES RIVERA SILVA',i:312.6,r:96},
+    {n:'LIZ EMILY ZU\u00d1IGA OSORIO',i:312.4,r:97},
+    {n:'YENNIFER CASTILLO SUAREZ',i:310.5,r:98},
+    {n:'JOSE DANIEL ORTEGA JIMENEZ',i:309.9,r:99},
+    {n:'PERTUZ ELIECER DE JESUS DE LEON',i:309.4,r:100},
+    {n:'MARIA ANGELICA PASTRANA RODRIGUEZ',i:308.5,r:101},
+    {n:'ANA SOFIA GONZALEZ CALAO',i:308.1,r:102},
+  ],
+  4: [
+    {n:'DIONI SOLA MARTINEZ',i:307.6,r:103},
+    {n:'CRISTIANO RONALDO ROMERO ZU\u00d1IGA',i:306.9,r:104},
+    {n:'JULIANA CONTRERAS GARCIA',i:306.2,r:105},
+    {n:'KEILLY MICHELLE HERNANDEZ HOYOS',i:305.3,r:106},
+    {n:'ANDRES DIAZ CASTRO',i:304.6,r:107},
+    {n:'SAMUEL ALEXANDER RODRIGUEZ VELASQUEZ',i:304.2,r:108},
+    {n:'CAMILA ANDREA SOTELO TORRES',i:303.6,r:109},
+    {n:'LUISA FERNANDA BENITEZ BALTAZAR',i:303.2,r:110},
+    {n:'ENAN JOAQUIN TUIRAN MORENO',i:302.9,r:111},
+    {n:'JHOJAN STIVEN ALZATE CARMONA',i:302.2,r:112},
+    {n:'NAIDERLIN ESPITIA CASTRO',i:301.0,r:113},
+    {n:'ISABELLA VALENTINA HERRERA CAMA\u00d1O',i:301.0,r:114},
+    {n:'ORNELLA HEREDIA MORENO',i:299.5,r:115},
+    {n:'PATRICIA DEL CARMEN RODRIGUEZ VERTEL',i:299.0,r:116},
+    {n:'GABRIELA CORONADO OJEDA',i:298.3,r:117},
+    {n:'ESTEBAN DAVID CORONADO PALENCIA',i:297.5,r:118},
+    {n:'CARLOS DANIEL MARCHENA BARRERO',i:297.3,r:119},
+    {n:'HECTOR LUIS FUENTES MENDOZA',i:294.5,r:120},
+    {n:'ESTHER MARIA LONDO\u00d1O BARRIOS',i:292.8,r:121},
+    {n:'YURIS PAOLA RODRIGUEZ FLOREZ',i:292.3,r:122},
+    {n:'EDITH NATALIA MADERA PEREIRA',i:291.9,r:123},
+    {n:'MELANI PE\u00d1ATES GARAVITO',i:291.2,r:124},
+    {n:'KELLY JOHANA ROMERO CASARRUBIA',i:290.0,r:125},
+    {n:'GABRIELA HERNANDEZ DIAZ',i:289.6,r:126},
+    {n:'JIMENA ANDREA HOLGUIN CARDE\u00d1O',i:287.9,r:127},
+    {n:'GENESIS ROMERO ACOSTA',i:287.8,r:128},
+    {n:'BRESLY QUINTERO ROSARIO',i:286.8,r:129},
+    {n:'MARIA ALEJANDRA RAMOS CALLE',i:285.2,r:130},
+    {n:'VALERI CORREA DOMINGUEZ',i:282.4,r:131},
+    {n:'SOFIA MARTINEZ HERNANDEZ',i:281.2,r:132},
+    {n:'TAILIN MARIA GOMEZ HOYOS',i:278.6,r:133},
+    {n:'JAIDER DAVID MEZA AVILES',i:277.5,r:134},
+    {n:'KELLY JOHANA MONTERROZA CASARRUBIA',i:276.9,r:135},
+    {n:'KATY MILENA SALGADO VERONA',i:275.7,r:136},
+    {n:'LUIS EDUARDO SALGADO QUINTERO',i:274.7,r:137},
+  ],
+  5: [
+    {n:'VICTOR MANUEL TEJADA ZU\u00d1IGA',i:274.1,r:138},
+    {n:'MARIANGEL SALGADO MAZO',i:274.0,r:139},
+    {n:'STEFANY RUIZ MARTINEZ',i:273.8,r:140},
+    {n:'DIDIEN MATIAS ROMERO SIERRA',i:270.6,r:141},
+    {n:'ENIS YULISA HERNANDEZ PE\u00d1ATES',i:268.1,r:142},
+    {n:'JOHN ESTEBAN FLOREZ LONDO\u00d1O',i:267.9,r:143},
+    {n:'SAMARA ARIZA ECHAVARRIA',i:267.3,r:144},
+    {n:'LORENA LORETH MONTES CORDERO',i:266.0,r:145},
+    {n:'JUAN DAVID MESTRA AVILA',i:263.1,r:146},
+    {n:'TALIANA CORREA OVIEDO',i:263.0,r:147},
+    {n:'TALIANA BERRIO MENDOZA',i:261.2,r:148},
+    {n:'JESUS DAVID VERGARA OCAMPO',i:259.2,r:149},
+    {n:'JOSE JULIAN PATERNINA ARCIA',i:256.8,r:150},
+    {n:'JHON FREED QUINTERO SUAREZ',i:253.8,r:151},
+    {n:'VICTOR ANDRES ESPITIA MORALES',i:252.0,r:152},
+    {n:'JULIANA ANDREA PASTRANA ROMERO',i:251.7,r:153},
+    {n:'YAIRA ANDREA TORRES CADRASCO',i:251.4,r:154},
+    {n:'JAIVER VILLADIEGO JIMENEZ',i:251.1,r:155},
+    {n:'HITA FERNANDA REYES CORDOBA',i:248.8,r:156},
+    {n:'JUAN CAMILO GAMARRA LOPEZ',i:248.4,r:157},
+    {n:'MARIA ANGEL JULIO HERNANDEZ',i:247.7,r:158},
+    {n:'KEVIN ANDRES RUIZ PEREZ',i:244.6,r:159},
+    {n:'JUAN DAVID JULIO VILLORINA',i:241.0,r:160},
+    {n:'DIEGO PADILLA MORA',i:239.9,r:161},
+    {n:'MARIA JOSE GARCIA GUERRA',i:232.9,r:162},
+    {n:'YONIER ANDRES SALA SOLIS',i:230.7,r:163},
+    {n:'NIKOL MICHELL AVILA GARCIA',i:229.8,r:164},
+    {n:'MARIA CAROLINA GOMEZ MU\u00d1OZ',i:226.5,r:165},
+    {n:'ANGIE PAOLA ALARCON MENDEZ',i:223.7,r:166},
+    {n:'KEINER GONZALEZ RAMOS',i:222.4,r:167},
+    {n:'MARIANA FLOREZ HERNANDEZ',i:219.3,r:168},
+    {n:'CRISTIAN DAVID MONTALVO PACHECO',i:217.2,r:169},
+    {n:'SARA IBA\u00d1EZ CAUSIL',i:213.5,r:170},
+    {n:'JHONEIDER LONDO\u00d1O VASQUEZ',i:210.2,r:171},
+    {n:'DANNA CAROLINA SCHELEGUEL CORREA',i:192.0,r:172},
+  ],
+};
+
 // Helpers
 function sim2GradoValue(n) { return `11-sim-g${n}`; }
 function sim2GradoLabel(n) { return `11° · Grupo ${n} — Sim. 2`; }
 function isSim2Grado(val)  { return /^11-sim-g[1-5]$/.test(val); }
 function sim2NumFromGrado(val) { return isSim2Grado(val) ? parseInt(val.slice(-1)) : null; }
+
+function sim3GradoValue(n) { return `11-sim3-g${n}`; }
+function sim3GradoLabel(n) { return `11° · Grupo ${n} — Sim. 3`; }
+function isSim3Grado(val)  { return /^11-sim3-g[1-5]$/.test(val); }
+function sim3NumFromGrado(val) { return isSim3Grado(val) ? parseInt(val.slice(-1)) : null; }
 
 // Lookup rápido: nombre (cualquier formato) → grupo sim2
 const _SIM2_LOOKUP = {};
@@ -1634,6 +1831,20 @@ const _SIM2_LOOKUP = {};
 
 function getGrupoSim2(nombre) {
   return _SIM2_LOOKUP[window._normSim2(nombre)] || null;
+}
+
+// Lookup rápido: nombre (cualquier formato) → grupo sim3
+const _SIM3_LOOKUP = {};
+(function() {
+  const _n = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+  for (const [g, lista] of Object.entries(GRUPOS_SIM3_LISTAS)) {
+    for (const st of lista) _SIM3_LOOKUP[_n(st.n)] = parseInt(g);
+  }
+  window._normSim3 = _n;
+})();
+
+function getGrupoSim3(nombre) {
+  return _SIM3_LOOKUP[(window._normSim3||window._normSim2)(nombre)] || null;
 }
 
 // Busca el estudiante de Firebase más parecido a un nombre Sim2.
@@ -2003,6 +2214,11 @@ function poblarSelectGrados() {
     return state.gradosPermitidos.includes(sim2GradoValue(n)) ||
            state.gradosPermitidos.some(g => g.startsWith('11'));
   });
+  const sim3GruposVisibles = [1,2,3,4,5].filter(n => {
+    if (state.isAdmin || state.gradosPermitidos.length === 0) return true;
+    return state.gradosPermitidos.includes(sim3GradoValue(n)) ||
+           state.gradosPermitidos.some(g => g.startsWith('11'));
+  });
 
   if (!state.isAdmin && state.gradosPermitidos.length > 0) {
     grados = grados.filter(g => state.gradosPermitidos.includes(g));
@@ -2024,6 +2240,18 @@ function poblarSelectGrados() {
         const o = document.createElement('option');
         o.value = sim2GradoValue(n);
         o.textContent = sim2GradoLabel(n);
+        sel.appendChild(o);
+      });
+    }
+    if (['asistGrado','filtroGradoEst','actGrado','filtroGradoNotas'].includes(id) && sim3GruposVisibles.length > 0) {
+      const sep3 = document.createElement('option');
+      sep3.disabled = true;
+      sep3.textContent = '── Grupos Sim. 3 ──';
+      sel.appendChild(sep3);
+      sim3GruposVisibles.forEach(n => {
+        const o = document.createElement('option');
+        o.value = sim3GradoValue(n);
+        o.textContent = sim3GradoLabel(n);
         sel.appendChild(o);
       });
     }
@@ -2102,6 +2330,16 @@ window.filtrarEstudiantes = function() {
   const gradoVal = document.getElementById('asistGrado').value;
   const buscar   = document.getElementById('asistBuscar').value.toLowerCase();
   const sim2Num  = sim2NumFromGrado(gradoVal);
+  const sim3Num  = sim3NumFromGrado(gradoVal);
+
+  // Si se selecciona un grupo sim3, cargar estudiantes DIRECTO desde GRUPOS_SIM3_LISTAS
+  if (sim3Num !== null) {
+    const lista = (GRUPOS_SIM3_LISTAS[sim3Num] || [])
+      .filter(s => !buscar || s.n.toLowerCase().includes(buscar))
+      .map(s => ({ nombre: s.n, grado: '11°', grupo_sim3: sim3Num, icfes: s.i, rank: s.r }));
+    renderPlanilla(lista);
+    return;
+  }
 
   // Si se selecciona un grupo sim2, cargar estudiantes DIRECTO desde GRUPOS_SIM2_LISTAS
   if (sim2Num !== null) {
@@ -2133,8 +2371,10 @@ function renderPlanilla(estudiantes) {
     const tdNombre = document.createElement('td');
     const tieneNov = state.novedadesActivas.some(n=>n.estudiante===est.nombre);
     const g2 = est.grupo_sim2 || getGrupoSim2(est.nombre);
-    const g2badge = g2 ? `<span class="sim2-badge">G${g2}</span>` : '';
-    tdNombre.innerHTML=`<div class="est-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(est.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(est.nombre)}</span>${g2badge}</div>
+    const g3 = est.grupo_sim3 || getGrupoSim3(est.nombre);
+    const g2badge = g2 ? `<span class="sim2-badge">S2G${g2}</span>` : '';
+    const g3badge = g3 ? `<span class="sim3-badge">S3G${g3}</span>` : '';
+    tdNombre.innerHTML=`<div class="est-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(est.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(est.nombre)}</span>${g2badge}${g3badge}</div>
       <div class="est-meta">${escapeHtml(est.grado)}${tieneNov?' &nbsp;<span style="color:#93c5fd;font-size:.65rem">📋 Nov</span>':''}</div>`;
     tr.appendChild(tdNombre);
 
@@ -2340,8 +2580,16 @@ window.cargarEstadisticas = async function() {
     const gradoNorm = gradoFiltro.toLowerCase();
     const esSim2 = isSim2Grado(gradoFiltro);
     const sim2Num = esSim2 ? sim2NumFromGrado(gradoFiltro) : null;
+    const esSim3 = isSim3Grado(gradoFiltro);
+    const sim3Num = esSim3 ? sim3NumFromGrado(gradoFiltro) : null;
 
-    if (esSim2) {
+    if (esSim3) {
+      // Grupo Sim3 específico: solo los estudiantes virtuales de ese grupo
+      const lista = GRUPOS_SIM3_LISTAS[sim3Num] || [];
+      lista.forEach(st => {
+        mapa[st.n] = { nombre:st.n, grado:sim3GradoLabel(sim3Num), diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+      });
+    } else if (esSim2) {
       // Grupo Sim2 específico: solo los estudiantes virtuales de ese grupo
       const lista = GRUPOS_SIM2_LISTAS[sim2Num] || [];
       lista.forEach(st => {
@@ -2355,14 +2603,16 @@ window.cargarEstadisticas = async function() {
           mapa[e.nombre] = { nombre:e.nombre, grado:e.grado, diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
         });
 
-      // Si es 11° general, también incluir Sim2 virtuales que no estén en Firebase
+      // Si es 11° general, también incluir Sim2 y Sim3 virtuales que no estén en Firebase
       if (gradoNorm.startsWith('11')) {
         const _norm = window._normSim2 || (s => (s||'').toUpperCase().trim());
         const nombresFirebase = new Set(state.estudiantes.map(e => _norm(e.nombre)));
-        for (const [g, lista] of Object.entries(GRUPOS_SIM2_LISTAS)) {
-          for (const st of lista) {
-            if (!nombresFirebase.has(_norm(st.n)) && !mapa[st.n]) {
-              mapa[st.n] = { nombre:st.n, grado:'11°', diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+        for (const listas of [GRUPOS_SIM2_LISTAS, GRUPOS_SIM3_LISTAS]) {
+          for (const [g, lista] of Object.entries(listas)) {
+            for (const st of lista) {
+              if (!nombresFirebase.has(_norm(st.n)) && !mapa[st.n]) {
+                mapa[st.n] = { nombre:st.n, grado:'11°', diasFallas:0, fugas:0, retardos:0, excusas:0, reportes:0 };
+              }
             }
           }
         }
@@ -2370,26 +2620,27 @@ window.cargarEstadisticas = async function() {
     }
 
     // Reconciliar nombres: estudiantes de 11° pueden tener nombre ligeramente distinto
-    // en Firebase vs GRUPOS_SIM2_LISTAS. Agregar aliases para que la asistencia de
-    // cualquier sesión (11B o Sim2) acumule en el mismo objeto de estadísticas.
-    if (gradoNorm.startsWith('11') || esSim2) {
+    // en Firebase vs GRUPOS_SIM2_LISTAS/SIM3. Agregar aliases para acumulación correcta.
+    if (gradoNorm.startsWith('11') || esSim2 || esSim3) {
       const _norm = window._normSim2 || (s=>(s||'').toUpperCase().trim());
       // Índice del mapa actual por nombre normalizado
       const normIdx = {};
       Object.entries(mapa).forEach(([k,v]) => { normIdx[_norm(k)] = v; });
-      // Para cada nombre Sim2: si hay un alias Firebase, apuntar al mismo objeto
-      for (const lista of Object.values(GRUPOS_SIM2_LISTAS)) {
-        for (const st of lista) {
-          const nk = _norm(st.n);
-          if (normIdx[nk] && !mapa[st.n])  mapa[st.n]  = normIdx[nk]; // alias Sim2 → Firebase entry
-          else if (mapa[st.n] && !normIdx[nk]) normIdx[nk] = mapa[st.n];
+      // Para cada nombre Sim2/Sim3: si hay un alias Firebase, apuntar al mismo objeto
+      for (const listas of [GRUPOS_SIM2_LISTAS, GRUPOS_SIM3_LISTAS]) {
+        for (const lista of Object.values(listas)) {
+          for (const st of lista) {
+            const nk = _norm(st.n);
+            if (normIdx[nk] && !mapa[st.n])  mapa[st.n]  = normIdx[nk];
+            else if (mapa[st.n] && !normIdx[nk]) normIdx[nk] = mapa[st.n];
+          }
         }
       }
-      // Para cada Firebase de 11°: si hay alias Sim2, apuntar al mismo objeto
+      // Para cada Firebase de 11°: si hay alias Sim, apuntar al mismo objeto
       state.estudiantes.forEach(e => {
         if (!(e.grado||'').toLowerCase().startsWith('11')) return;
         const nk = _norm(e.nombre);
-        if (normIdx[nk] && !mapa[e.nombre]) mapa[e.nombre] = normIdx[nk]; // alias Firebase → Sim2 entry
+        if (normIdx[nk] && !mapa[e.nombre]) mapa[e.nombre] = normIdx[nk];
       });
     }
 
@@ -2872,6 +3123,10 @@ window.renderActividades = function() {
 };
 
 function _estudiantesDeGrado(grado) {
+  if (isSim3Grado(grado)) {
+    const num = sim3NumFromGrado(grado);
+    return (GRUPOS_SIM3_LISTAS[num] || []).map(st => ({ nombre: st.n, grado }));
+  }
   if (isSim2Grado(grado)) {
     const num = sim2NumFromGrado(grado);
     return (GRUPOS_SIM2_LISTAS[num] || []).map(st => ({ nombre: st.n, grado }));
@@ -2884,7 +3139,7 @@ window.abrirCalificacion = function(id) {
   if (!act) return;
   _actividadActual = act;
   document.getElementById('calNombreActividad').textContent = act.nombre;
-  document.getElementById('calGrado').textContent           = isSim2Grado(act.grado) ? sim2GradoLabel(sim2NumFromGrado(act.grado)) : act.grado;
+  document.getElementById('calGrado').textContent           = isSim3Grado(act.grado) ? sim3GradoLabel(sim3NumFromGrado(act.grado)) : isSim2Grado(act.grado) ? sim2GradoLabel(sim2NumFromGrado(act.grado)) : act.grado;
   document.getElementById('calValoracionMax').textContent   = act.valoracionMax;
   document.getElementById('calFecha').textContent           = act.fecha;
   document.getElementById('calActividadId').value           = act.id;
@@ -3442,6 +3697,16 @@ window.abrirGradosDocente = function(uid, nombre, gradosActuales) {
         <input type="checkbox" class="grado-check" value="${val}" ${gradosActuales.includes(val)?'checked':''} style="accent-color:#1565c0;width:15px;height:15px">
         <span style="background:#1565c0;color:#fff;font-size:.6rem;padding:1px 5px;border-radius:3px;font-weight:700">G${n}</span>
         ${sim2GradoLabel(n)} <span style="color:var(--text-2);font-size:.78rem">(${count} est.)</span>
+      </label>`;
+    });
+    html += `<div style="margin:.6rem 0 .3rem;font-size:.75rem;font-weight:700;color:#1b5e20;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);padding-top:.5rem">Grupos Simulacro 3 — Grado 11°</div>`;
+    [1,2,3,4,5].forEach(n => {
+      const val3 = sim3GradoValue(n);
+      const count3 = state.estudiantes.filter(e => getGrupoSim3(e.nombre) === n).length;
+      html += `<label style="display:flex;align-items:center;gap:.5rem;padding:.35rem .1rem;font-size:.88rem;cursor:pointer;color:var(--text-1)">
+        <input type="checkbox" class="grado-check" value="${val3}" ${gradosActuales.includes(val3)?'checked':''} style="accent-color:#1b5e20;width:15px;height:15px">
+        <span style="background:#1b5e20;color:#fff;font-size:.6rem;padding:1px 5px;border-radius:3px;font-weight:700">G${n}</span>
+        ${sim3GradoLabel(n)} <span style="color:var(--text-2);font-size:.78rem">(${count3} est.)</span>
       </label>`;
     });
   }
