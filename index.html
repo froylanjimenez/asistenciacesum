@@ -2283,7 +2283,12 @@ window.switchTab = function(tab) {
     }
   }
   if (tab==='psicologia')   cargarCitasPendientes();
-  if (tab==='notas')        cargarActividades();
+  if (tab==='notas') {
+    // Repopulate actGrado in case it was not populated during initialization
+    const _actGSel = document.getElementById('actGrado');
+    if (_actGSel && _actGSel.options.length <= 1) poblarSelectGrados();
+    cargarActividades();
+  }
   if (tab==='calendario')   cargarCalendario();
   if (tab==='admin')        { cargarNovedades(); switchAdminTab('novedades'); }
 };
@@ -3098,14 +3103,14 @@ window.cargarActividades = async function() {
 window.renderActividades = function() {
   const lista  = document.getElementById('actividadesLista');
   const filtro = (document.getElementById('filtroGradoNotas')?.value || '').toLowerCase();
-  const acts   = filtro ? _actividades.filter(a => a.grado.toLowerCase() === filtro) : _actividades;
+  const acts   = filtro ? _actividades.filter(a => (a.grado||'').toLowerCase() === filtro) : _actividades;
   if (!acts.length) {
     lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Sin actividades. Crea una en el panel izquierdo.</p>';
     return;
   }
   lista.innerHTML = acts.map(a => {
     const calCount = Object.keys(a.calificaciones || {}).length;
-    const estudiantesGrado = state.estudiantes.filter(e => e.grado === a.grado).length;
+    const estudiantesGrado = _estudiantesDeGrado(a.grado || '').length;
     const esPropia = state.isAdmin || a.docenteUid === state.usuario || a.docente === state.nombre;
     return `<div class="actividad-card" onclick="abrirCalificacion('${escapeHtml(a.id)}')">
       <div>
@@ -3247,7 +3252,7 @@ window.eliminarActividad = async function(id) {
 window.exportarNotasCSV = async function() {
   if (!_actividades.length) { showToast('No hay actividades cargadas. Refresca primero.','warning'); return; }
   const filtro = (document.getElementById('filtroGradoNotas')?.value || '').toLowerCase();
-  const acts   = filtro ? _actividades.filter(a => a.grado.toLowerCase() === filtro) : _actividades;
+  const acts   = filtro ? _actividades.filter(a => (a.grado||'').toLowerCase() === filtro) : _actividades;
   const rows   = [['Actividad','Valoración Máx','Grado','Fecha','Docente','Estudiante','Grado Estudiante','Nota','% Obtenido']];
   acts.forEach(act => {
     const estGrado = _estudiantesDeGrado(act.grado);
@@ -3271,7 +3276,7 @@ window.exportarNotasGrupoCSV = function() {
   const filtro = document.getElementById('filtroGradoNotas')?.value || '';
   if (!filtro) { showToast('Selecciona un grado en el filtro para exportar.','warning'); return; }
   if (!_actividades.length) { showToast('No hay actividades cargadas. Refresca primero.','warning'); return; }
-  const acts = _actividades.filter(a => a.grado.toLowerCase() === filtro.toLowerCase() && (state.isAdmin || a.docenteUid === state.usuario || a.docente === state.nombre)).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const acts = _actividades.filter(a => (a.grado||'').toLowerCase() === filtro.toLowerCase() && (state.isAdmin || a.docenteUid === state.usuario || a.docente === state.nombre)).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   if (!acts.length) { showToast('No hay actividades para el grado seleccionado.','warning'); return; }
   const estudiantes = _estudiantesDeGrado(filtro);
   if (!estudiantes.length) { showToast('No hay estudiantes en este grado.','warning'); return; }
