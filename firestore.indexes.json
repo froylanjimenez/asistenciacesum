@@ -87,6 +87,23 @@
         { "fieldPath": "estudiante",  "order": "ASCENDING" },
         { "fieldPath": "fechaInicio", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "preinformes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docenteUid", "order": "ASCENDING" },
+        { "fieldPath": "periodo",    "order": "ASCENDING" },
+        { "fieldPath": "grado",      "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "preinformes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docenteUid", "order": "ASCENDING" },
+        { "fieldPath": "periodo",    "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

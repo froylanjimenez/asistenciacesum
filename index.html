@@ -446,6 +446,9 @@ html.text-xl     { font-size: 22px; }
       <button class="nav-tab-btn" id="tabNotas" onclick="switchTab('notas')">
         <i class="bi bi-journal-text"></i><span>Notas</span>
       </button>
+      <button class="nav-tab-btn" id="tabPreinforme" onclick="switchTab('preinforme')">
+        <i class="bi bi-clipboard2-x"></i><span>Preinforme</span>
+      </button>
       <button class="nav-tab-btn" id="tabCalendario" onclick="switchTab('calendario')">
         <i class="bi bi-calendar3"></i><span>Calendario</span>
       </button>
@@ -707,6 +710,78 @@ html.text-xl     { font-size: 22px; }
         </div>
         <div class="cal-leyenda" id="calLeyenda"></div>
         <div class="cal-grid" id="calGrid"></div>
+      </div>
+    </div>
+
+    <!-- PREINFORME -->
+    <div id="preinformeTab" class="tab-content" style="display:none">
+      <div class="row g-3">
+        <!-- Configuración -->
+        <div class="col-lg-4">
+          <div class="cesum-card">
+            <div class="cesum-card-header"><h5><i class="bi bi-clipboard2-x-fill"></i> Preinforme</h5></div>
+            <div class="mb-3">
+              <label class="form-label">Mi asignatura</label>
+              <div style="display:flex;gap:.4rem">
+                <input type="text" id="preinAsignatura" class="form-control" placeholder="Ej: Matemáticas">
+                <button class="btn-cesum btn-cesum-primary" onclick="guardarAsignatura()" title="Guardar asignatura"><i class="bi bi-save"></i></button>
+              </div>
+              <p id="preinAsigStatus" style="font-size:.75rem;color:var(--text-2);margin-top:.3rem;min-height:1em"></p>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Período</label>
+              <select id="preinPeriodo" class="form-select">
+                <option value="">-- Seleccionar --</option>
+                <option value="1">Período 1</option>
+                <option value="2">Período 2</option>
+                <option value="3">Período 3</option>
+                <option value="4">Período 4</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Grado</label>
+              <select id="preinGrado" class="form-select">
+                <option value="">-- Seleccionar --</option>
+                <option value="11°A">11°A</option>
+                <option value="11°B">11°B</option>
+                <option value="11°C">11°C</option>
+                <option value="11°D">11°D</option>
+                <option value="11°E">11°E</option>
+                <option value="11°F">11°F</option>
+              </select>
+            </div>
+            <button class="btn-cesum btn-cesum-primary w-100" onclick="cargarListaPreinforme()">
+              <i class="bi bi-search"></i> Cargar lista
+            </button>
+            <hr style="border-color:var(--border);margin:1.25rem 0">
+            <p style="font-size:.8rem;color:var(--text-2);margin-bottom:.5rem"><i class="bi bi-download"></i> Descargar preinformados:</p>
+            <div style="display:flex;flex-direction:column;gap:.5rem">
+              <button class="btn-cesum btn-cesum-secondary w-100" onclick="descargarPreinformeGrupo()">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Este grupo (CSV)
+              </button>
+              <button class="btn-cesum btn-cesum-secondary w-100" onclick="descargarPreinformePeriodo()">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Todo el período (CSV)
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Lista -->
+        <div class="col-lg-8">
+          <div class="cesum-card">
+            <div class="cesum-card-header">
+              <h5 id="preinListaTitle"><i class="bi bi-list-check"></i> Lista de estudiantes</h5>
+              <button class="btn-cesum btn-cesum-success sm" id="btnGuardarPreinformes" style="display:none" onclick="guardarPreinformes()">
+                <i class="bi bi-save"></i> Guardar
+              </button>
+            </div>
+            <div id="preinListaCont">
+              <p style="color:var(--text-2);font-size:.85rem;text-align:center;padding:2.5rem">
+                <i class="bi bi-clipboard2-x" style="font-size:2rem;display:block;margin-bottom:.5rem;opacity:.4"></i>
+                Selecciona asignatura, período y grado para cargar la lista.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2385,7 +2460,7 @@ function poblarSelectGrados() {
 //  NAVEGACIÓN
 // ════════════════════════════════════════════
 window.switchTab = function(tab) {
-  ['inicio','asistencia','estadisticas','psicologia','notas','calendario','admin'].forEach(t => {
+  ['inicio','asistencia','estadisticas','psicologia','notas','preinforme','calendario','admin'].forEach(t => {
     const el=document.getElementById(t+'Tab');
     const btn=document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1));
     if(el)  el.style.display  = t===tab?'block':'none';
@@ -2410,6 +2485,7 @@ window.switchTab = function(tab) {
     if (_actGSel && _actGSel.options.length <= 1) poblarSelectGrados();
     cargarActividades();
   }
+  if (tab==='preinforme')   cargarPreinforme();
   if (tab==='calendario')   cargarCalendario();
   if (tab==='admin')        { cargarNovedades(); switchAdminTab('novedades'); }
 };
@@ -2551,6 +2627,203 @@ window.cargarMetricasDocentes = async function() {
   } catch(e) {
     cont.innerHTML = `<p style="color:#c62828;font-size:.85rem"><i class="bi bi-exclamation-triangle"></i> Error: ${escapeHtml(e.message)}</p>`;
   }
+};
+
+// ════════════════════════════════════════════
+//  PREINFORME
+// ════════════════════════════════════════════
+window.cargarPreinforme = async function() {
+  if (!state.uid) return;
+  // Load stored asignatura for this teacher
+  try {
+    const userSnap = await _getDoc(doc(db, 'usuarios', state.uid));
+    if (userSnap.exists()) {
+      const asig = userSnap.data().asignatura || '';
+      const el = document.getElementById('preinAsignatura');
+      if (el && asig) {
+        el.value = asig;
+        const st = document.getElementById('preinAsigStatus');
+        if (st) st.textContent = 'Asignatura cargada';
+      }
+    }
+  } catch(e) { /* no-op */ }
+};
+
+window.guardarAsignatura = async function() {
+  const asig = (document.getElementById('preinAsignatura').value || '').trim();
+  if (!asig) { showToast('Escribe el nombre de tu asignatura', 'warning'); return; }
+  try {
+    await updateDoc(doc(db, 'usuarios', state.uid), { asignatura: asig });
+    const st = document.getElementById('preinAsigStatus');
+    if (st) st.textContent = '✓ Asignatura guardada';
+    showToast('Asignatura guardada', 'success');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+};
+
+window.cargarListaPreinforme = async function() {
+  const periodo = document.getElementById('preinPeriodo').value;
+  const grado   = document.getElementById('preinGrado').value;
+  const asig    = (document.getElementById('preinAsignatura').value || '').trim();
+  const cont    = document.getElementById('preinListaCont');
+  const btn     = document.getElementById('btnGuardarPreinformes');
+
+  if (!periodo || !grado) { showToast('Selecciona período y grado', 'warning'); return; }
+  if (!asig) { showToast('Primero guarda tu asignatura', 'warning'); return; }
+
+  document.getElementById('preinListaTitle').innerHTML =
+    `<i class="bi bi-list-check"></i> ${grado} · Período ${periodo} · ${asig}`;
+  cont.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+  btn.style.display = 'none';
+
+  const estudiantes = (state.estudiantes || [])
+    .filter(e => e.grado === grado)
+    .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+  if (!estudiantes.length) {
+    cont.innerHTML = '<p style="color:var(--text-2);font-size:.85rem;text-align:center;padding:1.5rem">Sin estudiantes en este grado.</p>';
+    return;
+  }
+
+  // Load existing preinformes for this docente + periodo + grado
+  let existentes = {};
+  try {
+    const q = query(collection(db, 'preinformes'),
+      where('docenteUid', '==', state.uid),
+      where('periodo', '==', periodo),
+      where('grado', '==', grado)
+    );
+    const snap = await _getDocs(q);
+    snap.forEach(d => { existentes[d.data().codigo] = d.data().tipo; });
+  } catch(e) { /* red: index not yet built, proceed empty */ }
+
+  const rows = estudiantes.map(est => {
+    const tipo  = existentes[est.codigo] || '';
+    const rend  = tipo === 'rendimiento' || tipo === 'ambos';
+    const disc  = tipo === 'disciplinario' || tipo === 'ambos';
+    const badge = tipo
+      ? `<span style="font-size:.72rem;padding:.15rem .5rem;border-radius:99px;background:#fce4ec;color:#c62828">${tipo}</span>`
+      : '<span style="color:var(--text-3);font-size:.82rem">—</span>';
+    return `<tr>
+      <td style="text-align:left">${escapeHtml(est.nombre)}</td>
+      <td style="text-align:center;font-size:.75rem;color:var(--text-2)">${escapeHtml(est.codigo || '')}</td>
+      <td style="text-align:center">
+        <input type="checkbox" class="prein-chk" data-codigo="${escapeHtml(est.codigo || '')}"
+          data-nombre="${escapeHtml(est.nombre)}" data-tipo="rendimiento"
+          ${rend ? 'checked' : ''} style="width:1.1rem;height:1.1rem;cursor:pointer">
+      </td>
+      <td style="text-align:center">
+        <input type="checkbox" class="prein-chk" data-codigo="${escapeHtml(est.codigo || '')}"
+          data-nombre="${escapeHtml(est.nombre)}" data-tipo="disciplinario"
+          ${disc ? 'checked' : ''} style="width:1.1rem;height:1.1rem;cursor:pointer">
+      </td>
+      <td style="text-align:center">${badge}</td>
+    </tr>`;
+  }).join('');
+
+  cont.innerHTML = `<div style="overflow-x:auto">
+    <table class="stat-table">
+      <thead><tr>
+        <th style="text-align:left">Estudiante</th>
+        <th>Código</th>
+        <th title="Bajo rendimiento académico"><i class="bi bi-book"></i> Rendimiento</th>
+        <th title="Problema disciplinario"><i class="bi bi-exclamation-triangle"></i> Disciplinario</th>
+        <th>Estado</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  btn.style.display = 'inline-flex';
+};
+
+window.guardarPreinformes = async function() {
+  const periodo = document.getElementById('preinPeriodo').value;
+  const grado   = document.getElementById('preinGrado').value;
+  const asig    = (document.getElementById('preinAsignatura').value || '').trim();
+  if (!periodo || !grado || !asig) return;
+
+  // Group checkboxes by codigo
+  const byCode = {};
+  document.querySelectorAll('.prein-chk').forEach(cb => {
+    const c = cb.dataset.codigo;
+    if (!byCode[c]) byCode[c] = { nombre: cb.dataset.nombre, rend: false, disc: false };
+    if (cb.dataset.tipo === 'rendimiento')  byCode[c].rend = cb.checked;
+    if (cb.dataset.tipo === 'disciplinario') byCode[c].disc = cb.checked;
+  });
+
+  showLoading(true);
+  try {
+    await Promise.all(Object.entries(byCode).map(([codigo, v]) => {
+      const ref = doc(db, 'preinformes', `${state.uid}_${codigo}_${periodo}`);
+      if (v.rend || v.disc) {
+        const tipo = (v.rend && v.disc) ? 'ambos' : v.rend ? 'rendimiento' : 'disciplinario';
+        return setDoc(ref, {
+          codigo, nombre: v.nombre, grado, periodo, tipo,
+          asignatura: asig, docenteUid: state.uid, docente: state.nombre,
+          ts: serverTimestamp()
+        });
+      }
+      return deleteDoc(ref).catch(() => {});
+    }));
+    showToast('Preinforme guardado ✓', 'success');
+    cargarListaPreinforme();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+};
+
+function _preinCSV(rows) {
+  const header = ['Código','Nombre','Grado','Período','Tipo','Asignatura','Docente'];
+  return [header.join(','), ...rows.map(r =>
+    [r.codigo, `"${(r.nombre||'').replace(/"/g,'""')}"`, r.grado, r.periodo,
+     r.tipo, `"${(r.asignatura||'').replace(/"/g,'""')}"`, `"${(r.docente||'').replace(/"/g,'""')}"`].join(',')
+  )].join('\n');
+}
+
+function _dlCSV(content, filename) {
+  const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+window.descargarPreinformeGrupo = async function() {
+  const periodo = document.getElementById('preinPeriodo').value;
+  const grado   = document.getElementById('preinGrado').value;
+  if (!periodo || !grado) { showToast('Selecciona período y grado', 'warning'); return; }
+  showLoading(true);
+  try {
+    const snap = await _getDocs(query(collection(db, 'preinformes'),
+      where('docenteUid', '==', state.uid),
+      where('periodo', '==', periodo),
+      where('grado', '==', grado)
+    ));
+    const rows = [];
+    snap.forEach(d => rows.push(d.data()));
+    if (!rows.length) { showToast('Sin preinformados en este grupo', 'info'); return; }
+    rows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+    _dlCSV(_preinCSV(rows), `preinforme_${grado.replace('°','')}_p${periodo}.csv`);
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { showLoading(false); }
+};
+
+window.descargarPreinformePeriodo = async function() {
+  const periodo = document.getElementById('preinPeriodo').value;
+  if (!periodo) { showToast('Selecciona un período', 'warning'); return; }
+  showLoading(true);
+  try {
+    const snap = await _getDocs(query(collection(db, 'preinformes'),
+      where('docenteUid', '==', state.uid),
+      where('periodo', '==', periodo)
+    ));
+    const rows = [];
+    snap.forEach(d => rows.push(d.data()));
+    if (!rows.length) { showToast('Sin preinformados en este período', 'info'); return; }
+    rows.sort((a, b) => (a.grado || '').localeCompare(b.grado || '') || (a.nombre || '').localeCompare(b.nombre || ''));
+    _dlCSV(_preinCSV(rows), `preinforme_periodo${periodo}.csv`);
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { showLoading(false); }
 };
 
 // ════════════════════════════════════════════
