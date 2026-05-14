@@ -2633,10 +2633,10 @@ window.cargarMetricasDocentes = async function() {
 //  PREINFORME
 // ════════════════════════════════════════════
 window.cargarPreinforme = async function() {
-  if (!state.uid) return;
+  if (!state.usuario) return;
   // Load stored asignatura for this teacher
   try {
-    const userSnap = await _getDoc(doc(db, 'usuarios', state.uid));
+    const userSnap = await _getDoc(doc(db, 'usuarios', state.usuario));
     if (userSnap.exists()) {
       const asig = userSnap.data().asignatura || '';
       const el = document.getElementById('preinAsignatura');
@@ -2653,7 +2653,7 @@ window.guardarAsignatura = async function() {
   const asig = (document.getElementById('preinAsignatura').value || '').trim();
   if (!asig) { showToast('Escribe el nombre de tu asignatura', 'warning'); return; }
   try {
-    await setDoc(doc(db, 'usuarios', state.uid), { asignatura: asig }, { merge: true });
+    await setDoc(doc(db, 'usuarios', state.usuario), { asignatura: asig }, { merge: true });
     const st = document.getElementById('preinAsigStatus');
     if (st) st.textContent = '✓ Asignatura guardada';
     showToast('Asignatura guardada', 'success');
@@ -2688,7 +2688,7 @@ window.cargarListaPreinforme = async function() {
   let existentes = {};
   try {
     const q = query(collection(db, 'preinformes'),
-      where('docenteUid', '==', state.uid),
+      where('docenteUid', '==', state.usuario),
       where('periodo', '==', periodo),
       where('grado', '==', grado)
     );
@@ -2752,12 +2752,12 @@ window.guardarPreinformes = async function() {
   showLoading(true);
   try {
     await Promise.all(Object.entries(byCode).map(([codigo, v]) => {
-      const ref = doc(db, 'preinformes', `${state.uid}_${codigo}_${periodo}`);
+      const ref = doc(db, 'preinformes', `${state.usuario}_${codigo}_${periodo}`);
       if (v.rend || v.disc) {
         const tipo = (v.rend && v.disc) ? 'ambos' : v.rend ? 'rendimiento' : 'disciplinario';
         return setDoc(ref, {
           codigo, nombre: v.nombre, grado, periodo, tipo,
-          asignatura: asig, docenteUid: state.uid, docente: state.nombre,
+          asignatura: asig, docenteUid: state.usuario, docente: state.nombre,
           ts: serverTimestamp()
         });
       }
@@ -2795,7 +2795,7 @@ window.descargarPreinformeGrupo = async function() {
   showLoading(true);
   try {
     const snap = await _getDocs(query(collection(db, 'preinformes'),
-      where('docenteUid', '==', state.uid),
+      where('docenteUid', '==', state.usuario),
       where('periodo', '==', periodo),
       where('grado', '==', grado)
     ));
@@ -2814,7 +2814,7 @@ window.descargarPreinformePeriodo = async function() {
   showLoading(true);
   try {
     const snap = await _getDocs(query(collection(db, 'preinformes'),
-      where('docenteUid', '==', state.uid),
+      where('docenteUid', '==', state.usuario),
       where('periodo', '==', periodo)
     ));
     const rows = [];
