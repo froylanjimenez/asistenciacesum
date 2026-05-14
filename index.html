@@ -678,6 +678,9 @@ html.text-xl     { font-size: 22px; }
                 <button class="btn-cesum btn-cesum-primary sm" onclick="exportarNotasGrupoCSV()">
                   <i class="bi bi-download"></i> CSV por grupo
                 </button>
+                <button class="btn-cesum btn-cesum-success sm" onclick="abrirModalLiquidar()">
+                  <i class="bi bi-calculator"></i> Liquidar grupo
+                </button>
               </div>
             </div>
             <div id="actividadesLista"><p style="color:var(--text-2);font-size:.85rem">Carga o crea una actividad para comenzar.</p></div>
@@ -1336,6 +1339,44 @@ html.text-xl     { font-size: 22px; }
   </div>
 </div>
 
+
+<div class="modal fade modal-cesum" id="modalLiquidar" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-calculator me-2" style="color:#4ade80"></i>Liquidar notas por grupo original</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p style="font-size:.83rem;color:var(--text-2);margin-bottom:1.2rem">
+          Calcula el promedio de <strong>todas las actividades</strong> de cada estudiante
+          (en cualquier grupo sim en el que haya participado), agrupado por su salón original.
+        </p>
+        <div class="mb-3">
+          <label class="form-label" style="font-weight:600">Grupo original</label>
+          <select id="liquidarGrado" class="form-select">
+            <option value="11°A">11°A</option>
+            <option value="11°B">11°B</option>
+            <option value="11°C">11°C</option>
+            <option value="11°D">11°D</option>
+            <option value="11°E">11°E</option>
+            <option value="11°F">11°F</option>
+          </select>
+        </div>
+        <div id="liquidarInfo" style="font-size:.8rem;color:var(--text-2);background:var(--bg-2);padding:.6rem .9rem;border-radius:8px;line-height:1.5">
+          Selecciona el grado y descarga el CSV con el promedio de cada estudiante.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-success" onclick="liquidarGrupoOriginal()">
+          <i class="bi bi-download"></i> Descargar CSV
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Firebase SDK -->
@@ -1859,6 +1900,22 @@ function getGrupoSim3(nombre, codigo) {
 
 // Busca el estudiante de Firebase más parecido a un nombre Sim2.
 // Estrategia: exacto → normalizado → solapamiento de tokens (apellidos/nombre).
+// Busca el codigo de un estudiante Firebase a partir de su nombre en formato sim (NOMBRE APELLIDO)
+function _findCodigoBySimName(simName) {
+  const _n = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+  const simTok = new Set(_n(simName).split(' ').filter(t => t.length > 1));
+  if (!simTok.size) return null;
+  let best = null, bestScore = 0;
+  for (const est of (state.estudiantes || [])) {
+    const fbTok = _n(est.nombre).split(' ').filter(t => t.length > 1);
+    const common = fbTok.filter(t => simTok.has(t)).length;
+    const union = new Set([...simTok, ...fbTok]).size;
+    const score = union ? common / union : 0;
+    if (score > bestScore && score >= 0.5) { bestScore = score; best = est; }
+  }
+  return best?.codigo || null;
+}
+
 function _findEstudianteFirebase(nombre) {
   const _n = window._normSim2 || (s=>(s||'').toUpperCase().trim());
   // 1) Exacto
@@ -3183,11 +3240,11 @@ window.renderActividades = function() {
 function _estudiantesDeGrado(grado) {
   if (isSim3Grado(grado)) {
     const num = sim3NumFromGrado(grado);
-    return (GRUPOS_SIM3_LISTAS[num] || []).map(st => ({ nombre: st.n, grado }));
+    return (GRUPOS_SIM3_LISTAS[num] || []).map(st => ({ nombre: st.n, grado, codigo: st.c || _findCodigoBySimName(st.n) }));
   }
   if (isSim2Grado(grado)) {
     const num = sim2NumFromGrado(grado);
-    return (GRUPOS_SIM2_LISTAS[num] || []).map(st => ({ nombre: st.n, grado }));
+    return (GRUPOS_SIM2_LISTAS[num] || []).map(st => ({ nombre: st.n, grado, codigo: _findCodigoBySimName(st.n) }));
   }
   return state.estudiantes.filter(e => e.grado === grado);
 }
@@ -3222,7 +3279,8 @@ function renderFilasNotas(estudiantes) {
         <input type="number" class="form-control nota-input" min="0" max="${act.valoracionMax}"
           placeholder="–" value="${nota}"
           oninput="validarNota(this,${act.valoracionMax})"
-          data-est="${escapeHtml(est.nombre)}">
+          data-est="${escapeHtml(est.nombre)}"
+          data-codigo="${escapeHtml(est.codigo||'')}">
       </div>
     </div>`;
   }).join('');
@@ -3271,17 +3329,23 @@ window.guardarCalificaciones = async function() {
     showToast('Hay notas que superan la valoración máxima.','warning'); return;
   }
   const calificaciones = { ..._actividadActual.calificaciones };
+  const calificaciones_codigos = { ...(_actividadActual.calificaciones_codigos || {}) };
   inputs.forEach(input => {
     const est = input.dataset.est;
+    const codigo = input.dataset.codigo;
     const val = input.value.trim();
-    if (val !== '') calificaciones[est] = parseFloat(val);
+    if (val !== '') {
+      calificaciones[est] = parseFloat(val);
+      if (codigo) calificaciones_codigos[codigo] = parseFloat(val);
+    }
   });
   bootstrap.Modal.getInstance(document.getElementById('modalCalificaciones')).hide();
   showLoading(true);
   try {
-    await updateDoc(doc(db,'actividades',id), { calificaciones });
+    await updateDoc(doc(db,'actividades',id), { calificaciones, calificaciones_codigos });
     _actividadActual.calificaciones = calificaciones;
-    _actividades = _actividades.map(a => a.id === id ? { ...a, calificaciones } : a);
+    _actividadActual.calificaciones_codigos = calificaciones_codigos;
+    _actividades = _actividades.map(a => a.id === id ? { ...a, calificaciones, calificaciones_codigos } : a);
     renderActividades();
     showToast('Notas guardadas.','success');
   } catch(e) { showToast('Error: '+e.message,'error'); }
@@ -3348,6 +3412,84 @@ window.exportarNotasGrupoCSV = function() {
   a.href = url; a.download = `notas_${filtro}_${todayISO()}.csv`; a.click();
   URL.revokeObjectURL(url);
   showToast(`CSV de ${filtro} exportado.`, 'success');
+};
+
+// ════════════════════════════════════════════
+//  LIQUIDACIÓN DE NOTAS POR GRUPO ORIGINAL
+// ════════════════════════════════════════════
+window.abrirModalLiquidar = function() {
+  new bootstrap.Modal(document.getElementById('modalLiquidar')).show();
+};
+
+window.liquidarGrupoOriginal = async function() {
+  const grado = document.getElementById('liquidarGrado').value;
+  if (!grado) { showToast('Selecciona un grado.','warning'); return; }
+
+  const estudiantes = state.estudiantes.filter(e => e.grado === grado)
+    .sort((a,b) => a.nombre.localeCompare(b.nombre));
+  if (!estudiantes.length) { showToast('No hay estudiantes registrados en ' + grado + '.','warning'); return; }
+
+  showLoading(true);
+  try {
+    // Cargar todas las actividades (requiere permisos de lectura autenticados)
+    const snap = await _getDocs(query(collection(db,'actividades'), orderBy('fecha','asc')));
+    const todasActividades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const _n = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+
+    const rows = [['Código','Nombre','Grado Original','Promedio (sobre 100)','Total Actividades Calificadas','Detalle por actividad']];
+
+    estudiantes.forEach(est => {
+      const fbTok = new Set(_n(est.nombre).split(' ').filter(t => t.length > 1));
+      const notasPct = [];
+      const detalles = [];
+
+      todasActividades.forEach(act => {
+        let nota = null;
+        // Buscar primero por código (datos nuevos)
+        if (est.codigo && act.calificaciones_codigos && act.calificaciones_codigos[est.codigo] !== undefined) {
+          nota = act.calificaciones_codigos[est.codigo];
+        } else {
+          // Fallback: matching por tokens de nombre (datos históricos)
+          for (const [key, val] of Object.entries(act.calificaciones || {})) {
+            const keyTok = _n(key).split(' ').filter(t => t.length > 1);
+            const common = keyTok.filter(t => fbTok.has(t)).length;
+            const union = new Set([...fbTok, ...keyTok]).size;
+            if (union > 0 && common / union >= 0.5) { nota = val; break; }
+          }
+        }
+        if (nota !== null && nota !== undefined && nota !== '') {
+          const valorMax = act.valoracionMax || 100;
+          const pct = Math.round((parseFloat(nota) / valorMax) * 100 * 10) / 10;
+          notasPct.push(pct);
+          detalles.push(act.nombre + ': ' + pct + '%');
+        }
+      });
+
+      const promedio = notasPct.length
+        ? (notasPct.reduce((a,b) => a+b, 0) / notasPct.length).toFixed(1)
+        : '';
+      rows.push([
+        est.codigo || '',
+        est.nombre,
+        grado,
+        promedio,
+        notasPct.length,
+        detalles.join(' | ')
+      ]);
+    });
+
+    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'liquidacion_' + grado.replace('\u00b0','') + '_' + todayISO() + '.csv'; a.click();
+    URL.revokeObjectURL(url);
+
+    bootstrap.Modal.getInstance(document.getElementById('modalLiquidar')).hide();
+    showToast('\u2713 Liquidaci\u00f3n de ' + grado + ' descargada (' + estudiantes.length + ' estudiantes)','success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { showLoading(false); }
 };
 
 // ════════════════════════════════════════════
