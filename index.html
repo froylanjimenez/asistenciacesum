@@ -2088,7 +2088,9 @@ const SUPERADMIN_EMAILS = new Set(['froylan.jimenez@gmail.com', 'fjsan10@gmail.c
 // Alias para compatibilidad con badge de lista de docentes
 const SUPERADMIN_EMAIL = 'froylan.jimenez@gmail.com'; // email original (solo para badge legacy)
 
+console.log('[CESUM v2026-05-14] Firebase listo, esperando auth...');
 onAuthStateChanged(auth, async user => {
+  console.log('[CESUM] onAuthStateChanged:', user ? user.email : 'sin sesión');
   if (user) {
     const esSuperAdmin = SUPERADMIN_EMAILS.has(user.email);
     // Leer perfil desde Firestore
@@ -2138,8 +2140,11 @@ onAuthStateChanged(auth, async user => {
     }
     document.getElementById('navNombre').textContent = state.nombre;
     if (state.isAdmin) document.getElementById('tabAdmin').classList.remove('hidden');
+    console.log('[CESUM] Mostrando appScreen...');
     showScreen('appScreen');
+    console.log('[CESUM] Iniciando cargarDatosIniciales...');
     await cargarDatosIniciales();
+    console.log('[CESUM] cargarDatosIniciales completado');
     actualizarBannerHora();
     setInterval(actualizarBannerHora, 60000);
   } else {
