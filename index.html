@@ -1727,7 +1727,7 @@ const GRUPOS_SIM3_LISTAS = {
     {n:'PERTUZ ELIECER DE JESUS DE LEON',i:309.4,r:99},
     {n:'MARIA ANGELICA PASTRANA RODRIGUEZ',i:308.5,r:100},
     {n:'ANA SOFIA GONZALEZ CALAO',i:308.1,r:101},
-    {c:'EST-00001',n:'ISABEL CASTILLO RICARDO',i:294.7,r:47},
+    {c:'11D-ISACAS001',n:'ISABEL CASTILLO RICARDO',i:294.7,r:47},
   ],
   4: [
     {n:'DIONI SOLA MARTINEZ',i:307.6,r:102},
@@ -1802,7 +1802,7 @@ const GRUPOS_SIM3_LISTAS = {
     {n:'SARA IBAÑEZ CAUSIL',i:213.5,r:169},
     {n:'JHONEIDER LONDOÑO VASQUEZ',i:210.2,r:170},
     {n:'DANNA CAROLINA SCHELEGUEL CORREA',i:192.0,r:171},
-    {c:'EST-00002',n:'EVERNEY CALLE SOTELO',i:248.8,r:99},
+    {c:'11B-EVECAL001',n:'EVERNEY CALLE SOTELO',i:248.8,r:99},
   ],
 };
 
@@ -2454,6 +2454,7 @@ function renderPlanilla(estudiantes) {
         btn.className+=' '+e.css; btn.textContent=e.short;
         btn.dataset.estado=e.value; btn.dataset.est=est.nombre;
         btn.dataset.hora2=hora; btn.dataset.grado=est.grado;
+        if (est.codigo) btn.dataset.codigo=est.codigo;
         btn.setAttribute('data-label',e.label);
         btn.addEventListener('click', function() { ciclarEstado(this); });
       }
@@ -2492,14 +2493,16 @@ window.guardarAsistencia = async function() {
   if (btnGuardar) { btnGuardar.disabled=true; btnGuardar.innerHTML='<i class="bi bi-hourglass-split"></i> Guardando...'; }
   const registros = [];
   btns.forEach(btn => {
-    registros.push({
+    const reg = {
       fecha, hora: btn.dataset.hora2||btn.dataset.hora||'',
       estudiante: btn.dataset.est||'',
       grado: btn.dataset.grado||'',
       estado: btn.dataset.estado||'Asistió',
       docente: state.nombre,
       ts: new Date().toISOString()
-    });
+    };
+    if (btn.dataset.codigo) reg.codigo = btn.dataset.codigo;
+    registros.push(reg);
   });
   const validos = registros.filter(r=>r.estudiante);
   if (!validos.length) { showToast('No hay registros válidos.','warning'); return; }
