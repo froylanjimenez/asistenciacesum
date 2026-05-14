@@ -1875,12 +1875,6 @@ function getGrupoSim2(nombre) {
   return _SIM2_LOOKUP[window._normSim2(nombre)] || null;
 }
 
-// Helpers SIM 3
-function sim3GradoValue(n) { return `11-sim3-g${n}`; }
-function sim3GradoLabel(n) { return `11° · Grupo ${n} — Sim. 3`; }
-function isSim3Grado(val)  { return /^11-sim3-g[1-5]$/.test(val); }
-function sim3NumFromGrado(val) { return isSim3Grado(val) ? parseInt(val.slice(-1)) : null; }
-
 // Lookup rápido SIM3: por código (primario) y por nombre (fallback)
 const _SIM3_LOOKUP = {};    // nombre_norm → grupo
 const _SIM3_COD_LOOKUP = {}; // codigo → grupo
@@ -2088,9 +2082,7 @@ const SUPERADMIN_EMAILS = new Set(['froylan.jimenez@gmail.com', 'fjsan10@gmail.c
 // Alias para compatibilidad con badge de lista de docentes
 const SUPERADMIN_EMAIL = 'froylan.jimenez@gmail.com'; // email original (solo para badge legacy)
 
-console.log('[CESUM v2026-05-14] Firebase listo, esperando auth...');
 onAuthStateChanged(auth, async user => {
-  console.log('[CESUM] onAuthStateChanged:', user ? user.email : 'sin sesión');
   if (user) {
     const esSuperAdmin = SUPERADMIN_EMAILS.has(user.email);
     // Leer perfil desde Firestore
@@ -2140,11 +2132,8 @@ onAuthStateChanged(auth, async user => {
     }
     document.getElementById('navNombre').textContent = state.nombre;
     if (state.isAdmin) document.getElementById('tabAdmin').classList.remove('hidden');
-    console.log('[CESUM] Mostrando appScreen...');
     showScreen('appScreen');
-    console.log('[CESUM] Iniciando cargarDatosIniciales...');
     await cargarDatosIniciales();
-    console.log('[CESUM] cargarDatosIniciales completado');
     actualizarBannerHora();
     setInterval(actualizarBannerHora, 60000);
   } else {
