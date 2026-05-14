@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inasistencias Grado 11° — CESUM 2026</title>
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --blue: #2563eb; --blue-lt: #3b82f6; --blue-glow: #2563eb33;
+  --green: #22c55e; --red: #ef4444; --orange: #f97316;
+  --yellow: #eab308; --purple: #a855f7;
+  --text: #f0f6fc; --text-2: #8b949e; --text-3: #484f58;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text)}
+
+/* ── AUTH ──── */
+#auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:min(400px,92vw)}
+.auth-card h2{font-size:1.4rem;font-weight:700;margin-bottom:.3rem}
+.auth-card p{font-size:.88rem;color:var(--text-2);margin-bottom:1.5rem}
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:.8rem;color:var(--text-2);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em}
+.form-group input{width:100%;background:#1c2330;border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;color:var(--text);font-size:.95rem;outline:none;transition:border-color .2s}
+.form-group input:focus{border-color:var(--blue)}
+.btn-auth{width:100%;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:.75rem;font-size:1rem;font-weight:600;cursor:pointer;margin-top:.5rem;transition:background .2s}
+.btn-auth:hover{background:var(--blue-lt)}
+.auth-err{color:var(--red);font-size:.85rem;margin-top:.8rem;text-align:center;min-height:1.2em}
+.auth-logo{text-align:center;margin-bottom:1.5rem;font-size:.75rem;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase}
+
+/* ── LOADING ──── */
+#loading{display:none;position:fixed;inset:0;background:var(--bg)88;z-index:998;align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+.spinner{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── MAIN ──── */
+#main{display:none;max-width:1100px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+/* ── HEADER ──── */
+.report-header{text-align:center;padding:2rem 1rem 1.5rem;margin-bottom:2rem;border-bottom:1px solid var(--border)}
+.report-header .school{font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:var(--blue-lt);font-weight:600;margin-bottom:.5rem}
+.report-header h1{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;line-height:1.2;margin-bottom:.4rem}
+.report-header .meta{font-size:.85rem;color:var(--text-2)}
+.report-header .badges{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:.8rem}
+.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .75rem;border-radius:20px;font-size:.78rem;font-weight:600;border:1px solid transparent}
+.badge-sim{background:#162035;border-color:var(--blue);color:var(--blue-lt)}
+
+/* ── STAT CARDS ──── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:2rem}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;text-align:center}
+.stat-card .num{font-size:2rem;font-weight:800;line-height:1}
+.stat-card .lbl{font-size:.75rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin-top:.4rem}
+.stat-card.red{border-color:var(--red)}
+.stat-card.orange{border-color:var(--orange)}
+.stat-card.yellow{border-color:var(--yellow)}
+.stat-card.blue{border-color:var(--blue)}
+.stat-card.green{border-color:var(--green)}
+
+/* ── GROUP NAV ──── */
+.group-nav{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:2rem}
+.btn-group{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.45rem 1.1rem;font-size:.88rem;color:var(--text-2);cursor:pointer;transition:all .2s;font-weight:500}
+.btn-group:hover,.btn-group.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ── SECTION TITLE ──── */
+.section-title{font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2);margin-bottom:.8rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+
+/* ── TABLE ──── */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:2.5rem}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+thead th{background:#1c2330;padding:.65rem .9rem;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--blue-lt)}
+thead th .sort-icon{opacity:.4;margin-left:.3rem}
+thead th.sorted .sort-icon{opacity:1;color:var(--blue-lt)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#1c2330}
+tbody td{padding:.6rem .9rem;vertical-align:middle}
+.rank-num{font-family:monospace;font-weight:700;color:var(--text-3);font-size:.85rem}
+.rank-1 .rank-num{color:#fbbf24}
+.rank-2 .rank-num{color:#94a3b8}
+.rank-3 .rank-num{color:#b45309}
+.student-name{font-weight:600;color:var(--text)}
+.group-chip{display:inline-flex;align-items:center;gap:.25rem;background:#162035;border:1px solid var(--blue);color:var(--blue-lt);border-radius:20px;padding:.15rem .6rem;font-size:.72rem;font-weight:700;white-space:nowrap}
+.icfes-score{font-family:monospace;color:var(--text-2);font-size:.83rem}
+.cell-falla{color:var(--red);font-weight:700;font-size:.95rem}
+.cell-fuga{color:var(--orange)}
+.cell-ret{color:var(--yellow)}
+.cell-exc{color:var(--blue-lt)}
+.cell-zero{color:var(--text-3)}
+.bar-wrap{display:flex;align-items:center;gap:.5rem}
+.bar-bg{flex:1;background:#1c2330;border-radius:4px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--red);transition:width .4s ease}
+
+/* ── GROUP SUMMARY ──── */
+.group-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.gscard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem}
+.gscard .g-title{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:.5rem}
+.gscard .g-stat{display:flex;justify-content:space-between;font-size:.82rem;padding:.18rem 0;border-bottom:1px solid var(--border)}
+.gscard .g-stat:last-child{border-bottom:none}
+.gscard .g-stat span:last-child{font-weight:700}
+
+/* ── PRINT ──── */
+@media print{
+  body{background:#fff;color:#000}
+  #auth-overlay,#loading,.btn-group,.group-nav,.no-print{display:none!important}
+  #main{display:block!important;max-width:100%;padding:0}
+  .stat-card,.gscard,.table-wrap{border:1px solid #ccc;background:#fff}
+  thead th{background:#1e3a5f;color:#fff}
+  .bar-bg,.bar-fill{display:none}
+  .student-name{color:#000}
+  .group-chip{background:#e0f2fe;color:#0369a1;border-color:#7dd3fc}
+  a{display:none}
+}
+.print-btn{background:var(--card);border:1px solid var(--border);color:var(--text-2);padding:.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+.print-btn:hover{border-color:var(--blue-lt);color:var(--blue-lt)}
+.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:.5rem}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">CESUM · Sistema de Asistencia</div>
+    <h2>Reporte Inasistencias</h2>
+    <p>Inicia sesión para ver el reporte de grado 11°</p>
+    <div class="form-group">
+      <label>Correo electrónico</label>
+      <input type="email" id="email" placeholder="usuario@cesum.edu.co" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-auth" id="btn-login">Ingresar</button>
+    <div class="auth-err" id="auth-err"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spinner"></div>
+  <span style="color:var(--text-2);font-size:.9rem">Cargando datos de asistencia…</span>
+</div>
+
+<!-- MAIN REPORT -->
+<div id="main">
+  <div class="report-header">
+    <div class="school">Concentración Educativa del Sur de Montelbano</div>
+    <h1>Ranking de Inasistencias<br>Grado <span style="color:var(--blue-lt)">Undécimo</span></h1>
+    <div class="meta">Año lectivo 2026 · Simulacros ICFES — Grupos 1 a 5</div>
+    <div class="badges">
+      <span class="badge badge-sim">📋 Sim. 1 — Grupos 1–5 (175 est.)</span>
+      <span class="badge badge-sim">📋 Sim. 2 — Grupos 1–5 (175 est.)</span>
+      <span id="badge-fecha" class="badge" style="background:#1c2d12;border-color:var(--green);color:var(--green)"></span>
+    </div>
+  </div>
+
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card red"><div class="num" id="s-fallas">–</div><div class="lbl">Total días falla</div></div>
+    <div class="stat-card orange"><div class="num" id="s-fugas">–</div><div class="lbl">Total fugas</div></div>
+    <div class="stat-card yellow"><div class="num" id="s-retardos">–</div><div class="lbl">Total retardos</div></div>
+    <div class="stat-card blue"><div class="num" id="s-excusas">–</div><div class="lbl">Total excusas</div></div>
+    <div class="stat-card green"><div class="num" id="s-clean">–</div><div class="lbl">Sin inasistencias</div></div>
+    <div class="stat-card"><div class="num">175</div><div class="lbl">Estudiantes totales</div></div>
+  </div>
+
+  <div class="top-bar">
+    <div style="font-size:.8rem;color:var(--text-2)" id="current-view-label">Todos los grupos</div>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+  </div>
+
+  <div class="group-nav no-print" id="group-nav">
+    <button class="btn-group active" data-g="0">Todos</button>
+    <button class="btn-group" data-g="1">Grupo 1</button>
+    <button class="btn-group" data-g="2">Grupo 2</button>
+    <button class="btn-group" data-g="3">Grupo 3</button>
+    <button class="btn-group" data-g="4">Grupo 4</button>
+    <button class="btn-group" data-g="5">Grupo 5</button>
+  </div>
+
+  <div class="section-title">Resumen por Grupo</div>
+  <div class="group-summary-grid" id="group-summary"></div>
+
+  <div class="section-title" id="ranking-title">Ranking completo — Todos los grupos (mayor a menor inasistencia)</div>
+  <div class="table-wrap">
+    <table id="ranking-table">
+      <thead>
+        <tr>
+          <th data-col="rank"># <span class="sort-icon sorted">▲</span></th>
+          <th data-col="nombre">Estudiante <span class="sort-icon">⇅</span></th>
+          <th data-col="grupo">Grupo <span class="sort-icon">⇅</span></th>
+          <th data-col="icfes">ICFES <span class="sort-icon">⇅</span></th>
+          <th data-col="fallas">Días Falla <span class="sort-icon">⇅</span></th>
+          <th data-col="fugas">Fugas <span class="sort-icon">⇅</span></th>
+          <th data-col="retardos">Retardos <span class="sort-icon">⇅</span></th>
+          <th data-col="excusas">Excusas <span class="sort-icon">⇅</span></th>
+        </tr>
+      </thead>
+      <tbody id="ranking-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+import { getFirestore, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAbfE_6TywiN7_BzfZkLP7aBs2ZNl8HKwg",
+  authDomain: "cesum-2026.firebaseapp.com",
+  projectId: "cesum-2026",
+  storageBucket: "cesum-2026.firebasestorage.app",
+  messagingSenderId: "921246749192",
+  appId: "1:921246749192:web:9494e8646b21ee82d3b7bd"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── LISTA DE ESTUDIANTES (ambos simulacros = los 175 de grado 11°) ──────────
+const GRUPOS = {
+  1: [
+    {n:'JUSTIN TIRADO GARAY',i:378.1,r:1},
+    {n:'YEHIDER VILLORINA',i:365.1,r:2},
+    {n:'ANA SOFIA FERNANDEZ MADRID',i:362.2,r:3},
+    {n:'STEVEN ANDRES HOYOS NAVARRO',i:361.5,r:4},
+    {n:'MICHELL ANDREA PEREZ CHOLES',i:358.1,r:5},
+    {n:'JUAN PABLO PATERNINA HINCAPIE',i:357.4,r:6},
+    {n:'SAMUEL VARGAS VIDES',i:357.4,r:7},
+    {n:'IVAN DAVID MARCELO SERPA',i:356.9,r:8},
+    {n:'DAYLIS PEREZ PADILLA',i:351.3,r:9},
+    {n:'SEBASTIAN RUIZ MONTERROZA',i:351.0,r:10},
+    {n:'ANGELICA MADRID SIERRA',i:349.3,r:11},
+    {n:'SAMUEL ALEAN ZAPATA',i:341.3,r:12},
+    {n:'VALENTINA AGUAS ATENCIA',i:340.0,r:13},
+    {n:'JULIANA CASTAÑEDA MEJIA',i:335.9,r:14},
+    {n:'JULIANA BANQUET MENDOZA',i:334.9,r:15},
+    {n:'YERMAN YAIR RUIZ GRANADOS',i:326.6,r:16},
+    {n:'DIEGO DAVID DUQUE HERRERA',i:323.4,r:17},
+    {n:'SANTIAGO CEBALLOS ZABALA',i:320.7,r:18},
+    {n:'SAMAHARA FLOREZ OVIEDO',i:320.1,r:19},
+    {n:'JULIANA ARRIETA GOMEZ',i:319.8,r:20},
+    {n:'YOJAN DAVID BENITEZ BARRIOS',i:319.3,r:21},
+    {n:'MELANI ALEJANDRA MALDONADO VILLALBA',i:319.3,r:22},
+    {n:'KEINER ACOSTA BUENO',i:318.3,r:23},
+    {n:'DAILY ALEJANDRA ARGUMEDO SALAS',i:317.8,r:24},
+    {n:'SYARA SOFIA DIAZ HERNANDEZ',i:313.6,r:25},
+    {n:'NATALIA SANCHEZ MONTERROZA',i:312.4,r:26},
+    {n:'KEVIN DAVID MEJIA HEREDIA',i:309.9,r:27},
+    {n:'KAROL DAYANA ESCOBAR VARGAS',i:308.6,r:28},
+    {n:'MARIA JOSE VILLEGAS HERRERA',i:306.3,r:29},
+    {n:'ESTEBAN DAVID CORONADO PALENCIA',i:305.5,r:30}
+  ],
+  2: [
+    {n:'VALENTINA ESTREMOR PEREZ',i:304.5,r:31},
+    {n:'JUAN ANDRES CARVAJAL DIAZ',i:304.3,r:32},
+    {n:'MARIA DE LOS ANGELES PASOS SOTELO',i:304.3,r:33},
+    {n:'SARAY CAMILA PIMIENTA SOTO',i:304.0,r:34},
+    {n:'ARIATHNA MESTRA ARDILA',i:302.7,r:35},
+    {n:'DIEGO ARMANDO CAMPO SALAZAR',i:301.8,r:36},
+    {n:'LAUREN VANESSA ESTRADA GARCES',i:300.7,r:37},
+    {n:'SHARON LISHELL RODRIGUEZ OSORIO',i:300.0,r:38},
+    {n:'STIVEN DARIO CALI ESTRADA',i:299.0,r:39},
+    {n:'JULIANA CONTRERAS GARCIA',i:298.7,r:40},
+    {n:'PAMELA DENISE RUIZ VILLADIEGO',i:298.1,r:41},
+    {n:'LUIS FERNANDO TEJADA GUERRERO',i:297.5,r:42},
+    {n:'KEVIN DAVID CARRASCO MONTIEL',i:296.7,r:43},
+    {n:'ANGELICA MARTINEZ BALBERA',i:295.8,r:44},
+    {n:'MADELINE CAMPO RIVERA',i:295.4,r:45},
+    {n:'JULIANA ALVARADO MARTINEZ',i:295.1,r:46},
+    {n:'ISABEL CASTILLO RICARDO',i:294.7,r:47},
+    {n:'CARLOS ENRIQUE MENDOZA FERIA',i:294.3,r:48},
+    {n:'JUAN ESTEBAN FLOREZ MARTINEZ',i:294.0,r:49},
+    {n:'JAIDER DAVID MEZA AVILES',i:292.4,r:50},
+    {n:'JUAN CAMILO RICARDO VEGA',i:292.1,r:51},
+    {n:'YESID ANDRES ZEA CAMAÑO',i:290.9,r:52},
+    {n:'ELISEO LUNA PEREZ',i:290.5,r:53},
+    {n:'MARISOL MARTINEZ SALAS',i:289.8,r:54},
+    {n:'SARA MARCELA TORREZ MENDOZA',i:289.8,r:55},
+    {n:'YALENA SOFIA SALAZAR OYOLA',i:289.4,r:56},
+    {n:'LUISA FERNANDA BENITEZ BALTAZAR',i:289.3,r:57},
+    {n:'JUAN FELIPE MERCADO PEREZ',i:288.4,r:58},
+    {n:'LIZ EMILY ZUÑIGA OSORIO',i:287.6,r:59},
+    {n:'DIONI SOLA MARTINEZ',i:286.6,r:60},
+    {n:'ALEJANDRO ZARZA HOYOS',i:286.3,r:61},
+    {n:'ANDY PAOLA MANTILLA ESPITIA',i:284.7,r:62},
+    {n:'DIDIER ESNEIDER CASTILLO CAMARGO',i:281.9,r:63},
+    {n:'PATRICIA DEL CARMEN RODRIGUEZ VERTEL',i:281.4,r:64},
+    {n:'ANDREA LISETH CAMARGO URANGO',i:280.7,r:65},
+    {n:'JUNIOR ENRIQUE MERCADO ROHENES',i:278.5,r:66},
+    {n:'YENNIFER CASTILLO SUAREZ',i:277.1,r:67}
+  ],
+  3: [
+    {n:'VICTOR ANDRES ESPITIA MORALES',i:275.2,r:68},
+    {n:'MELANI PEÑATES GARAVITO',i:274.8,r:69},
+    {n:'VALENTINA ARRIETA SIERRA',i:272.4,r:70},
+    {n:'TALIANA BERRIO MENDOZA',i:271.6,r:71},
+    {n:'ANGIE PAOLA ALARCON MENDEZ',i:271.4,r:72},
+    {n:'JOSE ALBEIRO CALLE MORENO',i:271.1,r:73},
+    {n:'MARIA ALEJANDRA RAMOS CALLE',i:271.1,r:74},
+    {n:'STEFANIA GUERRA VILLA',i:270.9,r:75},
+    {n:'JULIANA PEREZ VERGARA',i:270.7,r:76},
+    {n:'OSSA POLO ALEX JOSE DE LA',i:270.5,r:77},
+    {n:'ALYS PATRICIA HERNANDEZ PASTRANA',i:269.8,r:78},
+    {n:'ANA SOFIA GONZALEZ CALAO',i:268.9,r:79},
+    {n:'VALERI CORREA DOMINGUEZ',i:268.7,r:80},
+    {n:'NICOLAS ELIAS AGAMEZ ZABALA',i:266.4,r:81},
+    {n:'DANILSA MERCADO TIRADO',i:265.7,r:82},
+    {n:'CAMILO ANDRES MURILLO BUELVAS',i:265.3,r:83},
+    {n:'JESUS ORLANDO FINO RICARDO',i:265.2,r:84},
+    {n:'ANDRES FELIPE MARTINEZ PACHECO',i:264.2,r:85},
+    {n:'ELIZABETH PEREIRA LOPEZ',i:263.7,r:86},
+    {n:'NAIDERLIN ESPITIA CASTRO',i:263.4,r:87},
+    {n:'MARIA ANGEL JULIO HERNANDEZ',i:261.9,r:88},
+    {n:'ISABELLA FLOREZ CANO',i:259.9,r:89},
+    {n:'MARIA JOSE PEREZ CANTERO',i:259.5,r:90},
+    {n:'CRISTIANO RONALDO ROMERO ZUÑIGA',i:258.7,r:91},
+    {n:'SHERYL ANDREA FUENTES MENDEZ',i:257.6,r:92},
+    {n:'SOFIA MARTINEZ HERNANDEZ',i:257.5,r:93},
+    {n:'YADY ISABEL RAMIREZ MORALES',i:255.4,r:94},
+    {n:'ANYS ANDREA GUTIERREZ ARRIETA',i:254.0,r:95},
+    {n:'KEILLY MICHELLE HERNANDEZ HOYOS',i:253.7,r:96},
+    {n:'HITA FERNANDA REYES CORDOBA',i:253.3,r:97},
+    {n:'JULIANA ANDREA PASTRANA ROMERO',i:251.3,r:98},
+    {n:'EVERNEY CALLE SOTELO',i:248.8,r:99},
+    {n:'YISEL KAROLINA RAMOS BELEÑO',i:247.5,r:100},
+    {n:'MARIA ANGELICA PASTRANA RODRIGUEZ',i:247.4,r:101},
+    {n:'ENAN JOAQUIN TUIRAN MORENO',i:247.3,r:102},
+    {n:'SKARLIT YHIRET HERRERA GIL',i:247.2,r:103}
+  ],
+  4: [
+    {n:'ELEMI HERNANDEZ ALVAREZ',i:245.7,r:104},
+    {n:'JHOJAN STIVEN ALZATE CARMONA',i:245.4,r:105},
+    {n:'VICTOR MANUEL TEJADA ZUÑIGA',i:243.7,r:106},
+    {n:'NICOLAS ELIAS CANOLE VASQUEZ',i:241.9,r:107},
+    {n:'NICOL STEFANY BAQUERO DIAZ',i:239.9,r:108},
+    {n:'DIEGO PADILLA MORA',i:239.6,r:109},
+    {n:'MATIAS ANDRES BARRIOS SOTELO',i:239.0,r:110},
+    {n:'YOINER ARRIETA JARAMILLO',i:238.8,r:111},
+    {n:'MARIA ANGEL HERNANDEZ HOYOS',i:238.5,r:112},
+    {n:'ISABELLA VALENTINA HERRERA CAMAÑO',i:236.1,r:113},
+    {n:'ANA SOFIA VERGARA MARTINEZ',i:234.6,r:114},
+    {n:'JHONEIDER LONDOÑO VASQUEZ',i:231.8,r:115},
+    {n:'MARIANGEL SALGADO MAZO',i:229.9,r:116},
+    {n:'ORNELLA HEREDIA MORENO',i:229.5,r:117},
+    {n:'YURIS PAOLA RODRIGUEZ FLOREZ',i:228.9,r:118},
+    {n:'ESTHER MARIA LONDOÑO BARRIOS',i:228.2,r:119},
+    {n:'CARLOS DANIEL MARCHENA BARRERO',i:225.3,r:120},
+    {n:'GABRIELA HERNANDEZ DIAZ',i:224.3,r:121},
+    {n:'KELLY JOHANA MONTERROZA CASARRUBIA',i:224.2,r:122},
+    {n:'KATALINA PEREZ MORENO',i:223.1,r:123},
+    {n:'JAIVER VILLADIEGO JIMENEZ',i:223.1,r:124},
+    {n:'LUISA FERNANDA COLON SERRANO',i:220.7,r:125},
+    {n:'STEFANY RUIZ MARTINEZ',i:218.2,r:126},
+    {n:'GABRIELA CORONADO OJEDA',i:218.1,r:127},
+    {n:'TALIANA CORREA OVIEDO',i:218.1,r:128},
+    {n:'KELLY JOHANA ROMERO CASARRUBIA',i:217.8,r:129},
+    {n:'DAVID MENDOZA HOYOS',i:216.4,r:130},
+    {n:'SAMARA ARIZA ECHAVARRIA',i:216.0,r:131},
+    {n:'ENIS YULISA HERNANDEZ PEÑATES',i:214.9,r:132},
+    {n:'JESUS DAVID VERGARA OCAMPO',i:214.9,r:133},
+    {n:'TALIANA CARDENAS MANSILLA',i:214.5,r:134},
+    {n:'JIMENA ANDREA HOLGUIN CARDEÑO',i:213.1,r:135},
+    {n:'JUAN DAVID MESTRA AVILA',i:212.8,r:136},
+    {n:'MARIA JOSE GARCIA GUERRA',i:211.3,r:137},
+    {n:'SAMUEL DAVID FABRA VAZQUEZ',i:210.8,r:138},
+    {n:'YONIER ANDRES SALA SOLIS',i:210.2,r:139}
+  ],
+  5: [
+    {n:'LORENA LORETH MONTES CORDERO',i:209.9,r:140},
+    {n:'CAMILA ANDREA SOTELO TORRES',i:209.6,r:141},
+    {n:'MONICA PAOLA MONTALVO SOTO',i:208.2,r:142},
+    {n:'PERTUZ ELIECER DE JESUS DE LEON',i:206.2,r:143},
+    {n:'GENESIS ROMERO ACOSTA',i:205.7,r:144},
+    {n:'KATY MILENA SALGADO VERONA',i:204.6,r:145},
+    {n:'MICHELL ANDREA MESA RIVERA',i:204.4,r:146},
+    {n:'EDITH NATALIA MADERA PEREIRA',i:204.2,r:147},
+    {n:'ANDRES DIAZ CASTRO',i:203.3,r:148},
+    {n:'HOYOS LUZ ELENA PEREZ DE',i:202.8,r:149},
+    {n:'JUAN CAMILO GAMARRA LOPEZ',i:200.5,r:150},
+    {n:'FREDY JOSE RODIÑO VALLEJO',i:200.2,r:151},
+    {n:'BIANA LICETH CASTRO RIVERA',i:200.1,r:152},
+    {n:'LEONEL ANDRES RIVERA SILVA',i:197.0,r:153},
+    {n:'YASMILA MENDEZ HERNANDEZ',i:191.4,r:154},
+    {n:'HECTOR LUIS FUENTES MENDOZA',i:191.3,r:155},
+    {n:'DIDIEN MATIAS ROMERO SIERRA',i:186.4,r:156},
+    {n:'KEVIN ANDRES RUIZ PEREZ',i:185.5,r:157},
+    {n:'NIKOL MICHELL AVILA GARCIA',i:180.8,r:158},
+    {n:'MARIA CAROLINA GOMEZ MUÑOZ',i:179.9,r:159},
+    {n:'RONALD SAMPAYO ALVIS',i:178.8,r:160},
+    {n:'SAMUEL ALEXANDER RODRIGUEZ VELASQUEZ',i:178.5,r:161},
+    {n:'JOHN ESTEBAN FLOREZ LONDOÑO',i:178.4,r:162},
+    {n:'SARA IBAÑEZ CAUSIL',i:177.3,r:163},
+    {n:'JUAN DAVID JULIO VILLORINA',i:176.7,r:164},
+    {n:'JHON FREED QUINTERO SUAREZ',i:175.8,r:165},
+    {n:'LUIS EDUARDO SALGADO QUINTERO',i:175.3,r:166},
+    {n:'JOSE JULIAN PATERNINA ARCIA',i:170.8,r:167},
+    {n:'MARIANA FLOREZ HERNANDEZ',i:168.1,r:168},
+    {n:'KEINER GONZALEZ RAMOS',i:167.2,r:169},
+    {n:'DANNA CAROLINA SCHELEGUEL CORREA',i:166.0,r:170},
+    {n:'CRISTIAN DAVID MONTALVO PACHECO',i:151.1,r:171},
+    {n:'TAILIN MARIA GOMEZ HOYOS',i:143.5,r:172},
+    {n:'YAIRA ANDREA TORRES CADRASCO',i:135.4,r:173},
+    {n:'BRESLY QUINTERO ROSARIO',i:133.5,r:174},
+    {n:'JOSE DANIEL ORTEGA JIMENEZ',i:130.8,r:175}
+  ]
+};
+
+// Normalización de nombres para match robusto
+function norm(s) {
+  return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .toUpperCase().replace(/\s+/g,' ').trim();
+}
+
+// Construir lookup nombre → {grupo, icfes, rank}
+const LOOKUP = {};
+for (const [g, lista] of Object.entries(GRUPOS)) {
+  for (const st of lista) {
+    LOOKUP[norm(st.n)] = { grupo: parseInt(g), icfes: st.i, rank: st.r, nombre: st.n };
+  }
+}
+
+// ── ESTADO ──────────────────────────────────────────────────────────────────
+let allData = [];  // [{nombre, grupo, icfes, rank, fallas, fugas, retardos, excusas}]
+let currentGroup = 0;
+let sortCol = 'fallas';
+let sortAsc = false;
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+document.getElementById('btn-login').addEventListener('click', doLogin);
+document.getElementById('pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function doLogin() {
+  const email = document.getElementById('email').value.trim();
+  const pass  = document.getElementById('pass').value;
+  const errEl = document.getElementById('auth-err');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Completa los campos.'; return; }
+  document.getElementById('btn-login').disabled = true;
+  document.getElementById('btn-login').textContent = 'Ingresando…';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    errEl.textContent = 'Credenciales incorrectas. Verifica e intenta de nuevo.';
+    document.getElementById('btn-login').disabled = false;
+    document.getElementById('btn-login').textContent = 'Ingresar';
+  }
+}
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('auth-overlay').style.display = 'none';
+    loadData();
+  }
+});
+
+// ── CARGA DE DATOS ────────────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('loading').style.display = 'flex';
+  try {
+    const snap = await getDocs(collection(db, 'asistencia'));
+    const statsMap = {};
+
+    // Inicializar todos los estudiantes
+    for (const [g, lista] of Object.entries(GRUPOS)) {
+      for (const st of lista) {
+        statsMap[norm(st.n)] = {
+          nombre: st.n, grupo: parseInt(g), icfes: st.i, rank: st.r,
+          fallasDias: new Set(), fugasDias: new Set(),
+          retardosCnt: 0, excusasCnt: 0
+        };
+      }
+    }
+
+    // Procesar registros de asistencia
+    snap.forEach(doc => {
+      const data = doc.data();
+      const fecha = data.fecha || doc.id;
+      const registros = data.registros || [];
+      registros.forEach(r => {
+        const key = norm(r.estudiante);
+        if (!statsMap[key]) return;
+        const s = statsMap[key];
+        if (r.estado === 'Falla')   s.fallasDias.add(fecha);
+        if (r.estado === 'Fuga')    s.fugasDias.add(fecha);
+        if (r.estado === 'Retardo') s.retardosCnt++;
+        if (r.estado === 'Excusa')  s.excusasCnt++;
+      });
+    });
+
+    allData = Object.values(statsMap).map(s => ({
+      nombre: s.nombre, grupo: s.grupo, icfes: s.icfes, rank: s.rank,
+      fallas: s.fallasDias.size,
+      fugas:  s.fugasDias.size,
+      retardos: s.retardosCnt,
+      excusas:  s.excusasCnt
+    }));
+
+    // Fecha del reporte
+    const hoy = new Date().toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'});
+    document.getElementById('badge-fecha').textContent = '📅 ' + hoy;
+
+    renderStats();
+    renderGroupSummary();
+    renderTable();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+  } catch(err) {
+    console.error(err);
+    document.getElementById('loading').innerHTML =
+      '<span style="color:var(--red)">Error al cargar datos: ' + err.message + '</span>';
+  }
+}
+
+// ── STATS GLOBALES ────────────────────────────────────────────────────────────
+function renderStats() {
+  const totalFallas   = allData.reduce((a,s)=>a+s.fallas,0);
+  const totalFugas    = allData.reduce((a,s)=>a+s.fugas,0);
+  const totalRetardos = allData.reduce((a,s)=>a+s.retardos,0);
+  const totalExcusas  = allData.reduce((a,s)=>a+s.excusas,0);
+  const sinFallas     = allData.filter(s=>s.fallas===0&&s.fugas===0).length;
+  document.getElementById('s-fallas').textContent   = totalFallas;
+  document.getElementById('s-fugas').textContent    = totalFugas;
+  document.getElementById('s-retardos').textContent = totalRetardos;
+  document.getElementById('s-excusas').textContent  = totalExcusas;
+  document.getElementById('s-clean').textContent    = sinFallas;
+}
+
+// ── RESUMEN POR GRUPO ─────────────────────────────────────────────────────────
+function renderGroupSummary() {
+  const container = document.getElementById('group-summary');
+  container.innerHTML = '';
+  for (let g = 1; g <= 5; g++) {
+    const est = allData.filter(s => s.grupo === g);
+    const totalF = est.reduce((a,s)=>a+s.fallas,0);
+    const maxF   = est.reduce((a,s)=>Math.max(a,s.fallas),0);
+    const sinF   = est.filter(s=>s.fallas===0).length;
+    const promF  = est.length ? (totalF/est.length).toFixed(1) : 0;
+    const card = document.createElement('div');
+    card.className = 'gscard';
+    card.innerHTML = `
+      <div class="g-title">Grupo ${g} <span style="color:var(--text-3);font-weight:400">(${est.length} est.)</span></div>
+      <div class="g-stat"><span>Total días falla</span><span style="color:var(--red)">${totalF}</span></div>
+      <div class="g-stat"><span>Promedio fallas</span><span>${promF}</span></div>
+      <div class="g-stat"><span>Máx. fallas</span><span>${maxF}</span></div>
+      <div class="g-stat"><span>Sin inasistencias</span><span style="color:var(--green)">${sinF}</span></div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+// ── TABLA RANKING ─────────────────────────────────────────────────────────────
+function getFiltered() {
+  if (currentGroup === 0) return allData;
+  return allData.filter(s => s.grupo === currentGroup);
+}
+
+function getSorted(data) {
+  return [...data].sort((a,b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (typeof va === 'string') va = va.toLowerCase(), vb = vb.toLowerCase();
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return a.nombre.localeCompare(b.nombre);
+  });
+}
+
+function renderTable() {
+  const data   = getFiltered();
+  const sorted = getSorted(data);
+  const maxFallas = sorted.reduce((a,s)=>Math.max(a,s.fallas),1);
+  const body   = document.getElementById('ranking-body');
+  body.innerHTML = '';
+
+  // Actualizar label
+  const label = currentGroup === 0
+    ? `Todos los grupos (${sorted.length} estudiantes)`
+    : `Grupo ${currentGroup} (${sorted.length} estudiantes)`;
+  document.getElementById('current-view-label').textContent = label;
+  document.getElementById('ranking-title').textContent =
+    `Ranking — ${label} — mayor a menor inasistencia`;
+
+  sorted.forEach((s, idx) => {
+    const pos = idx + 1;
+    const row = document.createElement('tr');
+    if (pos === 1) row.className = 'rank-1';
+    else if (pos === 2) row.className = 'rank-2';
+    else if (pos === 3) row.className = 'rank-3';
+
+    const barW = maxFallas > 0 ? Math.round(s.fallas / maxFallas * 100) : 0;
+    const fCell = s.fallas > 0
+      ? `<div class="bar-wrap"><span class="cell-falla">${s.fallas}</span><div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div></div>`
+      : `<span class="cell-zero">0</span>`;
+
+    row.innerHTML = `
+      <td><span class="rank-num">${pos}</span></td>
+      <td><span class="student-name">${e(s.nombre)}</span></td>
+      <td><span class="group-chip">G${s.grupo}</span></td>
+      <td><span class="icfes-score">${s.icfes.toFixed(1)}</span></td>
+      <td>${fCell}</td>
+      <td>${s.fugas > 0 ? `<span class="cell-fuga">${s.fugas}</span>` : `<span class="cell-zero">0</span>`}</td>
+      <td>${s.retardos > 0 ? `<span class="cell-ret">${s.retardos}</span>` : `<span class="cell-zero">0</span>`}</td>
+      <td>${s.excusas > 0 ? `<span class="cell-exc">${s.excusas}</span>` : `<span class="cell-zero">0</span>`}</td>
+    `;
+    body.appendChild(row);
+  });
+}
+
+function e(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── NAVEGACIÓN POR GRUPO ──────────────────────────────────────────────────────
+document.getElementById('group-nav').addEventListener('click', ev => {
+  const btn = ev.target.closest('.btn-group');
+  if (!btn) return;
+  document.querySelectorAll('.btn-group').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentGroup = parseInt(btn.dataset.g);
+  renderTable();
+});
+
+// ── ORDENAMIENTO POR COLUMNA ──────────────────────────────────────────────────
+document.querySelector('#ranking-table thead').addEventListener('click', ev => {
+  const th = ev.target.closest('th[data-col]');
+  if (!th) return;
+  const col = th.dataset.col;
+  if (col === sortCol) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = col === 'nombre'; }
+  document.querySelectorAll('thead th').forEach(t => {
+    t.classList.remove('sorted');
+    const ic = t.querySelector('.sort-icon');
+    if (ic) ic.textContent = '⇅';
+  });
+  th.classList.add('sorted');
+  const ic = th.querySelector('.sort-icon');
+  if (ic) ic.textContent = sortAsc ? '▲' : '▼';
+  renderTable();
+});
+</script>
+</body>
+</html>

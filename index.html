@@ -1727,6 +1727,7 @@ const GRUPOS_SIM3_LISTAS = {
     {n:'PERTUZ ELIECER DE JESUS DE LEON',i:309.4,r:99},
     {n:'MARIA ANGELICA PASTRANA RODRIGUEZ',i:308.5,r:100},
     {n:'ANA SOFIA GONZALEZ CALAO',i:308.1,r:101},
+    {c:'EST-00001',n:'ISABEL CASTILLO RICARDO',i:294.7,r:47},
   ],
   4: [
     {n:'DIONI SOLA MARTINEZ',i:307.6,r:102},
@@ -1801,10 +1802,11 @@ const GRUPOS_SIM3_LISTAS = {
     {n:'SARA IBAÑEZ CAUSIL',i:213.5,r:169},
     {n:'JHONEIDER LONDOÑO VASQUEZ',i:210.2,r:170},
     {n:'DANNA CAROLINA SCHELEGUEL CORREA',i:192.0,r:171},
+    {c:'EST-00002',n:'EVERNEY CALLE SOTELO',i:248.8,r:99},
   ],
 };
 
-// Helpers
+// Helpers SIM 2
 function sim2GradoValue(n) { return `11-sim-g${n}`; }
 function sim2GradoLabel(n) { return `11° · Grupo ${n} — Sim. 2`; }
 function isSim2Grado(val)  { return /^11-sim-g[1-5]$/.test(val); }
@@ -1832,18 +1834,27 @@ function getGrupoSim2(nombre) {
   return _SIM2_LOOKUP[window._normSim2(nombre)] || null;
 }
 
-// Lookup rápido: nombre (cualquier formato) → grupo sim3
-const _SIM3_LOOKUP = {};
+// Helpers SIM 3
+function sim3GradoValue(n) { return `11-sim3-g${n}`; }
+function sim3GradoLabel(n) { return `11° · Grupo ${n} — Sim. 3`; }
+function isSim3Grado(val)  { return /^11-sim3-g[1-5]$/.test(val); }
+function sim3NumFromGrado(val) { return isSim3Grado(val) ? parseInt(val.slice(-1)) : null; }
+
+// Lookup rápido SIM3: por código (primario) y por nombre (fallback)
+const _SIM3_LOOKUP = {};    // nombre_norm → grupo
+const _SIM3_COD_LOOKUP = {}; // codigo → grupo
 (function() {
-  const _n = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
   for (const [g, lista] of Object.entries(GRUPOS_SIM3_LISTAS)) {
-    for (const st of lista) _SIM3_LOOKUP[_n(st.n)] = parseInt(g);
+    for (const st of lista) {
+      _SIM3_LOOKUP[window._normSim2(st.n)] = parseInt(g);
+      if (st.c) _SIM3_COD_LOOKUP[st.c] = parseInt(g);
+    }
   }
-  window._normSim3 = _n;
 })();
 
-function getGrupoSim3(nombre) {
-  return _SIM3_LOOKUP[(window._normSim3||window._normSim2)(nombre)] || null;
+function getGrupoSim3(nombre, codigo) {
+  if (codigo && _SIM3_COD_LOOKUP[codigo]) return _SIM3_COD_LOOKUP[codigo];
+  return _SIM3_LOOKUP[window._normSim2 ? window._normSim2(nombre) : (nombre||'').toUpperCase().trim()] || null;
 }
 
 // Busca el estudiante de Firebase más parecido a un nombre Sim2.
@@ -1864,13 +1875,12 @@ function _findEstudianteFirebase(nombre) {
   state.estudiantes.forEach(e => {
     const tokensB = _n(e.nombre).split(' ').filter(t => t.length > 2);
     const comunes = tokensB.filter(t => tokensA.has(t)).length;
-    // score: fracción de tokens que coinciden sobre el total único entre ambos
     const union = new Set([...tokensA, ...tokensB]).size;
     const score = comunes / union;
     if (score > bestScore) { bestScore = score; best = e; }
   });
-  // Umbral mínimo: al menos el 50% de tokens en común
   return bestScore >= 0.5 ? best : null;
+}
 }
 
 function getHoraActual() {
@@ -2202,6 +2212,26 @@ function poblarSelectEstudiantes() {
       });
       sel.appendChild(grp);
     }
+    // Agregar estudiantes Sim3 virtuales agrupados
+    const sim3Extra = [];
+    for (const [g, lista] of Object.entries(GRUPOS_SIM3_LISTAS)) {
+      for (const st of lista) {
+        if (!nombresFirebase.has(_norm(st.n))) {
+          sim3Extra.push({ nombre: st.n, grado: '11°', grupo: parseInt(g), codigo: st.c || null });
+        }
+      }
+    }
+    if (sim3Extra.length > 0) {
+      const grp3 = document.createElement('optgroup');
+      grp3.label = 'Grupos Sim. 3 — 11°';
+      sim3Extra.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.nombre;
+        opt.textContent = `${s.nombre} (11° · G${s.grupo} Sim.3)`;
+        grp3.appendChild(opt);
+      });
+      sel.appendChild(grp3);
+    }
   });
 }
 
@@ -2244,6 +2274,24 @@ function poblarSelectGrados() {
         o.textContent = sim2GradoLabel(n);
         sel.appendChild(o);
       });
+      // Grupos Sim. 3
+      const sim3GruposVisibles = [1,2,3,4,5].filter(n => GRUPOS_SIM3_LISTAS[n] && GRUPOS_SIM3_LISTAS[n].length > 0).filter(n => {
+        if (state.isAdmin || state.gradosPermitidos.length === 0) return true;
+        return state.gradosPermitidos.includes(sim3GradoValue(n)) ||
+               state.gradosPermitidos.some(g => g.startsWith('11'));
+      });
+      if (sim3GruposVisibles.length > 0) {
+        const sep3 = document.createElement('option');
+        sep3.disabled = true;
+        sep3.textContent = '── Grupos Sim. 3 ──';
+        sel.appendChild(sep3);
+        sim3GruposVisibles.forEach(n => {
+          const o = document.createElement('option');
+          o.value = sim3GradoValue(n);
+          o.textContent = sim3GradoLabel(n);
+          sel.appendChild(o);
+        });
+      }
     }
     if (['asistGrado','filtroGradoEst','actGrado','filtroGradoNotas'].includes(id) && sim3GruposVisibles.length > 0) {
       const sep3 = document.createElement('option');
@@ -2339,11 +2387,11 @@ window.filtrarEstudiantes = function() {
   const sim2Num  = sim2NumFromGrado(gradoVal);
   const sim3Num  = sim3NumFromGrado(gradoVal);
 
-  // Si se selecciona un grupo sim3, cargar estudiantes DIRECTO desde GRUPOS_SIM3_LISTAS
+  // Si se selecciona un grupo sim3, cargar DIRECTO desde GRUPOS_SIM3_LISTAS
   if (sim3Num !== null) {
     const lista = (GRUPOS_SIM3_LISTAS[sim3Num] || [])
       .filter(s => !buscar || s.n.toLowerCase().includes(buscar))
-      .map(s => ({ nombre: s.n, grado: '11°', grupo_sim3: sim3Num, icfes: s.i, rank: s.r }));
+      .map(s => ({ nombre: s.n, grado: '11°', grupo_sim3: sim3Num, icfes: s.i, rank: s.r, codigo: s.c || null }));
     renderPlanilla(lista);
     return;
   }
@@ -2378,7 +2426,7 @@ function renderPlanilla(estudiantes) {
     const tdNombre = document.createElement('td');
     const tieneNov = state.novedadesActivas.some(n=>n.estudiante===est.nombre);
     const g2 = est.grupo_sim2 || getGrupoSim2(est.nombre);
-    const g3 = est.grupo_sim3 || getGrupoSim3(est.nombre);
+    const g3 = est.grupo_sim3 || getGrupoSim3(est.nombre, est.codigo);
     const g2badge = g2 ? `<span class="sim2-badge">S2G${g2}</span>` : '';
     const g3badge = g3 ? `<span class="sim3-badge">S3G${g3}</span>` : '';
     tdNombre.innerHTML=`<div class="est-nombre"><span class="est-nombre-link" onclick="verRecordEstudiante('${escapeHtml(est.nombre).replace(/'/g,"&#39;")}')">${escapeHtml(est.nombre)}</span>${g2badge}${g3badge}</div>
@@ -3706,16 +3754,20 @@ window.abrirGradosDocente = function(uid, nombre, gradosActuales) {
         ${sim2GradoLabel(n)} <span style="color:var(--text-2);font-size:.78rem">(${count} est.)</span>
       </label>`;
     });
-    html += `<div style="margin:.6rem 0 .3rem;font-size:.75rem;font-weight:700;color:#1b5e20;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);padding-top:.5rem">Grupos Simulacro 3 — Grado 11°</div>`;
-    [1,2,3,4,5].forEach(n => {
-      const val3 = sim3GradoValue(n);
-      const count3 = state.estudiantes.filter(e => getGrupoSim3(e.nombre) === n).length;
-      html += `<label style="display:flex;align-items:center;gap:.5rem;padding:.35rem .1rem;font-size:.88rem;cursor:pointer;color:var(--text-1)">
-        <input type="checkbox" class="grado-check" value="${val3}" ${gradosActuales.includes(val3)?'checked':''} style="accent-color:#1b5e20;width:15px;height:15px">
-        <span style="background:#1b5e20;color:#fff;font-size:.6rem;padding:1px 5px;border-radius:3px;font-weight:700">G${n}</span>
-        ${sim3GradoLabel(n)} <span style="color:var(--text-2);font-size:.78rem">(${count3} est.)</span>
-      </label>`;
-    });
+    // Grupos Sim. 3
+    const sim3Grupos = [1,2,3,4,5].filter(n => GRUPOS_SIM3_LISTAS[n] && GRUPOS_SIM3_LISTAS[n].length > 0);
+    if (sim3Grupos.length > 0) {
+      html += `<div style="margin:.6rem 0 .3rem;font-size:.75rem;font-weight:700;color:#1b5e20;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);padding-top:.5rem">Grupos Simulacro 3 — Grado 11°</div>`;
+      sim3Grupos.forEach(n => {
+        const val = sim3GradoValue(n);
+        const count = (GRUPOS_SIM3_LISTAS[n] || []).length;
+        html += `<label style="display:flex;align-items:center;gap:.5rem;padding:.35rem .1rem;font-size:.88rem;cursor:pointer;color:var(--text-1)">
+          <input type="checkbox" class="grado-check" value="${val}" ${gradosActuales.includes(val)?'checked':''} style="accent-color:#1b5e20;width:15px;height:15px">
+          <span style="background:#1b5e20;color:#fff;font-size:.6rem;padding:1px 5px;border-radius:3px;font-weight:700">G${n}</span>
+          ${sim3GradoLabel(n)} <span style="color:var(--text-2);font-size:.78rem">(${count} est.)</span>
+        </label>`;
+      });
+    }
   }
 
   cont.innerHTML = html;

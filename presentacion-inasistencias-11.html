@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inasistencias 11° — Presentación CESUM 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117;--card:#161b22;--input:#1c2330;--border:#30363d;
+  --blue:#2563eb;--blue-lt:#3b82f6;--blue-glow:#2563eb33;
+  --green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --yellow:#eab308;--purple:#a855f7;
+  --text:#f0f6fc;--text-2:#8b949e;--text-3:#484f58;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text)}
+
+#progress{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--red),var(--orange));width:0;transition:width .4s ease;z-index:1000}
+#counter{position:fixed;top:18px;right:22px;font-family:'JetBrains Mono',monospace;font-size:.9rem;color:var(--text-3);z-index:100;letter-spacing:.05em}
+.nav-arrow{position:fixed;bottom:28px;z-index:100;background:var(--card);border:1px solid var(--border);color:var(--text-2);font-size:1.4rem;width:52px;height:52px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;user-select:none}
+.nav-arrow:hover{background:var(--red);border-color:var(--red);color:#fff}
+#prev{left:calc(50% - 62px)}
+#next{left:calc(50% + 10px)}
+#dots{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:99}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--text-3);transition:all .3s;cursor:pointer}
+.dot.active{background:var(--red);width:20px;border-radius:3px}
+
+#deck{height:100vh;width:100vw;overflow:hidden;position:relative}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem 5rem;opacity:0;transform:translateX(60px);transition:all .5s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.slide.active{opacity:1;transform:translateX(0);pointer-events:all}
+.slide.exit{opacity:0;transform:translateX(-60px)}
+
+.slide-inner{width:100%;max-width:980px}
+.tag{font-size:.88rem;letter-spacing:3px;text-transform:uppercase;color:var(--red);font-weight:600;margin-bottom:1rem}
+.big-title{font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;line-height:1.15;margin-bottom:1rem}
+.big-title .hl{color:var(--red)}
+.big-title .hl2{color:var(--orange)}
+.subtitle{font-size:clamp(1rem,2vw,1.3rem);color:var(--text-2);line-height:1.7;max-width:740px}
+
+.grid{display:grid;gap:1rem}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:700px){.g2,.g3,.g5{grid-template-columns:1fr 1fr}}
+@media(max-width:450px){.g2,.g3,.g5{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem}
+.card h3{font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:.4rem}
+.card p{font-size:.9rem;color:var(--text-2);line-height:1.6}
+.card.red{border-color:var(--red);background:linear-gradient(135deg,#1f0d0d,var(--card))}
+.card.orange{border-color:var(--orange);background:linear-gradient(135deg,#1f1208,var(--card))}
+.card.green{border-color:var(--green);background:linear-gradient(135deg,#0a1f0e,var(--card))}
+.card.blue{border-color:var(--blue);background:linear-gradient(135deg,#0d1632,var(--card))}
+.card.yellow{border-color:var(--yellow)}
+
+.stat-big{text-align:center;padding:1.5rem 1rem}
+.stat-big .num{font-size:clamp(2.2rem,5vw,3.2rem);font-weight:800;line-height:1}
+.stat-big .lbl{font-size:.78rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;margin-top:.4rem}
+.stat-big.red .num{color:var(--red)}
+.stat-big.orange .num{color:var(--orange)}
+.stat-big.yellow .num{color:var(--yellow)}
+.stat-big.blue .num{color:var(--blue-lt)}
+.stat-big.green .num{color:var(--green)}
+
+/* ── RANKING TABLE ──── */
+.rank-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.rank-table th{background:#1c2330;padding:.5rem .7rem;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)}
+.rank-table td{padding:.45rem .7rem;border-bottom:1px solid var(--border)}
+.rank-table tr:last-child td{border-bottom:none}
+.rank-table tr:hover td{background:#1c2330}
+.medal{font-size:1.1rem}
+.g-chip{display:inline-flex;align-items:center;background:#1c2330;border:1px solid var(--border);border-radius:20px;padding:.1rem .55rem;font-size:.72rem;font-weight:700;color:var(--text-2);white-space:nowrap}
+.g1-chip{border-color:#22c55e;color:#22c55e}
+.g2-chip{border-color:#3b82f6;color:#3b82f6}
+.g3-chip{border-color:#a855f7;color:#a855f7}
+.g4-chip{border-color:#f97316;color:#f97316}
+.g5-chip{border-color:#ef4444;color:#ef4444}
+.bar-wrap{display:flex;align-items:center;gap:.4rem}
+.bar-bg{flex:1;background:#1c2330;border-radius:3px;height:5px;overflow:hidden;max-width:80px}
+.bar-fill{height:100%;border-radius:3px}
+
+/* ── GROUP CARDS ──── */
+.gcard{border-radius:14px;border:1px solid var(--border);padding:1rem 1.2rem;background:var(--card)}
+.gcard .g-label{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:.6rem}
+.gcard .g-num{font-size:1.8rem;font-weight:800;line-height:1}
+.gcard .g-sub{font-size:.78rem;color:var(--text-2);margin-top:.3rem}
+.gcard.g1{border-color:#22c55e} .gcard.g1 .g-num{color:#22c55e} .gcard.g1 .g-label{color:#22c55e}
+.gcard.g2{border-color:#3b82f6} .gcard.g2 .g-num{color:#3b82f6} .gcard.g2 .g-label{color:#3b82f6}
+.gcard.g3{border-color:#a855f7} .gcard.g3 .g-num{color:#a855f7} .gcard.g3 .g-label{color:#a855f7}
+.gcard.g4{border-color:#f97316} .gcard.g4 .g-num{color:#f97316} .gcard.g4 .g-label{color:#f97316}
+.gcard.g5{border-color:#ef4444} .gcard.g5 .g-num{color:#ef4444} .gcard.g5 .g-label{color:#ef4444}
+
+.pill{display:inline-block;padding:.2rem .7rem;border-radius:20px;font-size:.75rem;font-weight:700}
+.pill-red{background:#fee2e2;color:#991b1b}
+.pill-green{background:#dcfce7;color:#14532d}
+.pill-orange{background:#ffedd5;color:#7c2d12}
+
+.section-label{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin-bottom:.8rem}
+
+/* ── AUTH ──── */
+#auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:min(380px,92vw)}
+.auth-card h2{font-size:1.3rem;font-weight:700;margin-bottom:.3rem}
+.auth-card p{font-size:.85rem;color:var(--text-2);margin-bottom:1.4rem}
+.fg{margin-bottom:.9rem}
+.fg label{display:block;font-size:.75rem;color:var(--text-2);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em}
+.fg input{width:100%;background:#1c2330;border:1px solid var(--border);border-radius:8px;padding:.55rem .85rem;color:var(--text);font-size:.95rem;outline:none;transition:border-color .2s;font-family:inherit}
+.fg input:focus{border-color:var(--red)}
+.btn-auth{width:100%;background:var(--red);color:#fff;border:none;border-radius:8px;padding:.7rem;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .2s;font-family:inherit}
+.btn-auth:hover{background:#dc2626}
+.auth-err{color:var(--red);font-size:.82rem;margin-top:.7rem;text-align:center;min-height:1.1em}
+
+#loading{display:none;position:fixed;inset:0;background:var(--bg)cc;z-index:998;align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+.spinner{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div style="font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-3);margin-bottom:1rem">CESUM · Sistema de Asistencia</div>
+    <h2>Presentación Inasistencias</h2>
+    <p>Grado 11° — Ambos Simulacros ICFES · 2026</p>
+    <div class="fg"><label>Correo</label><input type="email" id="email" placeholder="usuario@cesum.edu.co" autocomplete="username"></div>
+    <div class="fg"><label>Contraseña</label><input type="password" id="pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-auth" id="btn-login">Ingresar</button>
+    <div class="auth-err" id="auth-err"></div>
+  </div>
+</div>
+
+<div id="loading"><div class="spinner"></div><span style="color:var(--text-2);font-size:.9rem">Cargando datos…</span></div>
+
+<div id="progress"></div>
+<div id="counter"></div>
+<button class="nav-arrow" id="prev">&#8592;</button>
+<button class="nav-arrow" id="next">&#8594;</button>
+<div id="dots"></div>
+<div id="deck"></div>
+
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+import { getFirestore, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAbfE_6TywiN7_BzfZkLP7aBs2ZNl8HKwg",
+  authDomain: "cesum-2026.firebaseapp.com",
+  projectId: "cesum-2026",
+  storageBucket: "cesum-2026.firebasestorage.app",
+  messagingSenderId: "921246749192",
+  appId: "1:921246749192:web:9494e8646b21ee82d3b7bd"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const GRUPOS = {
+  1:[
+    {n:'JUSTIN TIRADO GARAY',i:378.1,r:1},{n:'YEHIDER VILLORINA',i:365.1,r:2},
+    {n:'ANA SOFIA FERNANDEZ MADRID',i:362.2,r:3},{n:'STEVEN ANDRES HOYOS NAVARRO',i:361.5,r:4},
+    {n:'MICHELL ANDREA PEREZ CHOLES',i:358.1,r:5},{n:'JUAN PABLO PATERNINA HINCAPIE',i:357.4,r:6},
+    {n:'SAMUEL VARGAS VIDES',i:357.4,r:7},{n:'IVAN DAVID MARCELO SERPA',i:356.9,r:8},
+    {n:'DAYLIS PEREZ PADILLA',i:351.3,r:9},{n:'SEBASTIAN RUIZ MONTERROZA',i:351.0,r:10},
+    {n:'ANGELICA MADRID SIERRA',i:349.3,r:11},{n:'SAMUEL ALEAN ZAPATA',i:341.3,r:12},
+    {n:'VALENTINA AGUAS ATENCIA',i:340.0,r:13},{n:'JULIANA CASTAÑEDA MEJIA',i:335.9,r:14},
+    {n:'JULIANA BANQUET MENDOZA',i:334.9,r:15},{n:'YERMAN YAIR RUIZ GRANADOS',i:326.6,r:16},
+    {n:'DIEGO DAVID DUQUE HERRERA',i:323.4,r:17},{n:'SANTIAGO CEBALLOS ZABALA',i:320.7,r:18},
+    {n:'SAMAHARA FLOREZ OVIEDO',i:320.1,r:19},{n:'JULIANA ARRIETA GOMEZ',i:319.8,r:20},
+    {n:'YOJAN DAVID BENITEZ BARRIOS',i:319.3,r:21},{n:'MELANI ALEJANDRA MALDONADO VILLALBA',i:319.3,r:22},
+    {n:'KEINER ACOSTA BUENO',i:318.3,r:23},{n:'DAILY ALEJANDRA ARGUMEDO SALAS',i:317.8,r:24},
+    {n:'SYARA SOFIA DIAZ HERNANDEZ',i:313.6,r:25},{n:'NATALIA SANCHEZ MONTERROZA',i:312.4,r:26},
+    {n:'KEVIN DAVID MEJIA HEREDIA',i:309.9,r:27},{n:'KAROL DAYANA ESCOBAR VARGAS',i:308.6,r:28},
+    {n:'MARIA JOSE VILLEGAS HERRERA',i:306.3,r:29},{n:'ESTEBAN DAVID CORONADO PALENCIA',i:305.5,r:30}
+  ],
+  2:[
+    {n:'VALENTINA ESTREMOR PEREZ',i:304.5,r:31},{n:'JUAN ANDRES CARVAJAL DIAZ',i:304.3,r:32},
+    {n:'MARIA DE LOS ANGELES PASOS SOTELO',i:304.3,r:33},{n:'SARAY CAMILA PIMIENTA SOTO',i:304.0,r:34},
+    {n:'ARIATHNA MESTRA ARDILA',i:302.7,r:35},{n:'DIEGO ARMANDO CAMPO SALAZAR',i:301.8,r:36},
+    {n:'LAUREN VANESSA ESTRADA GARCES',i:300.7,r:37},{n:'SHARON LISHELL RODRIGUEZ OSORIO',i:300.0,r:38},
+    {n:'STIVEN DARIO CALI ESTRADA',i:299.0,r:39},{n:'JULIANA CONTRERAS GARCIA',i:298.7,r:40},
+    {n:'PAMELA DENISE RUIZ VILLADIEGO',i:298.1,r:41},{n:'LUIS FERNANDO TEJADA GUERRERO',i:297.5,r:42},
+    {n:'KEVIN DAVID CARRASCO MONTIEL',i:296.7,r:43},{n:'ANGELICA MARTINEZ BALBERA',i:295.8,r:44},
+    {n:'MADELINE CAMPO RIVERA',i:295.4,r:45},{n:'JULIANA ALVARADO MARTINEZ',i:295.1,r:46},
+    {n:'ISABEL CASTILLO RICARDO',i:294.7,r:47},
+    {n:'CARLOS ENRIQUE MENDOZA FERIA',i:294.3,r:48},{n:'JUAN ESTEBAN FLOREZ MARTINEZ',i:294.0,r:49},
+    {n:'JAIDER DAVID MEZA AVILES',i:292.4,r:50},{n:'JUAN CAMILO RICARDO VEGA',i:292.1,r:51},
+    {n:'YESID ANDRES ZEA CAMAÑO',i:290.9,r:52},{n:'ELISEO LUNA PEREZ',i:290.5,r:53},
+    {n:'MARISOL MARTINEZ SALAS',i:289.8,r:54},{n:'SARA MARCELA TORREZ MENDOZA',i:289.8,r:55},
+    {n:'YALENA SOFIA SALAZAR OYOLA',i:289.4,r:56},{n:'LUISA FERNANDA BENITEZ BALTAZAR',i:289.3,r:57},
+    {n:'JUAN FELIPE MERCADO PEREZ',i:288.4,r:58},{n:'LIZ EMILY ZUÑIGA OSORIO',i:287.6,r:59},
+    {n:'DIONI SOLA MARTINEZ',i:286.6,r:60},{n:'ALEJANDRO ZARZA HOYOS',i:286.3,r:61},
+    {n:'ANDY PAOLA MANTILLA ESPITIA',i:284.7,r:62},{n:'DIDIER ESNEIDER CASTILLO CAMARGO',i:281.9,r:63},
+    {n:'PATRICIA DEL CARMEN RODRIGUEZ VERTEL',i:281.4,r:64},{n:'ANDREA LISETH CAMARGO URANGO',i:280.7,r:65},
+    {n:'JUNIOR ENRIQUE MERCADO ROHENES',i:278.5,r:66},{n:'YENNIFER CASTILLO SUAREZ',i:277.1,r:67}
+  ],
+  3:[
+    {n:'ISABEL CASTILLO RICARDO',i:294.7,r:47},{n:'VICTOR ANDRES ESPITIA MORALES',i:275.2,r:68},
+    {n:'MELANI PEÑATES GARAVITO',i:274.8,r:69},{n:'VALENTINA ARRIETA SIERRA',i:272.4,r:70},
+    {n:'TALIANA BERRIO MENDOZA',i:271.6,r:71},{n:'ANGIE PAOLA ALARCON MENDEZ',i:271.4,r:72},
+    {n:'JOSE ALBEIRO CALLE MORENO',i:271.1,r:73},{n:'MARIA ALEJANDRA RAMOS CALLE',i:271.1,r:74},
+    {n:'STEFANIA GUERRA VILLA',i:270.9,r:75},{n:'JULIANA PEREZ VERGARA',i:270.7,r:76},
+    {n:'OSSA POLO ALEX JOSE DE LA',i:270.5,r:77},{n:'ALYS PATRICIA HERNANDEZ PASTRANA',i:269.8,r:78},
+    {n:'ANA SOFIA GONZALEZ CALAO',i:268.9,r:79},{n:'VALERI CORREA DOMINGUEZ',i:268.7,r:80},
+    {n:'NICOLAS ELIAS AGAMEZ ZABALA',i:266.4,r:81},{n:'DANILSA MERCADO TIRADO',i:265.7,r:82},
+    {n:'CAMILO ANDRES MURILLO BUELVAS',i:265.3,r:83},{n:'JESUS ORLANDO FINO RICARDO',i:265.2,r:84},
+    {n:'ANDRES FELIPE MARTINEZ PACHECO',i:264.2,r:85},{n:'ELIZABETH PEREIRA LOPEZ',i:263.7,r:86},
+    {n:'NAIDERLIN ESPITIA CASTRO',i:263.4,r:87},{n:'MARIA ANGEL JULIO HERNANDEZ',i:261.9,r:88},
+    {n:'ISABELLA FLOREZ CANO',i:259.9,r:89},{n:'MARIA JOSE PEREZ CANTERO',i:259.5,r:90},
+    {n:'CRISTIANO RONALDO ROMERO ZUÑIGA',i:258.7,r:91},{n:'SHERYL ANDREA FUENTES MENDEZ',i:257.6,r:92},
+    {n:'SOFIA MARTINEZ HERNANDEZ',i:257.5,r:93},{n:'YADY ISABEL RAMIREZ MORALES',i:255.4,r:94},
+    {n:'ANYS ANDREA GUTIERREZ ARRIETA',i:254.0,r:95},{n:'KEILLY MICHELLE HERNANDEZ HOYOS',i:253.7,r:96},
+    {n:'HITA FERNANDA REYES CORDOBA',i:253.3,r:97},{n:'JULIANA ANDREA PASTRANA ROMERO',i:251.3,r:98},
+    {n:'EVERNEY CALLE SOTELO',i:248.8,r:99},
+    {n:'YISEL KAROLINA RAMOS BELEÑO',i:247.5,r:100},{n:'MARIA ANGELICA PASTRANA RODRIGUEZ',i:247.4,r:101},
+    {n:'ENAN JOAQUIN TUIRAN MORENO',i:247.3,r:102},{n:'SKARLIT YHIRET HERRERA GIL',i:247.2,r:103}
+  ],
+  4:[
+    {n:'ELEMI HERNANDEZ ALVAREZ',i:245.7,r:104},{n:'JHOJAN STIVEN ALZATE CARMONA',i:245.4,r:105},
+    {n:'VICTOR MANUEL TEJADA ZUÑIGA',i:243.7,r:106},{n:'NICOLAS ELIAS CANOLE VASQUEZ',i:241.9,r:107},
+    {n:'NICOL STEFANY BAQUERO DIAZ',i:239.9,r:108},{n:'DIEGO PADILLA MORA',i:239.6,r:109},
+    {n:'MATIAS ANDRES BARRIOS SOTELO',i:239.0,r:110},{n:'YOINER ARRIETA JARAMILLO',i:238.8,r:111},
+    {n:'MARIA ANGEL HERNANDEZ HOYOS',i:238.5,r:112},{n:'ISABELLA VALENTINA HERRERA CAMAÑO',i:236.1,r:113},
+    {n:'ANA SOFIA VERGARA MARTINEZ',i:234.6,r:114},{n:'JHONEIDER LONDOÑO VASQUEZ',i:231.8,r:115},
+    {n:'MARIANGEL SALGADO MAZO',i:229.9,r:116},{n:'ORNELLA HEREDIA MORENO',i:229.5,r:117},
+    {n:'YURIS PAOLA RODRIGUEZ FLOREZ',i:228.9,r:118},{n:'ESTHER MARIA LONDOÑO BARRIOS',i:228.2,r:119},
+    {n:'CARLOS DANIEL MARCHENA BARRERO',i:225.3,r:120},{n:'GABRIELA HERNANDEZ DIAZ',i:224.3,r:121},
+    {n:'KELLY JOHANA MONTERROZA CASARRUBIA',i:224.2,r:122},{n:'KATALINA PEREZ MORENO',i:223.1,r:123},
+    {n:'JAIVER VILLADIEGO JIMENEZ',i:223.1,r:124},{n:'LUISA FERNANDA COLON SERRANO',i:220.7,r:125},
+    {n:'STEFANY RUIZ MARTINEZ',i:218.2,r:126},{n:'GABRIELA CORONADO OJEDA',i:218.1,r:127},
+    {n:'TALIANA CORREA OVIEDO',i:218.1,r:128},{n:'KELLY JOHANA ROMERO CASARRUBIA',i:217.8,r:129},
+    {n:'DAVID MENDOZA HOYOS',i:216.4,r:130},{n:'SAMARA ARIZA ECHAVARRIA',i:216.0,r:131},
+    {n:'ENIS YULISA HERNANDEZ PEÑATES',i:214.9,r:132},{n:'JESUS DAVID VERGARA OCAMPO',i:214.9,r:133},
+    {n:'TALIANA CARDENAS MANSILLA',i:214.5,r:134},{n:'JIMENA ANDREA HOLGUIN CARDEÑO',i:213.1,r:135},
+    {n:'JUAN DAVID MESTRA AVILA',i:212.8,r:136},{n:'MARIA JOSE GARCIA GUERRA',i:211.3,r:137},
+    {n:'SAMUEL DAVID FABRA VAZQUEZ',i:210.8,r:138},{n:'YONIER ANDRES SALA SOLIS',i:210.2,r:139}
+  ],
+  5:[
+    {n:'EVERNEY CALLE SOTELO',i:248.8,r:99},{n:'LORENA LORETH MONTES CORDERO',i:209.9,r:140},
+    {n:'CAMILA ANDREA SOTELO TORRES',i:209.6,r:141},{n:'MONICA PAOLA MONTALVO SOTO',i:208.2,r:142},
+    {n:'PERTUZ ELIECER DE JESUS DE LEON',i:206.2,r:143},{n:'GENESIS ROMERO ACOSTA',i:205.7,r:144},
+    {n:'KATY MILENA SALGADO VERONA',i:204.6,r:145},{n:'MICHELL ANDREA MESA RIVERA',i:204.4,r:146},
+    {n:'EDITH NATALIA MADERA PEREIRA',i:204.2,r:147},{n:'ANDRES DIAZ CASTRO',i:203.3,r:148},
+    {n:'HOYOS LUZ ELENA PEREZ DE',i:202.8,r:149},{n:'JUAN CAMILO GAMARRA LOPEZ',i:200.5,r:150},
+    {n:'FREDY JOSE RODIÑO VALLEJO',i:200.2,r:151},{n:'BIANA LICETH CASTRO RIVERA',i:200.1,r:152},
+    {n:'LEONEL ANDRES RIVERA SILVA',i:197.0,r:153},{n:'YASMILA MENDEZ HERNANDEZ',i:191.4,r:154},
+    {n:'HECTOR LUIS FUENTES MENDOZA',i:191.3,r:155},{n:'DIDIEN MATIAS ROMERO SIERRA',i:186.4,r:156},
+    {n:'KEVIN ANDRES RUIZ PEREZ',i:185.5,r:157},{n:'NIKOL MICHELL AVILA GARCIA',i:180.8,r:158},
+    {n:'MARIA CAROLINA GOMEZ MUÑOZ',i:179.9,r:159},{n:'RONALD SAMPAYO ALVIS',i:178.8,r:160},
+    {n:'SAMUEL ALEXANDER RODRIGUEZ VELASQUEZ',i:178.5,r:161},{n:'JOHN ESTEBAN FLOREZ LONDOÑO',i:178.4,r:162},
+    {n:'SARA IBAÑEZ CAUSIL',i:177.3,r:163},{n:'JUAN DAVID JULIO VILLORINA',i:176.7,r:164},
+    {n:'JHON FREED QUINTERO SUAREZ',i:175.8,r:165},{n:'LUIS EDUARDO SALGADO QUINTERO',i:175.3,r:166},
+    {n:'JOSE JULIAN PATERNINA ARCIA',i:170.8,r:167},{n:'MARIANA FLOREZ HERNANDEZ',i:168.1,r:168},
+    {n:'KEINER GONZALEZ RAMOS',i:167.2,r:169},{n:'DANNA CAROLINA SCHELEGUEL CORREA',i:166.0,r:170},
+    {n:'CRISTIAN DAVID MONTALVO PACHECO',i:151.1,r:171},{n:'TAILIN MARIA GOMEZ HOYOS',i:143.5,r:172},
+    {n:'YAIRA ANDREA TORRES CADRASCO',i:135.4,r:173},{n:'BRESLY QUINTERO ROSARIO',i:133.5,r:174},
+    {n:'JOSE DANIEL ORTEGA JIMENEZ',i:130.8,r:175}
+  ]
+};
+
+function norm(s){
+  return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+}
+
+const G_COLORS = {1:'#22c55e',2:'#3b82f6',3:'#a855f7',4:'#f97316',5:'#ef4444'};
+const G_LABELS = {1:'g1-chip',2:'g2-chip',3:'g3-chip',4:'g4-chip',5:'g5-chip'};
+
+let allData = [];
+let slides = [], current = 0;
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+document.getElementById('btn-login').addEventListener('click', doLogin);
+document.getElementById('pass').addEventListener('keydown', e=>{if(e.key==='Enter')doLogin();});
+
+async function doLogin(){
+  const email=document.getElementById('email').value.trim();
+  const pass=document.getElementById('pass').value;
+  const err=document.getElementById('auth-err');
+  err.textContent='';
+  if(!email||!pass){err.textContent='Completa los campos.';return;}
+  document.getElementById('btn-login').disabled=true;
+  document.getElementById('btn-login').textContent='Ingresando…';
+  try{await signInWithEmailAndPassword(auth,email,pass);}
+  catch(e){
+    err.textContent='Credenciales incorrectas.';
+    document.getElementById('btn-login').disabled=false;
+    document.getElementById('btn-login').textContent='Ingresar';
+  }
+}
+
+onAuthStateChanged(auth, user=>{
+  if(user){document.getElementById('auth-overlay').style.display='none';loadData();}
+});
+
+// ── CARGA ─────────────────────────────────────────────────────────────────────
+async function loadData(){
+  document.getElementById('loading').style.display='flex';
+  try{
+    const snap=await getDocs(collection(db,'asistencia'));
+    const map={};
+    for(const [g,lista] of Object.entries(GRUPOS)){
+      for(const st of lista){
+        map[norm(st.n)]={nombre:st.n,grupo:parseInt(g),icfes:st.i,rank:st.r,
+          fallasDias:new Set(),fugasDias:new Set(),retardos:0,excusas:0};
+      }
+    }
+    snap.forEach(doc=>{
+      const data=doc.data(), fecha=data.fecha||doc.id;
+      (data.registros||[]).forEach(r=>{
+        const k=norm(r.estudiante);
+        if(!map[k])return;
+        const s=map[k];
+        if(r.estado==='Falla')  s.fallasDias.add(fecha);
+        if(r.estado==='Fuga')   s.fugasDias.add(fecha);
+        if(r.estado==='Retardo')s.retardos++;
+        if(r.estado==='Excusa') s.excusas++;
+      });
+    });
+    allData=Object.values(map).map(s=>({
+      nombre:s.nombre,grupo:s.grupo,icfes:s.icfes,rank:s.rank,
+      fallas:s.fallasDias.size,fugas:s.fugasDias.size,
+      retardos:s.retardos,excusas:s.excusas
+    }));
+    document.getElementById('loading').style.display='none';
+    buildSlides();
+    initDeck();
+  }catch(err){
+    document.getElementById('loading').innerHTML=
+      '<span style="color:var(--red)">Error: '+err.message+'</span>';
+  }
+}
+
+// ── CONSTRUCCIÓN DE SLIDES ────────────────────────────────────────────────────
+function buildSlides(){
+  const deck=document.getElementById('deck');
+  deck.innerHTML='';
+  slides=[];
+
+  const totalFallas  =allData.reduce((a,s)=>a+s.fallas,0);
+  const totalFugas   =allData.reduce((a,s)=>a+s.fugas,0);
+  const totalRetardos=allData.reduce((a,s)=>a+s.retardos,0);
+  const totalExcusas =allData.reduce((a,s)=>a+s.excusas,0);
+  const sinInasist   =allData.filter(s=>s.fallas===0&&s.fugas===0).length;
+  const conFallas    =allData.filter(s=>s.fallas>0).length;
+  const maxFalla     =allData.reduce((a,s)=>Math.max(a,s.fallas),0);
+  const sorted       =[...allData].sort((a,b)=>b.fallas-a.fallas||b.fugas-a.fugas||a.nombre.localeCompare(b.nombre));
+  const hoy          =new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'});
+
+  // Estadísticas por grupo
+  const gStats={};
+  for(let g=1;g<=5;g++){
+    const est=allData.filter(s=>s.grupo===g);
+    gStats[g]={
+      total:est.length,
+      fallas:est.reduce((a,s)=>a+s.fallas,0),
+      fugas:est.reduce((a,s)=>a+s.fugas,0),
+      sinFallas:est.filter(s=>s.fallas===0).length,
+      max:est.reduce((a,s)=>Math.max(a,s.fallas),0),
+      prom:(est.length?est.reduce((a,s)=>a+s.fallas,0)/est.length:0).toFixed(1)
+    };
+  }
+
+  // ── SLIDE 1: PORTADA ──────────────────────────────────────────────────────
+  addSlide(deck,`
+    <div class="slide-inner" style="text-align:center">
+      <div class="tag">Concentración Educativa del Sur de Montelibano</div>
+      <div class="big-title">Reporte de<br><span class="hl">Inasistencias</span><br><span class="hl2">Grado Undécimo</span></div>
+      <div class="subtitle" style="margin:0 auto">
+        Análisis integral de asistencia · Simulacro ICFES 2026<br>
+        <span style="font-size:.9em;color:var(--text-3)">📅 ${hoy} · 175 estudiantes · 5 grupos</span>
+      </div>
+    </div>
+  `);
+
+  // ── SLIDE 2: RESUMEN GLOBAL ────────────────────────────────────────────────
+  addSlide(deck,`
+    <div class="slide-inner">
+      <div class="tag">Panorama general</div>
+      <div class="big-title" style="font-size:clamp(1.6rem,3.5vw,2.4rem);margin-bottom:1.5rem">Estadísticas Globales — 175 Estudiantes</div>
+      <div class="grid g3" style="margin-bottom:1rem">
+        <div class="card stat-big red"><div class="num">${totalFallas}</div><div class="lbl">Total días falla</div></div>
+        <div class="card stat-big orange"><div class="num">${totalFugas}</div><div class="lbl">Total fugas</div></div>
+        <div class="card stat-big yellow"><div class="num">${totalRetardos}</div><div class="lbl">Total retardos</div></div>
+      </div>
+      <div class="grid g3">
+        <div class="card stat-big blue"><div class="num">${totalExcusas}</div><div class="lbl">Excusas registradas</div></div>
+        <div class="card stat-big green"><div class="num">${sinInasist}</div><div class="lbl">Sin inasistencias</div></div>
+        <div class="card stat-big red"><div class="num">${conFallas}</div><div class="lbl">Con al menos 1 falla</div></div>
+      </div>
+    </div>
+  `);
+
+  // ── SLIDE 3: COMPARATIVA POR GRUPO ────────────────────────────────────────
+  const gCardsHTML = [1,2,3,4,5].map(g=>`
+    <div class="gcard g${g}">
+      <div class="g-label">Grupo ${g} · ${gStats[g].total} est.</div>
+      <div class="g-num">${gStats[g].fallas}</div>
+      <div class="g-sub">días falla · prom ${gStats[g].prom}/est.</div>
+      <div style="margin-top:.6rem;font-size:.78rem;color:var(--text-2)">
+        Fugas: <strong style="color:var(--orange)">${gStats[g].fugas}</strong> &nbsp;|&nbsp;
+        Sin fallas: <strong style="color:var(--green)">${gStats[g].sinFallas}</strong>
+      </div>
+    </div>
+  `).join('');
+  addSlide(deck,`
+    <div class="slide-inner">
+      <div class="tag">Análisis por grupo</div>
+      <div class="big-title" style="font-size:clamp(1.5rem,3vw,2.1rem);margin-bottom:1.2rem">Comparativa entre Grupos</div>
+      <div class="grid g5">${gCardsHTML}</div>
+    </div>
+  `);
+
+  // ── SLIDE 4: TOP 10 CON MÁS FALLAS ────────────────────────────────────────
+  const top10 = sorted.slice(0,10);
+  const top10Rows = top10.map((s,i)=>{
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+    const barW  = maxFalla>0?Math.round(s.fallas/maxFalla*100):0;
+    return `<tr>
+      <td><span class="medal">${medal}</span></td>
+      <td style="font-weight:600">${s.nombre}</td>
+      <td><span class="g-chip ${G_LABELS[s.grupo]}">G${s.grupo}</span></td>
+      <td>
+        <div class="bar-wrap">
+          <span style="color:var(--red);font-weight:700;min-width:1.5rem">${s.fallas}</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:var(--red)"></div></div>
+        </div>
+      </td>
+      <td style="color:var(--orange)">${s.fugas||'–'}</td>
+    </tr>`;
+  }).join('');
+  addSlide(deck,`
+    <div class="slide-inner">
+      <div class="tag">Ranking</div>
+      <div class="big-title" style="font-size:clamp(1.5rem,3vw,2.1rem);margin-bottom:1.2rem">Top 10 — Mayor Inasistencia</div>
+      <div style="overflow:auto;border-radius:12px;border:1px solid var(--border)">
+        <table class="rank-table">
+          <thead><tr><th></th><th>Estudiante</th><th>Grupo</th><th>Días Falla</th><th>Fugas</th></tr></thead>
+          <tbody>${top10Rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `);
+
+  // ── SLIDE 5: TOP 11–25 ─────────────────────────────────────────────────────
+  const next15 = sorted.slice(10,25);
+  const next15Rows = next15.map((s,i)=>{
+    const barW=maxFalla>0?Math.round(s.fallas/maxFalla*100):0;
+    return `<tr>
+      <td style="color:var(--text-3);font-family:monospace">${i+11}.</td>
+      <td style="font-weight:500;font-size:.83rem">${s.nombre}</td>
+      <td><span class="g-chip ${G_LABELS[s.grupo]}">G${s.grupo}</span></td>
+      <td><div class="bar-wrap"><span style="color:var(--red);font-weight:700;min-width:1.5rem;font-size:.83rem">${s.fallas}</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:var(--red)"></div></div></div></td>
+      <td style="color:var(--orange);font-size:.83rem">${s.fugas||'–'}</td>
+    </tr>`;
+  }).join('');
+  addSlide(deck,`
+    <div class="slide-inner">
+      <div class="tag">Ranking</div>
+      <div class="big-title" style="font-size:clamp(1.5rem,3vw,2.1rem);margin-bottom:1.2rem">Posiciones 11 – 25</div>
+      <div style="overflow:auto;border-radius:12px;border:1px solid var(--border)">
+        <table class="rank-table">
+          <thead><tr><th>#</th><th>Estudiante</th><th>Grupo</th><th>Días Falla</th><th>Fugas</th></tr></thead>
+          <tbody>${next15Rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `);
+
+  // ── SLIDES 6–10: UNO POR GRUPO ────────────────────────────────────────────
+  for(let g=1;g<=5;g++){
+    const est=[...allData.filter(s=>s.grupo===g)].sort((a,b)=>b.fallas-a.fallas||b.fugas-a.fugas);
+    const maxF=est.reduce((a,s)=>Math.max(a,s.fallas),1);
+    const rows=est.map((s,i)=>{
+      const barW=Math.round(s.fallas/maxF*100);
+      return `<tr>
+        <td style="color:var(--text-3);font-family:monospace;font-size:.8rem">${i+1}.</td>
+        <td style="font-weight:500;font-size:.82rem">${s.nombre}</td>
+        <td style="font-family:monospace;font-size:.78rem;color:var(--text-3)">${s.icfes.toFixed(1)}</td>
+        <td><div class="bar-wrap"><span style="color:${s.fallas>0?'var(--red)':'var(--green)'};font-weight:700;min-width:1.2rem;font-size:.82rem">${s.fallas}</span>
+          ${s.fallas>0?`<div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:${G_COLORS[g]}"></div></div>`:''}
+        </div></td>
+        <td style="font-size:.8rem;color:var(--orange)">${s.fugas||'–'}</td>
+        <td style="font-size:.8rem;color:var(--yellow)">${s.retardos||'–'}</td>
+      </tr>`;
+    }).join('');
+    addSlide(deck,`
+      <div class="slide-inner">
+        <div class="tag" style="color:${G_COLORS[g]}">Grupo ${g} · ${est.length} estudiantes</div>
+        <div class="big-title" style="font-size:clamp(1.4rem,2.8vw,2rem);margin-bottom:1rem">Ranking Interno — Grupo ${g}</div>
+        <div style="overflow:auto;max-height:65vh;border-radius:12px;border:1px solid var(--border)">
+          <table class="rank-table">
+            <thead><tr><th>#</th><th>Estudiante</th><th>ICFES</th><th>Días Falla</th><th>Fugas</th><th>Retardos</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `);
+  }
+
+  // ── SLIDE FINAL ────────────────────────────────────────────────────────────
+  addSlide(deck,`
+    <div class="slide-inner" style="text-align:center">
+      <div class="tag">Fin del reporte</div>
+      <div class="big-title">Resumen<br><span class="hl">Ejecutivo</span></div>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.5rem">
+        <span class="pill pill-red">${conFallas} estudiantes con fallas</span>
+        <span class="pill pill-green">${sinInasist} sin inasistencias</span>
+        <span class="pill pill-orange">${totalFugas} fugas totales</span>
+      </div>
+      <div class="subtitle" style="margin:0 auto;font-size:.95rem">
+        Para el detalle completo por estudiante, accede al<br>
+        <strong style="color:var(--red)">reporte-inasistencias-11.html</strong>
+      </div>
+      <div style="margin-top:1.5rem;font-size:.78rem;color:var(--text-3)">CESUM · ${hoy}</div>
+    </div>
+  `);
+}
+
+function addSlide(deck, html){
+  const div=document.createElement('div');
+  div.className='slide';
+  div.innerHTML=`<div class="slide-inner" style="display:contents">${html}</div>`;
+  // Use the inner content directly
+  div.innerHTML=html;
+  deck.appendChild(div);
+  slides.push(div);
+}
+
+// ── DECK NAVIGATION ───────────────────────────────────────────────────────────
+function initDeck(){
+  const dotsEl=document.getElementById('dots');
+  dotsEl.innerHTML='';
+  slides.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='dot'+(i===0?' active':'');
+    d.addEventListener('click',()=>goTo(i));
+    dotsEl.appendChild(d);
+  });
+  goTo(0);
+}
+
+function goTo(n){
+  slides.forEach((s,i)=>{
+    s.classList.remove('active','exit');
+    if(i<n) s.classList.add('exit');
+  });
+  slides[n].classList.add('active');
+  current=n;
+  document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===n));
+  document.getElementById('progress').style.width=(((n)/(slides.length-1))*100)+'%';
+  document.getElementById('counter').textContent=(n+1)+' / '+slides.length;
+}
+
+document.getElementById('next').addEventListener('click',()=>{ if(current<slides.length-1) goTo(current+1); });
+document.getElementById('prev').addEventListener('click',()=>{ if(current>0) goTo(current-1); });
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ') { e.preventDefault(); if(current<slides.length-1) goTo(current+1); }
+  if(e.key==='ArrowLeft')               { e.preventDefault(); if(current>0) goTo(current-1); }
+});
+</script>
+</body>
+</html>
