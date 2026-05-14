@@ -2653,7 +2653,7 @@ window.guardarAsignatura = async function() {
   const asig = (document.getElementById('preinAsignatura').value || '').trim();
   if (!asig) { showToast('Escribe el nombre de tu asignatura', 'warning'); return; }
   try {
-    await updateDoc(doc(db, 'usuarios', state.uid), { asignatura: asig });
+    await setDoc(doc(db, 'usuarios', state.uid), { asignatura: asig }, { merge: true });
     const st = document.getElementById('preinAsigStatus');
     if (st) st.textContent = '✓ Asignatura guardada';
     showToast('Asignatura guardada', 'success');
