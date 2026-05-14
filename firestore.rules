@@ -42,7 +42,9 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create: if isAdmin() || (isSuperAdmin() && request.auth.uid == uid);
       allow update: if isSuperAdmin()
-                    || (isAdmin() && !isSuperAdminEmail(resource.data.email));
+                    || (isAdmin() && !isSuperAdminEmail(resource.data.email))
+                    || (request.auth != null && request.auth.uid == uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['asignatura']));
       allow delete: if isAdmin() && !isSuperAdminEmail(resource.data.email);
     }
 
