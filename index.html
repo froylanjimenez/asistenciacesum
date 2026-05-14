@@ -757,10 +757,10 @@ html.text-xl     { font-size: 22px; }
             <p style="font-size:.8rem;color:var(--text-2);margin-bottom:.5rem"><i class="bi bi-download"></i> Descargar preinformados:</p>
             <div style="display:flex;flex-direction:column;gap:.5rem">
               <button class="btn-cesum btn-cesum-secondary w-100" onclick="descargarPreinformeGrupo()">
-                <i class="bi bi-file-earmark-spreadsheet"></i> Este grupo (CSV)
+                <i class="bi bi-file-earmark-richtext"></i> Este grupo (HTML)
               </button>
               <button class="btn-cesum btn-cesum-secondary w-100" onclick="descargarPreinformePeriodo()">
-                <i class="bi bi-file-earmark-spreadsheet"></i> Todo el período (CSV)
+                <i class="bi bi-file-earmark-richtext"></i> Todo el período (HTML)
               </button>
             </div>
           </div>
@@ -2772,20 +2772,41 @@ window.guardarPreinformes = async function() {
   }
 };
 
-function _preinCSV(rows) {
-  const header = ['Código','Nombre','Grado','Período','Tipo','Asignatura','Docente'];
-  return [header.join(','), ...rows.map(r =>
-    [r.codigo, `"${(r.nombre||'').replace(/"/g,'""')}"`, r.grado, r.periodo,
-     r.tipo, `"${(r.asignatura||'').replace(/"/g,'""')}"`, `"${(r.docente||'').replace(/"/g,'""')}"`].join(',')
-  )].join('\n');
+function _preinBadge(tipo) {
+  const map = { rendimiento: ['r','#bf360c','#fff3e0'], disciplinario: ['d','#b71c1c','#fce4ec'], ambos: ['a','#6a1b9a','#f3e5f5'] };
+  const [,fg,bg] = map[tipo] || ['','#333','#eee'];
+  return `<span style="display:inline-block;padding:.1rem .5rem;border-radius:99px;font-size:11px;font-weight:700;background:${bg};color:${fg}">${tipo}</span>`;
 }
 
-function _dlCSV(content, filename) {
-  const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+function _preinHTMLShell(titulo, subtitulo, body) {
+  const hoy = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${titulo}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;padding:1.5rem 2rem;color:#111;font-size:13px}
+.cab{text-align:center;border-bottom:2px solid #1a237e;padding-bottom:.75rem;margin-bottom:1.2rem}
+.cab h1{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555}
+.cab h2{font-size:15px;font-weight:700;color:#1a237e;margin:.3rem 0}
+.cab .sub{font-size:11px;color:#555;margin-top:.25rem}
+.btn-p{display:inline-block;margin-bottom:1rem;padding:.35rem 1rem;background:#1a237e;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px}
+table{width:100%;border-collapse:collapse}
+th{background:#1a237e;color:#fff;padding:.4rem .6rem;text-align:left;font-size:11px;font-weight:700}
+td{padding:.4rem .6rem;border-bottom:1px solid #e0e0e0;vertical-align:top;font-size:12px}
+tr:nth-child(even) td{background:#f7f8fc}
+.num{color:#aaa;font-size:11px;width:2rem}
+.cod{font-size:11px;color:#666}
+.sec{background:#e8eaf6;color:#1a237e;font-weight:700;font-size:12px;padding:.4rem .6rem;margin-top:.75rem}
+@media print{.btn-p{display:none} @page{margin:.8cm} body{padding:.5rem 1rem}}
+</style></head><body>
+<div class="cab">
+  <h1>CONCENTRACIÓN EDUCATIVA DEL SUR DE MONTELÍBANO</h1>
+  <h2>${titulo}</h2>
+  ${subtitulo ? `<div class="sub">${subtitulo}</div>` : ''}
+  <div class="sub">Generado el ${hoy}</div>
+</div>
+<button class="btn-p" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+${body}
+</body></html>`;
 }
 
 window.descargarPreinformeGrupo = async function() {
@@ -2794,34 +2815,101 @@ window.descargarPreinformeGrupo = async function() {
   if (!periodo || !grado) { showToast('Selecciona período y grado', 'warning'); return; }
   showLoading(true);
   try {
+    // Trae preinformes de TODOS los docentes para este grado y período
     const snap = await _getDocs(query(collection(db, 'preinformes'),
-      where('docenteUid', '==', state.usuario),
       where('periodo', '==', periodo),
       where('grado', '==', grado)
     ));
-    const rows = [];
-    snap.forEach(d => rows.push(d.data()));
-    if (!rows.length) { showToast('Sin preinformados en este grupo', 'info'); return; }
-    rows.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-    _dlCSV(_preinCSV(rows), `preinforme_${grado.replace('°','')}_p${periodo}.csv`);
+    const lista = [];
+    snap.forEach(d => lista.push(d.data()));
+    if (!lista.length) { showToast('Sin preinformados en este grupo', 'info'); return; }
+
+    // Agrupar por código de estudiante
+    const byCode = {};
+    lista.forEach(p => {
+      if (!byCode[p.codigo]) byCode[p.codigo] = { nombre: p.nombre, codigo: p.codigo, asigs: [] };
+      byCode[p.codigo].asigs.push({ asignatura: p.asignatura || '—', tipo: p.tipo, docente: p.docente || '' });
+    });
+    const students = Object.values(byCode).sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    const filas = students.map((s, i) => {
+      const asigHtml = s.asigs
+        .sort((a, b) => a.asignatura.localeCompare(b.asignatura))
+        .map(a => `<div style="margin:.1rem 0">${escapeHtml(a.asignatura)} ${_preinBadge(a.tipo)}</div>`)
+        .join('');
+      return `<tr>
+        <td class="num">${i + 1}</td>
+        <td><strong>${escapeHtml(s.nombre)}</strong></td>
+        <td class="cod">${escapeHtml(s.codigo)}</td>
+        <td>${asigHtml}</td>
+      </tr>`;
+    }).join('');
+
+    const body = `
+      <p style="font-size:12px;color:#555;margin-bottom:.5rem">${students.length} estudiante(s) preinformado(s)</p>
+      <table>
+        <thead><tr><th class="num">#</th><th>Estudiante</th><th>Código</th><th>Asignaturas preinformadas</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>`;
+
+    const w = window.open('', '_blank');
+    if (!w) { showToast('Permite ventanas emergentes para ver el preinforme', 'warning'); return; }
+    w.document.write(_preinHTMLShell(
+      `PREINFORME PERÍODO ${periodo} — ${grado}`,
+      `${students.length} estudiante(s) preinformado(s) · Incluye todas las asignaturas`,
+      body
+    ));
+    w.document.close();
   } catch(e) { showToast('Error: ' + e.message, 'error'); }
   finally { showLoading(false); }
 };
 
 window.descargarPreinformePeriodo = async function() {
   const periodo = document.getElementById('preinPeriodo').value;
+  const asig    = (document.getElementById('preinAsignatura').value || '').trim();
   if (!periodo) { showToast('Selecciona un período', 'warning'); return; }
   showLoading(true);
   try {
+    // Solo los preinformes del docente activo en este período
     const snap = await _getDocs(query(collection(db, 'preinformes'),
       where('docenteUid', '==', state.usuario),
       where('periodo', '==', periodo)
     ));
-    const rows = [];
-    snap.forEach(d => rows.push(d.data()));
-    if (!rows.length) { showToast('Sin preinformados en este período', 'info'); return; }
-    rows.sort((a, b) => (a.grado || '').localeCompare(b.grado || '') || (a.nombre || '').localeCompare(b.nombre || ''));
-    _dlCSV(_preinCSV(rows), `preinforme_periodo${periodo}.csv`);
+    const lista = [];
+    snap.forEach(d => lista.push(d.data()));
+    if (!lista.length) { showToast('Sin preinformados en este período', 'info'); return; }
+
+    lista.sort((a, b) => (a.grado || '').localeCompare(b.grado || '') || (a.nombre || '').localeCompare(b.nombre || ''));
+
+    // Agrupar por grado para mostrar secciones
+    const porGrado = {};
+    lista.forEach(r => { (porGrado[r.grado] = porGrado[r.grado] || []).push(r); });
+
+    let n = 0;
+    const sections = Object.keys(porGrado).sort().map(g => {
+      const filas = porGrado[g].map(r => `<tr>
+        <td class="num">${++n}</td>
+        <td><strong>${escapeHtml(r.nombre)}</strong></td>
+        <td class="cod">${escapeHtml(r.codigo)}</td>
+        <td>${_preinBadge(r.tipo)}</td>
+      </tr>`).join('');
+      return `<div class="sec">${g} — ${porGrado[g].length} estudiante(s)</div>
+        <table>
+          <thead><tr><th class="num">#</th><th>Estudiante</th><th>Código</th><th>Tipo</th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>`;
+    }).join('<br>');
+
+    const body = `<p style="font-size:12px;color:#555;margin-bottom:.5rem">${lista.length} estudiante(s) preinformado(s) en total</p>${sections}`;
+
+    const w = window.open('', '_blank');
+    if (!w) { showToast('Permite ventanas emergentes para ver el preinforme', 'warning'); return; }
+    w.document.write(_preinHTMLShell(
+      `PREINFORME PERÍODO ${periodo}`,
+      `Docente: ${escapeHtml(state.nombre)} · Asignatura: ${escapeHtml(asig)}`,
+      body
+    ));
+    w.document.close();
   } catch(e) { showToast('Error: ' + e.message, 'error'); }
   finally { showLoading(false); }
 };
