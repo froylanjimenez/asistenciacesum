@@ -728,6 +728,9 @@ html.text-xl     { font-size: 22px; }
         <button class="nav-tab-btn" id="subTabDocentes" onclick="switchAdminTab('docentes')">
           <i class="bi bi-person-badge"></i> Docentes
         </button>
+        <button class="nav-tab-btn" id="subTabMetricas" onclick="switchAdminTab('metricas')">
+          <i class="bi bi-bar-chart"></i> Métricas
+        </button>
       </div>
 
       <!-- Novedades -->
@@ -934,6 +937,26 @@ html.text-xl     { font-size: 22px; }
               </div>
               <div id="noticiasAdminLista"><p style="color:var(--text-2);font-size:.85rem">Cargando...</p></div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Métricas de uso por docente (admin) -->
+      <div id="adminMetricasPanel" style="display:none">
+        <div class="cesum-card">
+          <div class="cesum-card-header">
+            <h5><i class="bi bi-bar-chart-fill"></i> Métricas de uso por docente</h5>
+            <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">
+              <span style="font-size:.82rem;color:var(--text-2)">Período:</span>
+              <button class="btn-cesum btn-cesum-secondary sm" id="metBtn30" onclick="setMetricasFiltro(30)">30 días</button>
+              <button class="btn-cesum btn-cesum-secondary sm" id="metBtn60" onclick="setMetricasFiltro(60)">60 días</button>
+              <button class="btn-cesum btn-cesum-secondary sm" id="metBtn90" onclick="setMetricasFiltro(90)">90 días</button>
+              <button class="btn-cesum btn-cesum-secondary sm" id="metBtnTodo" onclick="setMetricasFiltro(0)">Todo</button>
+              <button class="btn-cesum btn-cesum-primary sm" onclick="cargarMetricasDocentes()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+            </div>
+          </div>
+          <div id="metricasBody">
+            <p style="color:var(--text-2);font-size:.85rem">Selecciona el período y presiona Actualizar.</p>
           </div>
         </div>
       </div>
@@ -2392,7 +2415,7 @@ window.switchTab = function(tab) {
 };
 
 window.switchAdminTab = function(sub) {
-  ['novedades','seguimiento','estudiantes','noticias','docentes'].forEach(s => {
+  ['novedades','seguimiento','estudiantes','noticias','docentes','metricas'].forEach(s => {
     const el=document.getElementById('admin'+s.charAt(0).toUpperCase()+s.slice(1)+'Panel');
     const btn=document.getElementById('subTab'+s.charAt(0).toUpperCase()+s.slice(1));
     if(el)  el.style.display = s===sub?'block':'none';
@@ -2402,6 +2425,132 @@ window.switchAdminTab = function(sub) {
   if (sub==='estudiantes') renderEstudiantesAdmin();
   if (sub==='noticias')    { cargarNoticias(); cargarDocentes().then(renderDocentesCheckboxes); }
   if (sub==='docentes')    cargarDocentesAdmin();
+  if (sub==='metricas')    cargarMetricasDocentes();
+};
+
+// ════════════════════════════════════════════
+//  MÉTRICAS DE USO POR DOCENTE
+// ════════════════════════════════════════════
+let _metricasDias = 30;
+
+window.setMetricasFiltro = function(dias) {
+  _metricasDias = dias;
+  [30, 60, 90, 0].forEach(d => {
+    const key = d === 0 ? 'Todo' : String(d);
+    const btn = document.getElementById('metBtn' + key);
+    if (btn) btn.classList.toggle('active', d === dias);
+  });
+};
+
+window.cargarMetricasDocentes = async function() {
+  if (!state.isAdmin) return;
+  const cont = document.getElementById('metricasBody');
+  if (!cont) return;
+  cont.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+
+  const diasFiltro = _metricasDias;
+  const fechaCorte = diasFiltro > 0
+    ? new Date(Date.now() - diasFiltro * 86400000).toISOString().slice(0, 10)
+    : null;
+
+  try {
+    const usersSnap = await getDocs(collection(db, 'usuarios'));
+    const usuarios = {};
+    usersSnap.forEach(d => { usuarios[d.id] = d.data(); });
+
+    const metrics = {};
+    const init = (uid, nombre, rol) => {
+      if (!metrics[uid]) metrics[uid] = { nombre: nombre || '(sin nombre)', rol: rol || 'docente', diasAsist: new Set(), totalAsist: 0, totalActividades: 0, totalReportes: 0, ultima: null };
+    };
+    Object.entries(usuarios).forEach(([uid, u]) => init(uid, u.nombre || u.email, u.rol));
+
+    // nombre → uid para cruzar asistencia (que guarda nombre, no uid)
+    const nombreToUid = {};
+    Object.entries(usuarios).forEach(([uid, u]) => { if (u.nombre) nombreToUid[u.nombre] = uid; });
+
+    // Asistencia
+    const asistSnap = await getDocs(collection(db, 'asistencia'));
+    asistSnap.forEach(d => {
+      const fecha = d.id;
+      if (fechaCorte && fecha < fechaCorte) return;
+      (d.data().registros || []).forEach(r => {
+        const uid = nombreToUid[r.docente];
+        if (!uid || !metrics[uid]) return;
+        metrics[uid].totalAsist++;
+        metrics[uid].diasAsist.add(fecha);
+        if (!metrics[uid].ultima || fecha > metrics[uid].ultima) metrics[uid].ultima = fecha;
+      });
+    });
+
+    // Actividades / notas
+    const actSnap = await getDocs(collection(db, 'actividades'));
+    actSnap.forEach(d => {
+      const data = d.data();
+      const fecha = data.fecha || null;
+      if (fechaCorte && fecha && fecha < fechaCorte) return;
+      const uid = data.docenteUid || data.creadoPor;
+      if (!uid || !metrics[uid]) return;
+      metrics[uid].totalActividades++;
+      if (fecha && (!metrics[uid].ultima || fecha > metrics[uid].ultima)) metrics[uid].ultima = fecha;
+    });
+
+    // Reportes de comportamiento
+    const repSnap = await getDocs(collection(db, 'reportes'));
+    repSnap.forEach(d => {
+      const data = d.data();
+      const fecha = data.fecha || null;
+      if (fechaCorte && fecha && fecha < fechaCorte) return;
+      const uid = data.creadoPor;
+      if (!uid || !metrics[uid]) return;
+      metrics[uid].totalReportes++;
+      if (fecha && (!metrics[uid].ultima || fecha > metrics[uid].ultima)) metrics[uid].ultima = fecha;
+    });
+
+    const rows = Object.entries(metrics)
+      .map(([uid, m]) => ({ uid, ...m, diasCount: m.diasAsist.size }))
+      .sort((a, b) => (b.diasCount - a.diasCount) || (b.totalActividades - a.totalActividades));
+
+    const periodoLabel = diasFiltro > 0 ? `Últimos ${diasFiltro} días` : 'Todo el historial';
+    const total = rows.reduce((s, r) => s + r.diasCount, 0);
+
+    const rolBadge = rol => {
+      const colors = { superadmin: ['#e3f2fd','#1565c0'], admin: ['#e8f5e9','#2e7d32'] };
+      const [bg, fg] = colors[rol] || ['#f5f5f5','#555'];
+      return `<span style="font-size:.73rem;padding:.15rem .5rem;border-radius:99px;background:${bg};color:${fg}">${rol}</span>`;
+    };
+
+    cont.innerHTML = `
+      <p style="font-size:.78rem;color:var(--text-2);margin-bottom:.75rem">${periodoLabel} · ${rows.length} docentes · ${total} días con asistencia registrada</p>
+      <div style="overflow-x:auto">
+      <table class="stat-table">
+        <thead><tr>
+          <th style="text-align:left">Docente</th>
+          <th>Rol</th>
+          <th title="Días distintos en que registró asistencia">Días con asistencia</th>
+          <th title="Total de registros de asistencia guardados">Registros asistencia</th>
+          <th title="Actividades / notas creadas">Actividades/Notas</th>
+          <th title="Reportes de comportamiento creados">Reportes</th>
+          <th>Última actividad</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr>
+            <td style="text-align:left;font-weight:500">${escapeHtml(r.nombre)}</td>
+            <td style="text-align:center">${rolBadge(r.rol)}</td>
+            <td style="text-align:center;font-weight:600;color:${r.diasCount>0?'var(--accent)':'var(--text-3)'}">${r.diasCount}</td>
+            <td style="text-align:center">${r.totalAsist}</td>
+            <td style="text-align:center">${r.totalActividades}</td>
+            <td style="text-align:center">${r.totalReportes}</td>
+            <td style="text-align:center;font-size:.82rem;color:var(--text-2)">${r.ultima || '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      </div>`;
+
+    // Marcar botón activo
+    setMetricasFiltro(diasFiltro);
+  } catch(e) {
+    cont.innerHTML = `<p style="color:#c62828;font-size:.85rem"><i class="bi bi-exclamation-triangle"></i> Error: ${escapeHtml(e.message)}</p>`;
+  }
 };
 
 // ════════════════════════════════════════════
