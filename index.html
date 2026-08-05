@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>CESUM – Sistema de Gestión Escolar</title>
+<script>if (localStorage.getItem('cesum_tema') === 'claro') document.documentElement.classList.add('tema-claro');</script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -27,6 +28,24 @@
   --radius:     10px;
   --shadow:     0 4px 28px #00000099;
 }
+html.tema-claro {
+  --bg-dark:    #eef4f6;
+  --bg-card:    #ffffff;
+  --bg-input:   #f3f7f9;
+  --border:     #d3dfe4;
+  --accent:     #0087a8;
+  --accent-lt:  #0099bd;
+  --accent-glow:#0087a822;
+  --green:      #059669;
+  --red:        #dc2626;
+  --orange:     #ea580c;
+  --yellow:     #b45309;
+  --purple:     #9333ea;
+  --text-1:     #0b2530;
+  --text-2:     #4b6b74;
+  --text-3:     #9fb4ba;
+  --shadow:     0 4px 24px #0b253014;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-1);min-height:100vh}
 /* Accesibilidad: tamaño de texto */
@@ -37,6 +56,9 @@ html.text-xl     { font-size: 22px; }
   transition:all .2s;letter-spacing:.03em;min-width:2.4rem;text-align:center}
 #btnTextSize:hover{background:var(--bg-input);color:var(--text-1)}
 #btnTextSize.activo{border-color:var(--accent-lt);color:var(--accent-lt)}
+#btnTema{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text-2);
+  font-size:.9rem;padding:.28rem .55rem;cursor:pointer;transition:all .2s}
+#btnTema:hover{background:var(--bg-input);color:var(--text-1)}
 #app{min-height:100vh}
 .screen{display:none!important}
 .screen.active{display:flex!important}
@@ -459,6 +481,7 @@ html.text-xl     { font-size: 22px; }
     <div class="user-info">
       <div class="user-badge"><strong id="navNombre">Docente</strong></div>
       <button id="btnTextSize" onclick="ciclarTextSize()" title="Ajustar tamaño de texto">A</button>
+      <button id="btnTema" onclick="alternarTema()" title="Cambiar tema"><i class="bi bi-moon-stars-fill"></i></button>
       <button id="btnLogout" onclick="handleLogout()"><i class="bi bi-box-arrow-left"></i> Salir</button>
     </div>
   </nav>
@@ -544,6 +567,7 @@ html.text-xl     { font-size: 22px; }
                 <th id="th-H4">H4<div style="font-size:.6rem;opacity:.6;font-weight:400">9:45</div></th>
                 <th id="th-H5">H5<div style="font-size:.6rem;opacity:.6;font-weight:400">10:40</div></th>
                 <th id="th-H6">H6<div style="font-size:.6rem;opacity:.6;font-weight:400">11:35</div></th>
+                <th title="Marcar todo el día">🕓</th>
                 <th>⚑</th>
               </tr>
             </thead>
@@ -1080,6 +1104,33 @@ html.text-xl     { font-size: 22px; }
   </div>
 </div>
 
+<!-- MODAL ESTADO TODO EL DÍA -->
+<div class="modal fade modal-cesum" id="modalEstadoDia" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2" style="color:var(--accent-lt)"></i>Marcar todo el día</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-3 text-muted small">Estudiante: <strong id="estadoDiaNombre" class="text-white"></strong></p>
+        <p class="mb-3 text-muted small">Selecciona un estado para aplicarlo a las 6 horas del día de una sola vez:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.6rem">
+          <button class="estado-btn eb-asistio" style="width:auto;padding:.55rem 1rem" onclick="aplicarEstadoDia('Asistió')">✓ Asistió</button>
+          <button class="estado-btn eb-falla" style="width:auto;padding:.55rem 1rem" onclick="aplicarEstadoDia('Falla')">✗ Falla</button>
+          <button class="estado-btn eb-excusa" style="width:auto;padding:.55rem 1rem" onclick="aplicarEstadoDia('Excusa')">E Excusa</button>
+          <button class="estado-btn eb-fuga" style="width:auto;padding:.55rem 1rem" onclick="aplicarEstadoDia('Fuga')">F Fuga</button>
+          <button class="estado-btn eb-retardo" style="width:auto;padding:.55rem 1rem" onclick="aplicarEstadoDia('Retardo')">R Retardo</button>
+        </div>
+        <p class="mt-3 mb-0 text-muted" style="font-size:.75rem">Nota: las horas con novedad o cita psicológica activa no se modifican. Recuerda presionar <strong>Guardar</strong> luego de aplicar el estado.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DESCARGOS -->
 <div class="modal fade modal-cesum" id="modalDescargos" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1484,7 +1535,7 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, si
   sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider }
   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 import { initializeFirestore, getFirestore,
-  collection, doc, getDoc, getDocs, setDoc, addDoc, writeBatch,
+  collection, doc, getDoc, getDocs, setDoc, addDoc, writeBatch, runTransaction,
   updateDoc, deleteDoc, query, where, orderBy, serverTimestamp, Timestamp }
   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
@@ -2385,6 +2436,8 @@ function poblarSelectEstudiantes() {
 
 function poblarSelectGrados() {
   let grados = [...new Set(state.estudiantes.map(e=>e.grado))].sort();
+  // Los grupos de 6° a 9° quedan ocultos para docentes; solo el admin los ve.
+  if (!state.isAdmin) grados = grados.filter(g => !/^[6-9]°/.test(g));
   const has11 = grados.some(g => g.startsWith('11'));
 
   // Grupos sim2 visibles: siempre los 5 para admin / sin restricción,
@@ -2976,7 +3029,7 @@ window.filtrarEstudiantes = function() {
 function renderPlanilla(estudiantes) {
   const tbody = document.getElementById('asisBody');
   if (!estudiantes.length) {
-    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-2)">No hay estudiantes. Verifica el grado seleccionado.</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-2)">No hay estudiantes. Verifica el grado seleccionado.</td></tr>`;
     return;
   }
   const { horaKey } = getHoraActual();
@@ -3021,6 +3074,14 @@ function renderPlanilla(estudiantes) {
       td.appendChild(btn); tr.appendChild(td);
     });
 
+    const tdDia = document.createElement('td');
+    const btnDia = document.createElement('button');
+    btnDia.className='btn-reporte-fila';
+    btnDia.title='Marcar un estado para todo el día';
+    btnDia.innerHTML='<i class="bi bi-clock-history"></i>';
+    btnDia.addEventListener('click',()=>abrirModalEstadoDia(est.nombre));
+    tdDia.appendChild(btnDia); tr.appendChild(tdDia);
+
     const tdRep = document.createElement('td');
     const btnRep = document.createElement('button');
     btnRep.className='btn-reporte-fila';
@@ -3043,6 +3104,27 @@ function ciclarEstado(btn) {
   btn.textContent=next.short;
   btn.setAttribute('data-label',next.label);
 }
+
+let _estadoDiaEstudiante = null;
+window.abrirModalEstadoDia = function(nombre) {
+  _estadoDiaEstudiante = nombre;
+  document.getElementById('estadoDiaNombre').textContent = nombre;
+  new bootstrap.Modal(document.getElementById('modalEstadoDia')).show();
+};
+
+window.aplicarEstadoDia = function(estadoValue) {
+  if (!_estadoDiaEstudiante) return;
+  const e = getEstado(estadoValue);
+  document.querySelectorAll('#asisBody .estado-btn').forEach(btn => {
+    if (btn.disabled || btn.dataset.est !== _estadoDiaEstudiante) return;
+    btn.dataset.estado = e.value;
+    btn.className = 'estado-btn ' + e.css;
+    btn.textContent = e.short;
+    btn.setAttribute('data-label', e.label);
+  });
+  bootstrap.Modal.getInstance(document.getElementById('modalEstadoDia')).hide();
+  showToast(`"${e.label}" aplicado a las 6 horas de ${_estadoDiaEstudiante}. Recuerda Guardar.`, 'success');
+};
 
 window.guardarAsistencia = async function() {
   const fecha = document.getElementById('asistFecha').value;
@@ -3068,18 +3150,22 @@ window.guardarAsistencia = async function() {
   if (!validos.length) { showToast('No hay registros válidos.','warning'); return; }
   showLoading(true);
   try {
-    // Leer registros existentes del día y fusionar (evita que un docente borre los registros de otro)
+    // Leer y fusionar dentro de una transacción: evita que dos guardados simultáneos
+    // (dos docentes guardando casi a la vez) se pisen y se pierdan registros entre sí.
     const docRef = doc(db,'asistencia',fecha);
-    const existing = await _getDoc(docRef);
-    const previos = existing.exists() ? (existing.data().registros || []) : [];
-    // Reemplazar solo los registros del mismo estudiante+hora; conservar el resto
-    const merged = [...previos];
-    validos.forEach(nuevo => {
-      const idx = merged.findIndex(r => r.estudiante === nuevo.estudiante && r.hora === nuevo.hora);
-      if (idx >= 0) merged[idx] = nuevo; else merged.push(nuevo);
-    });
-    await setDoc(docRef, {
-      fecha, registros: merged, actualizadoPor: state.nombre, ts: serverTimestamp()
+    await runTransaction(db, async (tx) => {
+      const existing = await tx.get(docRef);
+      _dbReads++;
+      const previos = existing.exists() ? (existing.data().registros || []) : [];
+      // Reemplazar solo los registros del mismo estudiante+hora; conservar el resto
+      const merged = [...previos];
+      validos.forEach(nuevo => {
+        const idx = merged.findIndex(r => r.estudiante === nuevo.estudiante && r.hora === nuevo.hora);
+        if (idx >= 0) merged[idx] = nuevo; else merged.push(nuevo);
+      });
+      tx.set(docRef, {
+        fecha, registros: merged, actualizadoPor: state.nombre, ts: serverTimestamp()
+      });
     });
     _dbWrites++;
     cacheDelPrefix('asistencia:all'); // invalidar caché (todas las claves con rango de fechas)
@@ -5213,6 +5299,30 @@ window.guardarEvento = async function() {
   // Restaurar preferencia guardada al cargar
   const guardado = parseInt(localStorage.getItem('cesum_textSize') || '0', 10);
   if (guardado > 0 && guardado < NIVELES.length) aplicarNivel(guardado);
+})();
+
+// ════════════════════════════════════════════
+//  ACCESIBILIDAD — TEMA CLARO / OSCURO
+// ════════════════════════════════════════════
+(function() {
+  function aplicarTema(claro) {
+    const html = document.documentElement;
+    html.classList.toggle('tema-claro', claro);
+    const btn = document.getElementById('btnTema');
+    if (btn) {
+      btn.innerHTML = claro ? '<i class="bi bi-sun-fill"></i>' : '<i class="bi bi-moon-stars-fill"></i>';
+      btn.title = claro ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+    }
+    localStorage.setItem('cesum_tema', claro ? 'claro' : 'oscuro');
+  }
+
+  window.alternarTema = function() {
+    aplicarTema(!document.documentElement.classList.contains('tema-claro'));
+  };
+
+  // Restaurar preferencia guardada al cargar
+  const guardado = localStorage.getItem('cesum_tema');
+  if (guardado === 'claro') aplicarTema(true);
 })();
 
 window.eliminarEvento = async function(id) {
